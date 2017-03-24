@@ -11,22 +11,6 @@ output:
       smooth_scroll: true
 ---
 
-```{r}
-library(MCMCpack)
-library(tidyverse)
-library(cowplot)
-library(scales)
-
-nu <- 0.001
-V <- 1
-
-data_frame(x = seq(1, 10, length = 100),
-           y = dinvgamma(x, shape = nu / 2, scale = nu * V / 2)) %>% 
-  ggplot(aes(x, y)) +
-  geom_line() +
-  scale_y_continuous(labels = scientific_format())
-```
-
 # Setup
 
 ```{r}
@@ -50,12 +34,6 @@ sires <- data.frame(animal = unique(pedigree$sire),
 dams <- data.frame(animal = unique(pedigree$dam),
                    sire = NA, dam = NA, stringsAsFactors = FALSE)
 pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
-
-invA <- inverseA(pedigree)$Ainv
-
-# Inverse Gamma(0.001; 0.001)
-# a = nu / 2
-# b = nu * V / 2
 ```
 
 # Sire model MCMCglmm
@@ -75,16 +53,15 @@ prior <- list(R = list(V = 1, nu = 0.002),
                        G3 = list(V = diag(3), nu = 0.002)))
 
 # parameter extension
-# prior_ext <- list(
-#   R = list(V = 1, nu = 0.002),
-#   G = list(G1 = list(V = 1, nu = 0.002, alpha.mu = 0, alpha.V = 1000),
-#            G2 = list(V = 1, nu = 0.002, alpha.mu = 0, alpha.V = 1000),
-#            G3 = list(V = diag(3), nu = 0.002,
-#                      alpha.mu = c(0, 0, 0),
-#                      alpha.V = diag(3) * 1000)))
+prior_ext <- list(
+  R = list(V = 1, nu = 0.002),
+  G = list(G1 = list(V = 1, nu = 0.002, alpha.mu = 0, alpha.V = 1000),
+           G2 = list(V = 1, nu = 0.002, alpha.mu = 0, alpha.V = 1000),
+           G3 = list(V = diag(3), nu = 0.002,
+                     alpha.mu = c(0, 0, 0),
+                     alpha.V = diag(3) * 1000)))
 
-t1 <- Sys.time()
-
+system.time({
 m6 <- mclapply(1:chains, function(i) {
   MCMCglmm(NewAge ~ treat - 1, 
            random = ~ sire + sire:dam + idh(treat):sire,
@@ -96,8 +73,7 @@ m6 <- mclapply(1:chains, function(i) {
            burnin = burnin,
            thin = thinning)
 }, mc.cores = chains)
-
-Sys.time() - t1
+})
 
 save(m6, file = "Sire_model.Rda")
 
@@ -207,13 +183,15 @@ fm_rest <- stan_lmer(
   core = 4,
   iter = 1e4,
   warmup = 1e3)
-save(fm_full, fm_rest, file = "rstanarm_mods.Rda")
+
+loo_full <- loo(fm_full)
+loo_rest <- loo(fm_rest)
+
+save(fm_full, fm_rest, loo_full, loo_rest, file = "rstanarm_mods.Rda")
 ```
 
 ```{r}
 load("rstanarm_mods.Rda")
-loo_full <- loo(fm_full)
-loo_rest <- loo(fm_rest)
 
 par(mfrow = 1:2, mar = c(5,3.8,1,0) + 0.1, las = 3)
 plot(loo_full, label_points = TRUE)
@@ -248,21 +226,14 @@ STD <- h2life %>%
 
 h2life_mrg <- full_join(full_join(HS, LY), STD)
 
-# Wilson et al revised
-# prior <- list(G = list(G1 = list(V = diag(3), n = 1.002)),
-#               R = list(V = diag(3), n = 1.002))
-
-# See de Villemereuil
-# inverse-Gamma(0.001, 0.001) on variances; and the (marginal) prior
-# distribution of correlation follows to some extent Beta(0.001, 0.001
-# prior <- list(R = list(V = diag(2) * (0.002 / 1.002), nu = 1.002),
-#               G = list(G1 = list(V = diag(2) * (0.002 / 1.002), nu = 1.002)))
-
 prior1 <- list(R = list(V = diag(3) * 1.002, nu = 1.002),
                G = list(G1 = list(V = diag(3) * 1.002, nu = 1.002)))
 
 prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
                G = list(G1 = list(V = diag(3) / 3, nu = 1.002)))
+
+prior3 <- list(R = list(V = diag(3) * 1.002, nu = 3),
+               G = list(G1 = list(V = diag(3) * 1.002, nu = 3)))
 
 library(parallel)
 
@@ -271,24 +242,22 @@ burnin <- 20000
 thinning <- 500
 chains <- 12
 
-t1 <- Sys.time()
-
+system.time({
 m6 <- mclapply(1:chains, function(i) {
    MCMCglmm(cbind(Age_STD, Age_HS, Age_LY) ~ trait - 1,
          random = ~ us(trait):animal,
          rcov = ~ idh(trait):units,
          data = h2life_mrg,
-         prior = prior2,
+         prior = prior3,
          pedigree = pedigree,
          family = rep("gaussian", 3),
          nitt = iter,
          burnin = burnin,
          thin = thinning)
 }, mc.cores = chains)
+})
 
-Sys.time() - t1
-
-save(m6, file = "tri_model_p2.Rda")
+save(m6, file = "tri_model_p3.Rda")
 
 ###############################################################
 
@@ -316,11 +285,6 @@ effectiveSize(re)
 re <- as.mcmc(as.matrix(re))
 
 head(re)
-
-# Genetic correlation
-# corr.gen <- fm$VCV[ , 'phen1:phen2.animal'] / 
-#   sqrt(fm$VCV[ , 'phen1:phen1.animal'] * fm$VCV[ , 'phen2:phen2.animal'])
-# mean(corr.gen)
 
 # STD vs. HS
 plot(re[ , "traitAge_HS:traitAge_STD.animal"])
