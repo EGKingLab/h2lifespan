@@ -1,0 +1,518 @@
+---
+title: "halfsib_survival"
+author: "Enoch Ng'oma"
+date: "3/7/2017"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+```{r}
+#Analysis of lifespan 
+#Half-sibling fly data
+
+#Functions
+#fortify .survfit allows ggplot2 to handle survfit() results 
+# source: sinhrks/fortify_survfit.R, gitHub
+
+fortify.survfit <- function(survfit.data) {
+  data.frame(time = survfit.data$time,
+             n.risk = survfit.data$n.risk,
+             n.event = survfit.data$n.event,
+             n.censor = survfit.data$n.censor,
+             surv = survfit.data$surv,
+             std.err = survfit.data$std.err,
+             upper = survfit.data$upper,
+             lower = survfit.data$lower,
+             strata = rep(names(survfit.data$strata), survfit.data$strata))
+}
+```
+# data
+```{r}
+setwd("/Users/ngomae/Dropbox/EN_KM_EGK/Data/Processed/")
+h2life <- read.table('Female_events_lifespan.txt', sep="\t",header=TRUE,stringsAsFactors=FALSE)
+```
+# packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+
+library(survival)
+library(splines) #needed by survival package
+library(ggplot2) 
+library(GGally) #for better looking plots in ggplot2 and automatic legend
+library(KMsurv)
+library(scales)
+library(survMisc)
+```
+##### Ovelaid histograms (ggplot2)
+
+```{r histograms}
+
+    #density plots
+     ggplot(h2life, aes(NewAge, fill = treat)) + geom_density(alpha = 0.2)
+
+##Add lines for each mean requires first creating a separate data frame with the means:
+library(plyr)
+     mh2life <- ddply(h2life, "treat", summarise, NewAge.med=median(NewAge))
+     mh2life
+#Overlaid histograms with means
+     ggplot(h2life, aes(x=NewAge, fill=treat)) +
+       geom_histogram(binwidth=7, alpha=.2, position="identity") +
+       geom_vline(data=mh2life, aes(xintercept=NewAge.med,  colour=treat),
+                  linetype="dashed", size=0.5)
+#Overlaid density plots with means
+     ggplot(h2life, aes(x=NewAge, fill=treat)) +
+       geom_density(alpha=.2, position="identity") +
+       geom_vline(data=mh2life, aes(xintercept=NewAge.med,  colour=treat),
+                  linetype="dashed", size=0.5)     
+#Overlaid density plots with means
+     ggplot(h2life, aes(x=NewAge, colour=treat)) +
+       geom_density() +
+       geom_vline(data=mh2life, aes(xintercept=NewAge.med,  colour=treat),
+                  linetype="dashed", size=0.5)
+
+###option 2
+ggplot(h2life, aes(NewAge, fill = treat)) + geom_density(alpha = 0.2)
+ggplot(h2life, aes(NewAge, fill = treat)) + 
+  geom_histogram(alpha = 0.5, aes(y = ..density..), position = 'identity', binwidth=3)
+
+ggplot(h2life, aes(NewAge, fill = treat)) + 
+  geom_histogram(alpha = 0.5, aes(y = ..density..), position = 'dodge', binwidth=3)
+#dodge stacks, identity overlays - making the latter a better visual (dodge is misleading)
+
+```
+
+###### histograms (base functions)
+
+```{r histbaseR}
+
+x <- data.frame(h2life$treat, h2life$NewAge) #lift two columns
+x.HS <- x[x$h2life.treat== "HS", ]   #lift HS rows
+x1.HS <- x.HS$h2life.NewAge
+hshis <- hist(x1.HS, plot=FALSE)
+
+x.LY <- x[x$h2life.treat == "LY",]   #lift LY rows
+x1.LY <- x.LY$h2life.NewAge
+lyhis <- hist(x1.LY, plot=FALSE)
+
+x.STD <- x[x$h2life.treat == "STD",] #lift STD rows
+x1.STD <- x.STD$h2life.NewAge
+stdhis <- hist(x1.STD, plot=FALSE)
+
+#Overlapping histograms on transparent colors
+library(scales)
+my.bin.width<-7
+hist(x1.HS, breaks=seq(0,130, by=my.bin.width), col='skyblue', border=F)
+hist(x1.LY, add=T, breaks=seq(0,130,by=my.bin.width), col=scales::alpha('red', 0.5), border=F)
+hist(x1.STD, add=T, breaks=seq(0,130, by=my.bin.width), col=scales::alpha('gray', 0.5), border=F)
+
+#######Produce plot like ggplot above using baseR
+## calculate the density - don't plot yet
+densHS <- density(x1.HS)
+densLY <- density(x1.LY)
+densSTD <- density(x1.STD)
+
+#calculate the range of the graph
+xlim <- range(densLY$x, densHS$x, densSTD$x, na.rm=FALSE)
+ylim <- range(0,densLY$y, densHS$y, densSTD$y)
+#pick the colours
+HScol <- rgb(1,0,0,0.2)
+LYcol <- rgb(0,0,1,0.2)
+STDcol <- rgb(0,1,0,0.2)
+## plot lifespan and set up most of the plot parameters
+plot(densHS, xlim = xlim, ylim = ylim, xlab = 'Lifespan',
+     main = 'Lifespan response to diet treatment', 
+     panel.first = grid())
+#put our density plots in
+polygon(densHS, density = -1, col = HScol)
+polygon(densLY, density = -1, col = LYcol)
+polygon(densSTD, density = -1, col = STDcol)
+## add a legend in the corner
+legend('topleft',c('HS','LY', 'STD'),
+       fill = c(HScol, LYcol, STDcol), bty = 'n',
+       border = T) #border = NA removes borders in legend squares
+```
+
+# Median survival (variables: RIL, NewAge, status)
+
+```{r treat}
+
+# by treatment groups
+h2.treat <- survfit(Surv(NewAge, status==2) ~ treat, conf.type="log", 
+                    conf.int=0.95, type="kaplan-meier", error="greenwood",
+                    data=h2life)
+# h2.treat
+# summary(h2.treat)
+
+#pdf("../../Figures/Pilot_males vs females.pdf",width=6,height=4)
+#par(mar=c(4.5,4.5,0.5,0.5))
+plot(h2.treat, conf.int = F, mark.time=FALSE, #masks censored events
+     xlab="Age (days)", ylab="Proportion alive",
+     col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"), lwd=3,
+     cex.axis=1, cex.lab=1)
+#mtext("KM survival curve for RILs")
+abline(0.1,0, lty=3, lwd=1)
+abline(0.5,0, lty=3, lwd=1)
+legend(80,1, c("HS", "DR", "C"), lwd=3, text.font=1, bty = "n", y.intersp = 1.0, 
+       col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"))
+#dev.off()
+```
+
+# cummulative hazard
+```{r}
+
+#pdf("../../Figures/CumHaz_male v female.pdf",width=6,height=4)
+#par(mar=c(4.5,4.5,0.5,0.5))
+plot(h2.treat, fun="cumhaz", lty=1,conf.int=F, mark.time=FALSE,
+     xlab="Age (days)", ylab="Proportion alive", 
+     col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"), lwd=3,
+     cex.axis=1, cex.lab=1)
+legend(0,7.7, c("HS", "DR", "C"),lty=1, lwd=3,text.font=1, bty = "n",
+       col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"))
+#dev.off()
+```
+
+# test the difference
+```{r testdiff}
+
+survdiff(Surv(NewAge, status==2) ~ treat, data=h2life) #log-rank (Mantel-Haenszel) test
+survdiff(Surv(NewAge, status==2) ~ treat, data=h2life, rho=1) #Peto & Peto test
+```
+
+#BY LINE, sex coded by color
+
+```{r }
+sexril <- survfit(Surv(NewAge, status==2) ~ sex, conf.type="log", 
+                  conf.int=0.95, type="kaplan-meier", error="greenwood",
+                  data=newdata)
+sexril
+
+#library(scales)
+#pdf("../../Figures/Pilot_male v female lines.pdf",width=6,height=4)
+#par(mar=c(4.5,4.5,0.5,0.5))
+plot(sexril, conf.int = F, lty=1, mark.time=FALSE,
+     xlab="Age (days)", ylab="Proportion alive",
+     col=c("darkolivegreen", "tan"), lwd=1,
+     #col=adjustcolor(c("tan", "darkolivegreen",alpha=0.5)),
+     cex.axis=1, cex.lab=1)
+#abline(0.1,0, lty=3, lwd=1)
+abline(0.5,0, lty=3, lwd=1)
+#mtext("KM survival curve for each line", 3, line=1, cex=1)
+legend("bottomleft", c("F", "M"), lty=1, lwd=2.5, text.font=0.8,bty = "n",
+       col=c("tan", "darkolivegreen"))
+lines(psex, lwd=4,
+      #col='black',
+      #lty=c(1,3),
+      col=c("tan", "darkolivegreen"))
+#dev.off()
+
+
+#write output containing median values to screen or file
+sexril.table <- summary(sexril)$table #median, rmean and CIs
+sexril.table1 <- print(sexril, print.rmean=TRUE) # median, rmean, CIs - reduced output
+#print(sexril) #alternative
+write.table(sexril.table, "median survival.txt",sep="\t",row.names=TRUE)
+
+
+#BY LINE - pooled over sex and replicate
+surv.ril <- survfit(Surv(NewAge, status==2) ~ RIL, conf.type="log", 
+                  conf.int=0.95, type="kaplan-meier", error="greenwood",
+                  data=newdata)
+surv.ril
+
+pdf("../../Figures/Pooled male plus female.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
+plot(surv.ril, conf.int = F, lty=1, mark.time=FALSE,
+     xlab="Age (days)", ylab="Proportion alive",
+     col="darkolivegreen", lwd=1,
+     cex.axis=1, cex.lab=1)
+#abline(0.1,0, lty=3, lwd=1)
+abline(0.5,0, lty=3, lwd=1)
+dev.off()
+
+survriltable <- summary(surv.ril)$table #median, rmean and CIs
+write.table(survriltable, "Median of pooled data.txt",sep="\t",row.names=TRUE)
+
+
+#plot cumulative hazard
+psex.cum <- plot(psex, fun="cumhaz", conf.int = F, lty=1, mark.time=FALSE,
+                 xlab="Age (days)", ylab="Proportion alive",
+                 col=c("darkolivegreen", "tan"), lwd=4,
+                 cex.axis=1, cex.lab=1)
+
+plot(sexril, fun="cumhaz", conf.int = F, lty=1, mark.time=FALSE,
+     xlab="Age (days)", ylab="Proportion alive",
+     col=c("darkolivegreen", "tan"), lwd=1,
+     cex.axis=1, cex.lab=1)
+#mtext("Cumulative hazard plot for each line", 3, line=1, cex=1)
+legend("topleft", c("F", "M"), lty=1, lwd=2.5, text.font=0.8,bty = "n",
+       col=c("tan", "darkolivegreen"))
+lines(psex.cum, lwd=4,
+      col='black',lty=c(1,3))
+
+
+
+#Pull lines whose median > 69 days (median: M=60, F=79)
+sexril.tab <- fortify.survfit(sexril.table1)
+
+medsex <- read.table('mediansurv.txt',sep="\t",header=TRUE,stringsAsFactors=FALSE)
+med <- subset(medsex, medsex$median > 69)
+med1 <- subset(medsex, medsex$median > 84)
+med
+med1
+
+write.table(med, "median_over69days.txt",sep="\t",row.names=TRUE)
+write.table(med1, "median_over84days.txt",sep="\t",row.names=TRUE)
+
+```
+
+# heritability
+
+```{r eval=FALSE}
+library(MCMCglmm)
+library(tidyverse)
+
+iter <- 1000000
+burnin <- 15000
+
+h2life <- read.table('../Data/Processed/Female_events_lifespan.txt',
+                     sep = "\t", header = TRUE,
+                     stringsAsFactors = FALSE)
+
+h2_filtered <- h2life[h2life$status!=3, ] # remove censored events
+h2_filtered$animal <- seq(1, nrow(h2_filtered))
+h2_filtered$treat <- as.factor(h2_filtered$treat)
+```
+##### high sugar, HS
+```{r}
+HS <- subset(h2_filtered, treat == "HS")
+
+pedigree <- HS[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+
+# Inverse Gamma(0.001; 0.001)
+# a = nu / 2
+# b = nu * V / 2
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002)))
+
+model <- MCMCglmm(NewAge ~ 1,
+                  random = ~ animal,
+                  family = "gaussian",
+                  prior = prior,
+                  pedigree = pedigree,
+                  data = HS,
+                  nitt = iter,
+                  burnin = burnin,
+                  thin = 50,
+                  verbose = FALSE)
+
+save(model, file = "../Data/Processed/HS.Rda")
+```
+
+```{r}
+load("../Data/Processed/HS.Rda")
+# Fixed
+plot(model$Sol)
+autocorr.diag(model$Sol)
+effectiveSize(model$Sol)
+
+# Random
+plot(model$VCV)
+autocorr.diag(model$VCV)
+effectiveSize(model$VCV)
+
+summary(model)
+
+herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit)
+median(herit)
+HPDinterval(herit)
+```
+
+```{r}
+iter <- 650000
+burnin <- 15000
+
+##### low yeast, LY
+
+LY <- subset(h2_filtered, treat == "LY")
+
+pedigree <- LY[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+
+# Inverse Gamma(0.001; 0.001)
+# a = nu / 2
+# b = nu * V / 2
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002)))
+
+model <- MCMCglmm(NewAge ~ 1,
+                  random = ~ animal,
+                  family = "gaussian",
+                  prior = prior,
+                  pedigree = pedigree,
+                  data = LY,
+                  nitt = iter,
+                  burnin = burnin,
+                  thin = 50,
+                  verbose = FALSE)
+
+save(model, file = "../Data/Processed/LY.Rda")
+```
+
+```{r}
+load("../Data/Processed/LY.Rda")
+# Fixed
+plot(model$Sol)
+autocorr.diag(model$Sol)
+effectiveSize(model$Sol)
+
+# Random
+plot(model$VCV)
+autocorr.diag(model$VCV)
+effectiveSize(model$VCV)
+
+summary(model)
+
+herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit)
+median(herit)
+HPDinterval(herit)
+```
+
+```{r}
+iter <- 650000
+burnin <- 15000
+
+##### control, STD
+
+STD <- subset(h2_filtered, treat == "STD")
+
+pedigree <- STD[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+
+# Inverse Gamma(0.001; 0.001)
+# a = nu / 2
+# b = nu * V / 2
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002)))
+
+model <- MCMCglmm(NewAge ~ 1,
+                  random = ~ animal,
+                  family = "gaussian",
+                  prior = prior,
+                  pedigree = pedigree,
+                  data = STD,
+                  nitt = iter,
+                  burnin = burnin,
+                  thin = 50,
+                  verbose = FALSE)
+
+save(model, file = "../Data/Processed/STD.Rda")
+```
+
+```{r}
+load("../Data/Processed/STD.Rda")
+# Fixed
+plot(model$Sol)
+autocorr.diag(model$Sol)
+effectiveSize(model$Sol)
+
+# Random
+plot(model$VCV)
+autocorr.diag(model$VCV)
+effectiveSize(model$VCV)
+
+summary(model)
+
+herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit)
+median(herit)
+HPDinterval(herit)
+```
+
+# With diet treatment
+
+```{r}
+library(MCMCglmm)
+library(tidyverse)
+
+iter <- 10000
+burnin <- 1000
+
+h2_filtered <- h2life[h2life$status!=3, ]
+h2_filtered$animal <- seq(1, nrow(h2_filtered))
+h2_filtered$treat <- as.factor(h2_filtered$treat)
+
+pedigree <- h2_filtered[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+
+# Inverse Gamma(0.001; 0.001)
+# a = nu / 2
+# b = nu * V / 2
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002)))
+
+model <- MCMCglmm(NewAge ~ 1,
+                  random = ~ animal,
+                  family = "gaussian",
+                  prior = prior,
+                  pedigree = pedigree,
+                  data = h2_filtered,
+                  nitt = iter,
+                  burnin = burnin,
+                  thin = 10)
+
+save(model, file = "HS.Rda")
+
+# Fixed
+plot(model$Sol)
+autocorr.diag(model$Sol)
+effectiveSize(model$Sol)
+
+# Random
+plot(model$VCV)
+autocorr.diag(model$VCV)
+effectiveSize(model$VCV)
+
+summary(model)
+
+herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit)
+median(herit)
+HPDinterval(herit)
+```
+

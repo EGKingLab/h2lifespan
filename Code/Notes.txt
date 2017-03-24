@@ -1,0 +1,90 @@
+prior1 <- list(R = list(V = diag(3) * 1.002, nu = 1.002),
+              G = list(G1 = list(V = diag(3) * 1.002, nu = 1.002)))
+
+> posterior.mode(HS_STD)
+     var1 
+0.2453047 
+> HPDinterval(HS_STD)
+           lower     upper
+var1 0.001841899 0.5214535
+attr(,"Probability")
+[1] 0.95
+
+> posterior.mode(LY_STD)
+     var1 
+0.4728723 
+> HPDinterval(LY_STD)
+         lower     upper
+var1 0.2123665 0.6589107
+attr(,"Probability")
+[1] 0.95
+
+> posterior.mode(HS_LY)
+     var1 
+0.3479272 
+> HPDinterval(HS_LY)
+          lower     upper
+var1 0.04497146 0.5628811
+attr(,"Probability")
+[1] 0.95
+
+-------------------------------
+
+prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
+              G = list(G1 = list(V = diag(3) / 3, nu = 1.002)))
+
+> posterior.mode(HS_STD)
+     var1 
+0.3162993 
+> HPDinterval(HS_STD)
+          lower     upper
+var1 0.01320022 0.5425481
+attr(,"Probability")
+[1] 0.95
+
+> posterior.mode(LY_STD)
+     var1 
+0.5005566 
+> HPDinterval(LY_STD)
+         lower     upper
+var1 0.2427266 0.6893863
+attr(,"Probability")
+[1] 0.95
+
+> posterior.mode(HS_LY)
+    var1 
+0.374342 
+> HPDinterval(HS_LY)
+          lower     upper
+var1 0.06610751 0.5935878
+attr(,"Probability")
+[1] 0.95
+
+-------------------------------
+
+rstanarm
+
+> compare_models(loo_full, loo_rest)
+elpd_diff        se 
+   -134.5      16.9 
+> loo_full
+Computed from 36000 by 7485 log-likelihood matrix
+
+         Estimate    SE
+elpd_loo  -9332.1  89.8
+p_loo       116.5   2.9
+looic     18664.3 179.5
+
+All Pareto k estimates are good (k < 0.5)
+See help('pareto-k-diagnostic') for details.
+
+> loo_rest
+Computed from 36000 by 7485 log-likelihood matrix
+
+         Estimate    SE
+elpd_loo  -9466.6  86.8
+p_loo        72.5   1.9
+looic     18933.2 173.7
+
+All Pareto k estimates are good (k < 0.5)
+See help('pareto-k-diagnostic') for details.
