@@ -62,6 +62,38 @@ attr(,"Probability")
 
 -------------------------------
 
+prior3 <- list(R = list(V = diag(3) * 1.002, nu = 3),
+               G = list(G1 = list(V = diag(3) * 1.002, nu = 3)))
+
+> posterior.mode(HS_STD)
+     var1 
+0.2427872 
+> HPDinterval(HS_STD)
+           lower     upper
+var1 -0.02676084 0.4770998
+attr(,"Probability")
+[1] 0.95
+
+> posterior.mode(LY_STD)
+     var1 
+0.4083418 
+> HPDinterval(LY_STD)
+         lower     upper
+var1 0.1558751 0.6010527
+attr(,"Probability")
+[1] 0.95
+
+> posterior.mode(HS_LY)
+     var1 
+0.2620127 
+> HPDinterval(HS_LY)
+            lower    upper
+var1 -0.004143034 0.497168
+attr(,"Probability")
+[1] 0.95
+
+-------------------------------
+
 rstanarm
 
 > compare_models(loo_full, loo_rest)

@@ -187,7 +187,11 @@ fm_rest <- stan_lmer(
 loo_full <- loo(fm_full)
 loo_rest <- loo(fm_rest)
 
-save(fm_full, fm_rest, loo_full, loo_rest, file = "rstanarm_mods.Rda")
+kfold_full <- kfold(fm_full)
+kfold_rest <- kfold(fm_rest)
+
+save(fm_full, fm_rest, loo_full, loo_rest, kfold_full, kfold_rest,
+     file = "rstanarm_mods.Rda")
 ```
 
 ```{r}
@@ -261,7 +265,7 @@ save(m6, file = "tri_model_p3.Rda")
 
 ###############################################################
 
-load("tri_model_p2.Rda")
+load("tri_model_p1.Rda")
 
 fe <- lapply(m6, function(m) m$Sol)
 fe <- do.call(mcmc.list, fe)
@@ -293,7 +297,7 @@ HS_STD <- re[ , "traitAge_HS:traitAge_STD.animal"] /
   sqrt(re[ , "traitAge_STD:traitAge_STD.animal"] *
          re[ , "traitAge_HS:traitAge_HS.animal"])
 plot(HS_STD)
-posterior.mode(HS_STD)
+median(HS_STD)
 HPDinterval(HS_STD)
 
 # STD vs. LY
@@ -301,7 +305,7 @@ LY_STD <- re[ , "traitAge_LY:traitAge_STD.animal"] /
   sqrt(re[ , "traitAge_STD:traitAge_STD.animal"] *
          re[ , "traitAge_LY:traitAge_LY.animal"])
 plot(LY_STD)
-posterior.mode(LY_STD)
+median(LY_STD)
 HPDinterval(LY_STD)
 
 # LY vs. HS
@@ -309,7 +313,7 @@ HS_LY <- re[ , "traitAge_HS:traitAge_LY.animal"] /
   sqrt(re[ , "traitAge_LY:traitAge_LY.animal"] *
          re[ , "traitAge_HS:traitAge_HS.animal"])
 plot(HS_LY)
-posterior.mode(HS_LY)
+median(HS_LY)
 HPDinterval(HS_LY)
 ```
 
@@ -321,9 +325,14 @@ M <- data_frame(`HS vs. STD` = as.numeric(HS_STD),
                 `LY vs. STD` = as.numeric(LY_STD),
                 `HS vs. LY` = as.numeric(HS_LY))
 
-M %>% gather(key, value) %>%
-  ggplot(aes(value, color = key)) +
-  geom_line(stat = "density") +
-  labs(x = "Genetic Correlation", y = "Density")
+M %>% gather(Comparison, value) %>%
+  ggplot(aes(value, color = Comparison)) +
+  geom_line(stat = "density", size = 2) +
+  labs(x = "Genetic Correlation", y = "Density") +
+  theme(legend.position = c(0.15, 0.85),
+        text = element_text(size = 24),
+        legend.text = element_text(size = 18))
+ggsave(last_plot(), file = "Genetic_Correlation_Plot.pdf",
+       width = 8, height = 6)
 ```
 
