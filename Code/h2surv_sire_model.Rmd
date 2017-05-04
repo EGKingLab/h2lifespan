@@ -1,0 +1,202 @@
+---
+title: "Survival Sire Model"
+author: "Enoch Ng'oma"
+date: "3/7/2017"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+# Setup
+
+```{r}
+library(MCMCglmm)
+library(tidyverse)
+
+source("h2life_load_data.R")
+```
+
+# Sire model MCMCglmm
+
+FIXME
+
+```{r}
+library(parallel)
+
+set.seed(52329487)
+iter <- 8000000
+burnin <- iter * 0.1
+thinning <- 200
+chains <- 1
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002),
+                       G2 = list(V = 1, nu = 0.002),
+                       G3 = list(V = diag(3), nu = 0.002)))
+
+# parameter extension
+prior_ext <- list(
+  R = list(V = 1, nu = 0.002),
+  G = list(G1 = list(V = 1, nu = 0.002, alpha.mu = 0, alpha.V = 1000),
+           G2 = list(V = 1, nu = 0.002, alpha.mu = 0, alpha.V = 1000),
+           G3 = list(V = diag(3), nu = 0.002,
+                     alpha.mu = c(0, 0, 0),
+                     alpha.V = diag(3) * 1000)))
+
+system.time({
+  m6 <- mclapply(1:chains, function(i) {
+    MCMCglmm(NewAge ~ treat - 1, 
+             random = ~ sire + sire:dam + idh(treat):sire,
+             rcov = ~ idh(treat):sire,
+             family = "gaussian",
+             prior = prior,
+             data = h2life,
+             nitt = iter,
+             burnin = burnin,
+             thin = thinning)
+  }, mc.cores = chains)
+})
+
+save(m6, file = "Sire_model.Rda")
+
+# Load model & process ########################################
+
+load("Sire_model.Rda")
+
+m1 <- m6[[1]]
+
+fe <- lapply(m6, function(m) m$Sol)
+fe <- do.call(mcmc.list, fe)
+plot(fe, ask = FALSE)
+
+re <- lapply(m6, function(m) m$VCV)
+re <- do.call(mcmc.list, re)
+plot(re, ask = FALSE)
+
+# Fixed
+autocorr.diag(fe)
+effectiveSize(fe)
+
+# Random
+autocorr.diag(re)
+effectiveSize(re)
+
+re <- as.mcmc(as.matrix(re))
+```
+
+## Sire model comparison
+
+```{r}
+iter <- 4000000
+burnin <- 50000
+thinning <- 200
+
+V_mat <- diag(3)
+
+sire_full_us <- MCMCglmm(
+  NewAge ~ treat - 1,
+  random = ~ sire + sire:dam + us(treat):sire,
+  prior = list(R = list(V = 1, nu = 0.002),
+               G = list(G1 = list(V = 1, nu = 0.002),
+                        G2 = list(V = 1, nu = 0.002),
+                        G3 = list(V = V_mat, nu = 1.002))),
+  data = h2life,
+  nitt = iter,
+  burnin = burnin,
+  thin = thinning)
+save(sire_full_us, file = "sire_full_us.RDA")
+
+sire_full <- MCMCglmm(
+  NewAge ~ treat - 1,
+  random = ~ sire + sire:dam + treat:sire,
+  prior = list(R = list(V = 1, nu = 0.002),
+               G = list(G1 = list(V = 1, nu = 0.002),
+                        G2 = list(V = 1, nu = 0.002),
+                        G3 = list(V = 1, nu = 0.002))),
+  data = h2life,
+  nitt = iter,
+  burnin = burnin,
+  thin = thinning)
+
+sire_rest <- MCMCglmm(
+  NewAge ~ treat - 1, 
+  random = ~ sire + sire:dam,
+  prior = list(R = list(V = 1, nu = 0.002),
+               G = list(G1 = list(V = 1, nu = 0.002),
+                        G2 = list(V = 1, nu = 0.002))),
+  data = h2life,
+  nitt = iter,
+  burnin = burnin,
+  thin = thinning)
+
+save(sire_full, sire_rest, file = "sire_model_comparison.Rda")
+```
+
+## Sire Model rstanarm
+
+FIXME
+
+```{r}
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+
+fm_full <- stan_lmer(
+  NewAge ~ treat - 1 +
+    (1 | sire) + (1 | sire:dam) + (1 | treat:sire),
+  data = h2life,
+  prior = normal(0, 2.5),
+  prior_intercept = normal(0, 10),
+  prior_covariance = decov(regularization = 1,
+                           concentration = 1, shape = 1, scale = 1),
+  chains = 4,
+  core = 4,
+  iter = 1e4,
+  warmup = 1e3)
+
+fm_rest <- stan_lmer(
+  NewAge ~ treat - 1 +
+    (1 | sire) + (1 | sire:dam),
+  data = h2life,
+  prior = normal(0, 2.5),
+  prior_intercept = normal(0, 10),
+  prior_covariance = decov(regularization = 1,
+                           concentration = 1, shape = 1, scale = 1),
+  chains = 4,
+  core = 4,
+  iter = 1e4,
+  warmup = 1e3)
+
+loo_full <- loo(fm_full)
+loo_rest <- loo(fm_rest)
+
+kfold_full <- kfold(fm_full)
+kfold_rest <- kfold(fm_rest)
+
+save(fm_full, fm_rest, loo_full, loo_rest, kfold_full, kfold_rest,
+     file = "rstanarm_mods.Rda")
+```
+
+```{r}
+load("rstanarm_mods.Rda")
+
+par(mfrow = 1:2, mar = c(5,3.8,1,0) + 0.1, las = 3)
+plot(loo_full, label_points = TRUE)
+plot(loo_rest, label_points = TRUE)
+
+compare_models(loo_full, loo_rest)
+
+loo_full
+loo_rest
+```
+
+```{r}
+post <- as.matrix(fm_full) %>% as_data_frame()
+colnames(post)
+
+post %>% ggplot(aes(`Sigma[treat:sire:(Intercept),(Intercept)]`)) +
+  geom_line(stat = "density")
+```

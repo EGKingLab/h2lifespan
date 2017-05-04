@@ -1,0 +1,149 @@
+---
+title: "Survival MANOVA"
+author: "Enoch Ng'oma"
+date: "3/7/2017"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+# Setup
+
+```{r}
+library(MCMCglmm)
+library(tidyverse)
+
+source("h2life_load_data.R")
+```
+
+## As trivariate
+
+MANOVA analysis
+
+Poster for fly meeting
+
+```{r}
+HS <- h2life %>% 
+  filter(treat == "HS") %>% rename(Age_HS = NewAge) %>% 
+  as.data.frame()
+LY <- h2life %>% 
+  filter(treat == "LY") %>% rename(Age_LY = NewAge) %>% 
+  as.data.frame()
+STD <- h2life %>%
+  filter(treat == "STD") %>% rename(Age_STD = NewAge) %>% 
+  as.data.frame()
+
+h2life_mrg <- full_join(full_join(HS, LY), STD)
+
+prior1 <- list(R = list(V = diag(3) * 1.002, nu = 1.002),
+               G = list(G1 = list(V = diag(3) * 1.002, nu = 1.002)))
+
+prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
+               G = list(G1 = list(V = diag(3) / 3, nu = 1.002)))
+
+prior3 <- list(R = list(V = diag(3) * 1.002, nu = 3),
+               G = list(G1 = list(V = diag(3) * 1.002, nu = 3)))
+
+library(parallel)
+
+iter <- 2000000
+burnin <- 20000
+thinning <- 500
+chains <- 12
+
+system.time({
+m6 <- mclapply(1:chains, function(i) {
+   MCMCglmm(cbind(Age_STD, Age_HS, Age_LY) ~ trait - 1,
+         random = ~ us(trait):animal,
+         rcov = ~ idh(trait):units,
+         data = h2life_mrg,
+         prior = prior3,
+         pedigree = pedigree,
+         family = rep("gaussian", 3),
+         nitt = iter,
+         burnin = burnin,
+         thin = thinning)
+}, mc.cores = chains)
+})
+
+save(m6, file = "tri_model_p3.Rda")
+
+###############################################################
+
+load("tri_model_p1.Rda")
+
+fe <- lapply(m6, function(m) m$Sol)
+fe <- do.call(mcmc.list, fe)
+plot(fe, ask = FALSE)
+plot(fe[, 1, drop = FALSE], ask = FALSE)
+plot(fe[, 2, drop = FALSE], ask = FALSE)
+plot(fe[, 3, drop = FALSE], ask = FALSE)
+
+# Extract random effects, convert to mcmc.list
+re <- lapply(m6, function(m) m$VCV)
+re <- do.call(mcmc.list, re)
+
+plot(re[, 1, drop = FALSE], ask = FALSE)
+plot(re[, 2, drop = FALSE], ask = FALSE)
+plot(re[, 3, drop = FALSE], ask = FALSE)
+
+autocorr.diag(re)
+effectiveSize(re)
+
+# Concatenate samples
+re <- as.mcmc(as.matrix(re))
+
+head(re)
+
+# STD vs. HS
+plot(re[ , "traitAge_HS:traitAge_STD.animal"])
+plot(re[ , "traitAge_STD:traitAge_STD.animal"])
+HS_STD <- re[ , "traitAge_HS:traitAge_STD.animal"] /
+  sqrt(re[ , "traitAge_STD:traitAge_STD.animal"] *
+         re[ , "traitAge_HS:traitAge_HS.animal"])
+plot(HS_STD)
+median(HS_STD)
+HPDinterval(HS_STD)
+
+# STD vs. LY
+LY_STD <- re[ , "traitAge_LY:traitAge_STD.animal"] /
+  sqrt(re[ , "traitAge_STD:traitAge_STD.animal"] *
+         re[ , "traitAge_LY:traitAge_LY.animal"])
+plot(LY_STD)
+median(LY_STD)
+HPDinterval(LY_STD)
+
+# LY vs. HS
+HS_LY <- re[ , "traitAge_HS:traitAge_LY.animal"] /
+  sqrt(re[ , "traitAge_LY:traitAge_LY.animal"] *
+         re[ , "traitAge_HS:traitAge_HS.animal"])
+plot(HS_LY)
+median(HS_LY)
+HPDinterval(HS_LY)
+```
+
+### Plot for poster
+
+```{r}
+library(tidyverse)
+library(cowplot)
+
+M <- data_frame(`HS vs. STD` = as.numeric(HS_STD),
+                `LY vs. STD` = as.numeric(LY_STD),
+                `HS vs. LY` = as.numeric(HS_LY))
+
+M %>% gather(Comparison, value) %>%
+  ggplot(aes(value, color = Comparison)) +
+  geom_line(stat = "density", size = 2) +
+  labs(x = "Genetic Correlation", y = "Density") +
+  theme(legend.position = c(0.15, 0.85),
+        text = element_text(size = 24),
+        legend.text = element_text(size = 18))
+ggsave(last_plot(), file = "Genetic_Correlation_Plot.pdf",
+       width = 8, height = 6)
+```
+
