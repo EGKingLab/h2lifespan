@@ -8,13 +8,17 @@ h2life <- read_delim('../Data/Processed/Female_events_lifespan.txt',
   filter(status != 3) %>% 
   mutate(animal = factor(seq(1, nrow(.))),
          treat = as.factor(treat),
-         NewAge = as.numeric(scale(NewAge))) %>% 
+         NewAge = as.numeric(scale(NewAge)),
+         sireid = factor(sireid),
+         damid = factor(damid)) %>% 
   dplyr::select(NewAge, sireid, damid, animal, treat) %>% 
   rename(sire = sireid, dam = damid) %>% 
   as.data.frame()
 
 pedigree <- h2life[, c("animal", "sire", "dam")]
 pedigree$animal <- as.character(pedigree$animal)
+pedigree$sire <- as.character(pedigree$sire)
+pedigree$dam <- as.character(pedigree$dam)
 sires <- data.frame(animal = unique(pedigree$sire),
                     sire = NA, dam = NA, stringsAsFactors = FALSE)
 dams <- data.frame(animal = unique(pedigree$dam),
