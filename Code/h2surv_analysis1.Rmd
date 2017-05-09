@@ -33,7 +33,7 @@ fortify.survfit <- function(survfit.data) {
 ```
 # data
 ```{r}
-setwd("/Users/ngomae/Dropbox/EN_KM_EGK/Data/Processed/")
+# setwd("/Users/ngomae/Dropbox/EN_KM_EGK/Data/Processed/")
 h2life <- read.table('Female_events_lifespan.txt', sep="\t",header=TRUE,stringsAsFactors=FALSE)
 ```
 # packages
@@ -48,7 +48,8 @@ library(KMsurv)
 library(scales)
 library(survMisc)
 ```
-##### Ovelaid histograms (ggplot2)
+
+##### Overlaid histograms (ggplot2)
 
 ```{r histograms}
 
