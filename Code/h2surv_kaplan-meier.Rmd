@@ -1,0 +1,133 @@
+---
+title: "halfsib_survival - kaplan-meier"
+author: "Enoch Ng'oma"
+date: "3/7/2017"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+#Analysis of lifespan 
+#Half-sibling fly data
+
+# data
+```{r}
+h2life <- read.table('../Data/Processed/Female_events_lifespan.txt',
+                     sep = "\t", header = TRUE,
+                     stringsAsFactors = FALSE)
+```
+# packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+
+library(survival)
+library(splines) #needed by survival package
+library(tidyverse) 
+library(cowplot)
+```
+
+###### histograms (base functions)
+
+```{r histbaseR}
+
+x <- data.frame(h2life$treat, h2life$NewAge) #lift two columns
+x.HS <- x[x$h2life.treat== "HS", ]   #lift HS rows
+x1.HS <- x.HS$h2life.NewAge
+hshis <- hist(x1.HS, plot=FALSE)
+
+x.LY <- x[x$h2life.treat == "LY",]   #lift LY rows
+x1.LY <- x.LY$h2life.NewAge
+lyhis <- hist(x1.LY, plot=FALSE)
+
+x.STD <- x[x$h2life.treat == "STD",] #lift STD rows
+x1.STD <- x.STD$h2life.NewAge
+stdhis <- hist(x1.STD, plot=FALSE)
+
+#Overlapping histograms on transparent colors
+library(scales)
+my.bin.width<-7
+hist(x1.HS, breaks=seq(0,130, by=my.bin.width), col='skyblue', border=F)
+hist(x1.LY, add=T, breaks=seq(0,130,by=my.bin.width), col=scales::alpha('red', 0.5), border=F)
+hist(x1.STD, add=T, breaks=seq(0,130, by=my.bin.width), col=scales::alpha('gray', 0.5), border=F)
+
+#######Produce plot like ggplot above using baseR
+## calculate the density - don't plot yet
+densHS <- density(x1.HS)
+densLY <- density(x1.LY)
+densSTD <- density(x1.STD)
+
+#calculate the range of the graph
+xlim <- range(densLY$x, densHS$x, densSTD$x, na.rm=FALSE)
+ylim <- range(0,densLY$y, densHS$y, densSTD$y)
+#pick the colours
+HScol <- rgb(1,0,0,0.2)
+LYcol <- rgb(0,0,1,0.2)
+STDcol <- rgb(0,1,0,0.2)
+
+## plot lifespan and set up most of the plot parameters
+plot(densHS, xlim = xlim, ylim = ylim, xlab = 'Lifespan',
+     main = 'Lifespan response to diet treatment', 
+     panel.first = grid())
+
+#put our density plots in
+polygon(densHS, density = -1, col = HScol)
+polygon(densLY, density = -1, col = LYcol)
+polygon(densSTD, density = -1, col = STDcol)
+
+## add a legend in the corner
+legend('topleft',c('HS','LY', 'STD'),
+       fill = c(HScol, LYcol, STDcol), bty = 'n',
+       border = T) 
+```
+
+# Kaplan-Meier plot by diet 
+# variables: RIL, NewAge, status
+
+```{r treat}
+
+# by treatment groups
+h2.treat <- survfit(Surv(NewAge, status==2) ~ treat, conf.type="log", 
+                    conf.int=0.95, type="kaplan-meier", error="greenwood",
+                    data=h2life)
+# h2.treat
+# summary(h2.treat)
+
+#pdf("../../Figures/Pilot_males vs females.pdf",width=6,height=4)
+#par(mar=c(4.5,4.5,0.5,0.5))
+plot(h2.treat, conf.int = F, mark.time=FALSE, #masks censored events
+     xlab="Age (days)", ylab="Proportion alive",
+     col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"), lwd=3,
+     cex.axis=1, cex.lab=1)
+#mtext("KM survival curve for RILs")
+abline(0.1,0, lty=3, lwd=1)
+abline(0.5,0, lty=3, lwd=1)
+legend(80,1, c("HS", "DR", "C"), lwd=3, text.font=1, bty = "n", y.intersp = 1.0, 
+       col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"))
+#dev.off()
+```
+
+# cummulative hazard
+```{r}
+
+#pdf("../../Figures/CumHaz_male v female.pdf",width=6,height=4)
+#par(mar=c(4.5,4.5,0.5,0.5))
+plot(h2.treat, fun="cumhaz", lty=1,conf.int=F, mark.time=FALSE,
+     xlab="Age (days)", ylab="Proportion alive", 
+     col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"), lwd=3,
+     cex.axis=1, cex.lab=1)
+legend(0,7.7, c("HS", "DR", "C"),lty=1, lwd=3,text.font=1, bty = "n",
+       col=c("deepskyblue3", "darkgoldenrod", "darkolivegreen"))
+#dev.off()
+```
+
+# test differences
+```{r testdiff}
+
+survdiff(Surv(NewAge, status==2) ~ treat, data=h2life) #log-rank (Mantel-Haenszel) test
+survdiff(Surv(NewAge, status==2) ~ treat, data=h2life, rho=1) #Peto & Peto test
+```
+

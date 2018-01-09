@@ -20,6 +20,78 @@ library(tidyverse)
 source("h2life_load_data.R")
 ```
 
+## Ingleby et al Model
+
+```{r eval=FALSE}
+library(MCMCglmm)
+data<-read.table("gxe.txt",
+                 h = T,
+                 colClasses = c("numeric", rep("factor",4), rep("numeric",3)))
+attach(data)
+str(data)
+
+males<-data[Sex=="M",]
+females<-data[Sex=="F",]
+
+fam <- rep("gaussian",3)
+                         
+## male model: CHCs ~ Food*Temp + Food*Isoline + Temp*Isoline ; DIC 14968.1
+
+prior.10 <- list(R = list(V = diag(3) / 3, nu = 0.02),
+                 G = list(G1 = list(V = diag(9) / 9, nu = 0.02)))
+
+fmla.10 <- as.formula(
+  paste("cbind(PC1, PC2, PC3)" ,
+        "~",
+        "trait + trait:Temperature + trait:Food + trait:Food:Temperature - 1"))
+
+m.10 <- MCMCglmm(fmla.10,
+                 random =~ idh(trait + trait:Food + trait:Temperature):Isoline,
+                 rcov =~ idh(trait):units, 
+                 prior =  prior.10,
+                 data = males,
+                 family = fam,
+                 nitt = 200000,
+                 burnin = 10000,
+                 thin = 30,
+                 pr = F)
+
+## genetic correlation               
+corr <- m.10$VCV[ , 4] / (sqrt(m.10$VCV[ , 1] * m.10$VCV[ , 22]))
+summary(corr)
+
+## heritability
+h2<-2*m.10$VCV[,4]/(m.10$VCV[,1]+m.10$VCV[,22])
+summary(h2)
+                
+## female model: CHCs ~ Food*Temp + Food*Isoline + Temp*Isoline ; DIC 13903.59
+
+prior.9 <- list(R = list(V = diag(3) / 3, nu = 0.02),
+                G = list(G1 = list(V = diag(9) / 9, nu = 0.02)))
+fmla.9 <- as.formula(
+  paste("cbind(PC1, PC2, PC3)",
+        "~",
+        "trait + trait:Temperature + trait:Food + trait:Food:Temperature -1"))
+f.9 <- MCMCglmm(fmla.9,
+                random =~ idh(trait + trait:Temperature + trait:Food):Isoline,
+                rcov =~ idh(trait):units,
+                prior =  prior.9,
+                data = females,
+                family = fam,
+                nitt = 200000,
+                burnin = 10000,
+                thin = 30,
+                pr = F)
+             
+## genetic correlation               
+corr<-f.9$VCV[,4]/(sqrt(f.9$VCV[,1]*f.9$VCV[,22]))
+summary(corr)
+
+## heritability
+h2<-2*f.9$VCV[,4]/(f.9$VCV[,1]+f.9$VCV[,22])
+summary(h2)
+```
+
 # Sire model MCMCglmm
 
 FIXME
@@ -28,7 +100,7 @@ FIXME
 library(parallel)
 
 set.seed(52329487)
-iter <- 8000000
+iter <- 800000
 burnin <- iter * 0.1
 thinning <- 200
 chains <- 1
@@ -53,7 +125,7 @@ system.time({
              random = ~ sire + sire:dam + idh(treat):sire,
              rcov = ~ idh(treat):sire,
              family = "gaussian",
-             prior = prior,
+             prior = prior_ext,
              data = h2life,
              nitt = iter,
              burnin = burnin,
@@ -142,42 +214,30 @@ FIXME
 
 ```{r}
 library(rstanarm)
-options(mc.cores = parallel::detectCores())
 
 fm_full <- stan_lmer(
-  NewAge ~ treat - 1 +
-    (1 | sire) + (1 | sire:dam) + (1 | treat:sire),
+  NewAge ~ treat - 1 + (1 | sire:treat) + (1 | sire),
   data = h2life,
   prior = normal(0, 2.5),
   prior_intercept = normal(0, 10),
   prior_covariance = decov(regularization = 1,
                            concentration = 1, shape = 1, scale = 1),
   chains = 4,
-  core = 4,
-  iter = 1e4,
-  warmup = 1e3)
+  cores = 4,
+  iter = 2 * 1e4,
+  warmup = 2 * 1e3,
+  adapt_delta = 0.98)
 
-fm_rest <- stan_lmer(
-  NewAge ~ treat - 1 +
-    (1 | sire) + (1 | sire:dam),
-  data = h2life,
-  prior = normal(0, 2.5),
-  prior_intercept = normal(0, 10),
-  prior_covariance = decov(regularization = 1,
-                           concentration = 1, shape = 1, scale = 1),
-  chains = 4,
-  core = 4,
-  iter = 1e4,
-  warmup = 1e3)
+save(fm_full, file = "rstanarm_mods.Rda")
 
-loo_full <- loo(fm_full)
-loo_rest <- loo(fm_rest)
+# loo_full <- loo(fm_full)
+# loo_rest <- loo(fm_rest)
+# 
+# kfold_full <- kfold(fm_full)
+# kfold_rest <- kfold(fm_rest)
 
-kfold_full <- kfold(fm_full)
-kfold_rest <- kfold(fm_rest)
-
-save(fm_full, fm_rest, loo_full, loo_rest, kfold_full, kfold_rest,
-     file = "rstanarm_mods.Rda")
+# save(fm_full, fm_rest, loo_full, loo_rest, kfold_full, kfold_rest,
+     # file = "rstanarm_mods.Rda")
 ```
 
 ```{r}

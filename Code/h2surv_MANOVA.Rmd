@@ -1,6 +1,6 @@
 ---
 title: "Survival MANOVA"
-author: "Enoch Ng'oma"
+author: "Kevin Middleton"
 date: "3/7/2017"
 output:
   html_document:
@@ -13,70 +13,117 @@ output:
 
 # Setup
 
-```{r}
+```{r setup}
+set.seed(234876)
+
 library(MCMCglmm)
 library(tidyverse)
+library(parallel)
+library(knitr)
 
 source("h2life_load_data.R")
-```
 
-## As trivariate
+genet_corr <- tibble(model = character(),
+                     HS_STD = numeric(),
+                     LY_STD = numeric(),
+                     HS_LY = numeric(),
+                     n_eff = numeric())
 
-MANOVA analysis
-
-Poster for fly meeting
-
-```{r}
-HS <- h2life %>% 
-  filter(treat == "HS") %>% rename(Age_HS = NewAge) %>% 
-  as.data.frame()
-LY <- h2life %>% 
-  filter(treat == "LY") %>% rename(Age_LY = NewAge) %>% 
-  as.data.frame()
-STD <- h2life %>%
-  filter(treat == "STD") %>% rename(Age_STD = NewAge) %>% 
-  as.data.frame()
-
-h2life_mrg <- full_join(full_join(HS, LY), STD)
-
-prior1 <- list(R = list(V = diag(3) * 1.002, nu = 1.002),
-               G = list(G1 = list(V = diag(3) * 1.002, nu = 1.002)))
-
-prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
-               G = list(G1 = list(V = diag(3) / 3, nu = 1.002)))
-
-prior3 <- list(R = list(V = diag(3) * 1.002, nu = 3),
-               G = list(G1 = list(V = diag(3) * 1.002, nu = 3)))
-
-library(parallel)
-
-iter <- 2000000
-burnin <- 20000
+iter <- 2.5e5
+burnin <- 2e4
 thinning <- 500
 chains <- 12
 
-system.time({
-m6 <- mclapply(1:chains, function(i) {
-   MCMCglmm(cbind(Age_STD, Age_HS, Age_LY) ~ trait - 1,
-         random = ~ us(trait):animal,
-         rcov = ~ idh(trait):units,
-         data = h2life_mrg,
-         prior = prior3,
-         pedigree = pedigree,
-         family = rep("gaussian", 3),
-         nitt = iter,
-         burnin = burnin,
-         thin = thinning)
-}, mc.cores = chains)
-})
+rerun <- TRUE
+```
 
-save(m6, file = "tri_model_p3.Rda")
+## MANOVA analysis
 
-###############################################################
+Poster for fly meeting
 
-load("tri_model_p1.Rda")
+```{r MANOVA_Models, cache=TRUE}
+if (rerun) {
+  HS <- h2life %>% 
+    filter(treat == "HS") %>% rename(Age_HS = NewAge) %>% 
+    as.data.frame()
+  LY <- h2life %>% 
+    filter(treat == "LY") %>% rename(Age_LY = NewAge) %>% 
+    as.data.frame()
+  STD <- h2life %>%
+    filter(treat == "STD") %>% rename(Age_STD = NewAge) %>% 
+    as.data.frame()
+  
+  h2life_mrg <- full_join(full_join(HS, LY), STD)
+  
+  prior1 <- list(R = list(V = diag(3) * 1.002, nu = 1.002),
+                 G = list(G1 = list(V = diag(3) * 1.002, nu = 0.002)))
+  
+  prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
+                 G = list(G1 = list(V = diag(3) / 3, nu = 0.002)))
+  
+  prior3 <- list(R = list(V = diag(3) * 1.002, nu = 1),
+                 G = list(G1 = list(V = diag(3) * 0.5, nu = 0.002)))
+  
+  priors <- list(prior1, prior2, prior3)
+  prior_names <- c("Tri: V = diag(3) * 1.002, nu = 0.02",
+                   "Tri: V = diag(3) / 3, nu = 0.02",
+                   "Tri: V = diag(3) * 0.5, nu = 0.02")
+  
+  for (ii in 1:length(priors)) {
+    prior <- priors[[ii]]
+    fm <- mclapply(1:chains, function(i) {
+      MCMCglmm(cbind(Age_STD, Age_HS, Age_LY) ~ trait - 1,
+               random = ~ us(trait):animal,
+               rcov = ~ idh(trait):units,
+               data = h2life_mrg,
+               prior = prior,
+               pedigree = pedigree,
+               family = rep("gaussian", 3),
+               nitt = iter,
+               burnin = burnin,
+               thin = thinning)
+    }, mc.cores = chains)
+    outfile <- paste0("tri_model_prior", ii, ".Rda")
+    save(fm, file = outfile)
+    
+    re <- lapply(fm, function(m) m$VCV)
+    re <- do.call(mcmc.list, re)
+    re <- as.mcmc(as.matrix(re))
+    n_eff <- effectiveSize(re)
+    
+    # STD vs. HS
+    HS_STD <- re[ , "traitAge_HS:traitAge_STD.animal"] /
+      sqrt(re[ , "traitAge_STD:traitAge_STD.animal"] *
+             re[ , "traitAge_HS:traitAge_HS.animal"])
+    
+    # STD vs. LY
+    LY_STD <- re[ , "traitAge_LY:traitAge_STD.animal"] /
+      sqrt(re[ , "traitAge_STD:traitAge_STD.animal"] *
+             re[ , "traitAge_LY:traitAge_LY.animal"])
+    
+    # LY vs. HS
+    HS_LY <- re[ , "traitAge_HS:traitAge_LY.animal"] /
+      sqrt(re[ , "traitAge_LY:traitAge_LY.animal"] *
+             re[ , "traitAge_HS:traitAge_HS.animal"])
+    
+    genet_corr <- bind_rows(genet_corr,
+                            tibble(model = prior_names[[ii]],
+                                   HS_STD = median(HS_STD),
+                                   LY_STD = median(LY_STD),
+                                   HS_LY = median(HS_LY),
+                                   n_eff = mean(n_eff)))
+  }
+  
+  write_csv(genet_corr, path = "Genetic_Correlations.csv")
+}
+```
 
-fe <- lapply(m6, function(m) m$Sol)
+### Analyze model
+
+```{r MANOVA_Analysis}
+load("tri_model_prior1.Rda")
+
+fe <- lapply(fm, function(m) m$Sol)
 fe <- do.call(mcmc.list, fe)
 plot(fe, ask = FALSE)
 plot(fe[, 1, drop = FALSE], ask = FALSE)
@@ -84,7 +131,7 @@ plot(fe[, 2, drop = FALSE], ask = FALSE)
 plot(fe[, 3, drop = FALSE], ask = FALSE)
 
 # Extract random effects, convert to mcmc.list
-re <- lapply(m6, function(m) m$VCV)
+re <- lapply(fm, function(m) m$VCV)
 re <- do.call(mcmc.list, re)
 
 plot(re[, 1, drop = FALSE], ask = FALSE)
@@ -136,6 +183,8 @@ M <- data_frame(`HS vs. STD` = as.numeric(HS_STD),
                 `LY vs. STD` = as.numeric(LY_STD),
                 `HS vs. LY` = as.numeric(HS_LY))
 
+colMeans(M)
+
 M %>% gather(Comparison, value) %>%
   ggplot(aes(value, color = Comparison)) +
   geom_line(stat = "density", size = 2) +
@@ -147,3 +196,163 @@ ggsave(last_plot(), file = "Genetic_Correlation_Plot.pdf",
        width = 8, height = 6)
 ```
 
+## Model following Ingleby et al. 2013
+
+Setup data as above
+
+```{r}
+V_nu_to_a_b <- function(V, nu) {
+  require(tidyverse)
+  require(invgamma)
+  
+  a <- nu / 2
+  b <- (nu * V) / 2
+  
+  p <- tibble(
+    x = seq(0, 10, length = 200),
+    y = dinvgamma(x, a, b)) %>% 
+    ggplot(aes(x, y)) +
+    geom_line()
+  print(p)
+  
+  return(list(alpha = a, beta = b))
+}
+```
+
+```{r Sire_Models, cache=TRUE}
+V_nu_to_a_b(1, 0.002)
+
+genet_corr <- read_csv("Genetic_Correlations.csv")
+
+if (rerun) {
+  
+  prior1 <- list(R = list(V = 1, nu = 0.002),
+                 G = list(G1 = list(V = diag(3) / 3, nu = 0.002)))
+  
+  prior2 <- list(R = list(V = 1, nu = 0.002),
+                 G = list(G1 = list(V = diag(3) * 0.5 * 0.7, nu = 0.002)))
+  
+  M <- matrix(0.5 * 0.7, 3, 3)
+  diag(M) <- 0.5
+  prior3 <- list(R = list(V = 1, nu = 0.002),
+                 G = list(G1 = list(V = M, nu = 0.002)))
+  
+  priors <- list(prior1, prior2, prior3)
+  prior_names <- c("Sire: V = diag(3) / 3, nu = 0.002",
+                   "Sire: V = diag(3) * 0.5 * 0.7, nu = 0.002",
+                   "Sire: V = 0.5 diag, 0.35 off-diag, nu = 0.002")
+  
+  for (ii in 1:length(priors)) {
+    prior <- priors[[ii]]
+    
+    fm <- mclapply(1:chains, function(i) {
+      MCMCglmm(NewAge ~ treat,
+               random = ~ us(treat):sire,
+               data = h2life,
+               prior = prior,
+               family = "gaussian",
+               nitt = iter,
+               burnin = burnin,
+               thin = thinning,
+               verbose = TRUE)
+    }, mc.cores = chains)
+    
+    outfile <- paste0("sire_model_prior", ii, ".Rda")
+    save(fm, file = outfile)
+    
+    re <- lapply(fm, function(m) m$VCV)
+    re <- do.call(mcmc.list, re)
+    re <- as.mcmc(as.matrix(re))
+    n_eff <- effectiveSize(re)
+    
+    # STD vs. HS
+    HS_STD <- re[ , "treatHS:treatSTD.sire"] /
+      sqrt(re[ , "treatHS:treatHS.sire"] *
+             re[ , "treatSTD:treatSTD.sire"])
+    median(HS_STD)
+    
+    # STD vs. LY
+    LY_STD <- re[ , "treatSTD:treatLY.sire"] /
+      sqrt(re[ , "treatSTD:treatSTD.sire"] *
+             re[ , "treatLY:treatLY.sire"])
+    median(LY_STD)
+    
+    # LY vs. HS
+    HS_LY <- re[ , "treatHS:treatLY.sire"] /
+      sqrt(re[ , "treatLY:treatLY.sire"] *
+             re[ , "treatHS:treatHS.sire"])
+    median(HS_LY)
+    
+    genet_corr <- bind_rows(genet_corr,
+                            tibble(model = prior_names[[ii]],
+                                   HS_STD = median(HS_STD),
+                                   LY_STD = median(LY_STD),
+                                   HS_LY = median(HS_LY),
+                                   n_eff = mean(n_eff)))
+    
+  }
+  write_csv(genet_corr, path = "Genetic_Correlations.csv")
+  
+  kable(genet_corr, digits = 3)
+}
+
+```
+
+### Analyze model
+
+```{r Sire_Analysis}
+load("sire_model_prior1.Rda")
+
+fe <- lapply(fm, function(m) m$Sol)
+fe <- do.call(mcmc.list, fe)
+plot(fe, ask = FALSE)
+
+# Extract random effects, convert to mcmc.list
+re <- lapply(fm, function(m) m$VCV)
+re <- do.call(mcmc.list, re)
+
+plot(re[, 1:3], ask = FALSE)
+plot(re[, 4:6], ask = FALSE)
+plot(re[, 7:9], ask = FALSE)
+plot(re[, 10], ask = FALSE)
+
+effectiveSize(re)
+
+# Concatenate samples
+re <- as.mcmc(as.matrix(re))
+colnames(re)
+
+# ??? Heritability ????
+HS <- re[, "treatHS:treatHS.sire"] / (re[, "treatHS:treatHS.sire"] + re[, "units"])
+median(HS)
+
+LY <- re[, "treatLY:treatLY.sire"] / (re[, "treatLY:treatLY.sire"] + re[, "units"])
+median(LY)
+
+STD <- re[, "treatSTD:treatSTD.sire"] / (re[, "treatSTD:treatSTD.sire"] + re[, "units"])
+median(STD)
+
+# STD vs. HS
+HS_STD <- re[ , "treatHS:treatSTD.sire"] /
+  sqrt(re[ , "treatHS:treatHS.sire"] *
+         re[ , "treatSTD:treatSTD.sire"])
+plot(HS_STD)
+median(HS_STD)
+HPDinterval(HS_STD)
+
+# STD vs. LY
+LY_STD <- re[ , "treatSTD:treatLY.sire"] /
+  sqrt(re[ , "treatSTD:treatSTD.sire"] *
+         re[ , "treatLY:treatLY.sire"])
+plot(LY_STD)
+median(LY_STD)
+HPDinterval(LY_STD)
+
+# LY vs. HS
+HS_LY <- re[ , "treatHS:treatLY.sire"] /
+  sqrt(re[ , "treatLY:treatLY.sire"] *
+         re[ , "treatHS:treatHS.sire"])
+plot(HS_LY)
+median(HS_LY)
+HPDinterval(HS_LY)
+```
