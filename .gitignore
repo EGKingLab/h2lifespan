@@ -35,3 +35,5 @@ vignettes/*.pdf
 
 # Ignore .Rda files
 *.Rda
+
+*/.DS_Store
