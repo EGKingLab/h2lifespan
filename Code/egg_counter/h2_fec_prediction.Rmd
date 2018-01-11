@@ -1,0 +1,96 @@
+---
+title: "h2 fecundity analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(cowplot)
+library(readxl)
+```
+
+## Load and merge data
+
+```{r}
+M <- suppressWarnings(
+  read_excel("../h2lifespan/Data/Processed/feclife_with-image-ids.xlsx")
+)
+areas <- read_csv("h2_fec_images/area_summation_h2_fec_images.csv") %>% 
+  select(-lower_thresh)
+M <- left_join(M, areas)
+```
+
+## Regression on handcounted images
+
+Subset only train/test set
+
+```{r}
+HC <- M %>% 
+  filter(test_case == "yes") %>% 
+  mutate(handcount = as.numeric(handcount)) %>% 
+  select(camera_id, handcount, area)
+```
+
+Linear model predicting egg count from area
+
+```{r}
+fm <- lm(handcount ~ area, data = HC)
+```
+
+```{r}
+ggplot(HC, aes(x = area, y = handcount)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+Check these areas: should be in the test_case batch but aren't.
+
+```{r}
+HC %>% 
+  filter(is.na(area))
+```
+
+## Prediction for all images
+
+```{r}
+M$predicted_count <- predict(fm, newdata = M)
+```
+
+## Checks
+
+Check these. They are handcounted but in the set of analyzed images.
+
+```{r}
+M %>% 
+  filter(is.na(test_case)) %>% 
+  filter(!is.na(handcount)) %>% 
+  filter(handcount != "unassessable") %>% 
+  filter(handcount != "unassigned") %>% 
+  mutate(handcount = as.numeric(handcount)) %>% 
+  select(camera_id, handcount, predicted_count) %>% 
+  filter(!is.na(predicted_count))
+```
+
+## Some exploration
+
+```{r}
+ggplot(M, aes(predicted_count)) +
+  geom_histogram(bins = 30)
+```
+
+Check high and low predicted eggs
+
+```{r}
+M %>% 
+  select(camera_id, predicted_count) %>% 
+  arrange(desc(predicted_count))
+```
+
+```{r}
+M %>% 
+  select(camera_id, predicted_count) %>% 
+  arrange(predicted_count)
+```
+

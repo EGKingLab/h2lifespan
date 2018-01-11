@@ -1,4 +1,5 @@
 # h2 Lifespan Project Record & Notes
+
 ## Enoch Ng'oma (EN), Kevin Middleton (KM), and Elizabeth King (EK)
 
 ## Project Record
@@ -33,8 +34,6 @@ Script: "h2surv_analysis1.Rmd" - reads in either female or male output files fro
 		b. Survival curves by sire ids (sireid), by treatment (treat) (82 levels) - multistrata
 		c. Survival curves by dam ids (damid) (246 levels?)
 		d. Comparisons of median lifespan across diets
-		
-
 
 ## Project Notes
 
@@ -44,23 +43,24 @@ Script: "h2surv_analysis1.Rmd" - reads in either female or male output files fro
 
 See https://coderwall.com/p/ohk6cg/remote-access-to-ipython-notebooks-via-ssh
 
-On Nivalis:
+On nivalis:
 
-1. tmux new-session -s jupyter_session
-2. jupyter notebook --no-browser --port=8889
+1. `tmux new-session -s jupyter_session`
+2. `jupyter notebook --no-browser --port=8889`
 3. Ctrl-b d
-4. tmux attach -t jupyter_session
-5. exit to end tmux session
+4. `tmux attach -t jupyter_session`
+5. `exit` to end tmux session
 
 On Localhost:
 
-1. ssh -N -f -L localhost:8887:localhost:8889 remote_user@nivalis.biology.missouri.edu
-2. Chrome to localhost:8887
+1. `ssh -N -f -L localhost:8887:localhost:8889 remote_user@nivalis.biology.missouri.edu`
+2. Chrome load `localhost:8887`
 
 
 ### 2018-01-11
 
 Setting up this record. All work done on analyses should get an entry with some notes of what was done and who did it. This file will also keep track of the order of analyses, file names, etc. in the Project Record section. (EK)
 
-Missing images will be coded as "missing" in the camera_id column.
+Missing images will be coded as "missing" in the camera_id column. (EK)
 
+Moved egg counter analysis files into Code/egg_counter. (KM)
