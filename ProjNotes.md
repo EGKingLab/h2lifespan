@@ -64,3 +64,5 @@ Setting up this record. All work done on analyses should get an entry with some 
 Missing images will be coded as "missing" in the camera_id column. (EK)
 
 Moved egg counter analysis files into Code/egg_counter. (KM)
+
+Moved h2_fec_images up to the same directory level as h2_lifespan. (KM)
