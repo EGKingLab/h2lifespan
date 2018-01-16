@@ -66,3 +66,13 @@ Missing images will be coded as "missing" in the camera_id column. (EK)
 Moved egg counter analysis files into Code/egg_counter. (KM)
 
 Moved h2_fec_images up to the same directory level as h2_lifespan. (KM)
+
+### 2018-01-16
+
+Data file feclife_with-image-ids updated: 
+1) added rows with missing image previously deleted, 
+2) "Maybe" rows updated - with corresponding imaged placed in ‘h2_fec_images/’,
+3)  updated listing of handcounts in data file. (EN)
+
+
+
