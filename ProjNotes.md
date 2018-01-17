@@ -73,16 +73,37 @@ Data file feclife_with-image-ids updated:
 
 1. added rows with missing image previously deleted, 
 2. "Maybe" rows updated - with corresponding imaged placed in ‘h2_fec_images/’,
-3.  updated listing of handcounts in data file. (EN)
+3. updated listing of handcounts in data file. (EN)
 
 
 ### 2018-01-17
 
-Data file feclife_with-image-ids updated:
+Data file feclife_with-image-ids updated: (KM)
 
 1. Marking some rows as handcounted that were missed.
 
-Analysis file Area_Summation_h2_fec_images.py updated:
+Analysis file Area_Summation_h2_fec_images.py updated: (KM)
 
 1. Do not expect rows marked as "test_case", "handcounted", "missing", or "visually_recheck" to have images in h2_thresh_images.
 2. Direct output to Data/Processed
+
+Resquaring some of the h2_fec_images: (KM)
+
+- IMG_1961.JPG
+- IMG_1976.JPG
+- IMG_2956.JPG
+- IMG_1992.JPG
+- IMG_2865.JPG
+- IMG_3070.JPG
+- IMG_3071.JPG
+- IMG_3184.JPG
+- IMG_3641.JPG
+- IMG_3642.JPG
+- IMG_3737.JPG
+- IMG_3738.JPG
+- IMG_3739.JPG
+- IMG_3760.JPG
+- IMG_3771.JPG
+- IMG_4546.JPG
+- IMG_5056.JPG
+- IMG_5555.JPG

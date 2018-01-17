@@ -58,7 +58,8 @@ print('{} image files'.format(len(filelist)))
 # Keep only the rows in M that have files.
 
 M_no_handcount = M.loc[M.handcounted != 'yes', ]
-M_no_handcount = M_no_handcount.loc[M.visually_recheck != 'yes', ]
+M_no_handcount = M_no_handcount.loc[M_no_handcount.visually_recheck != 'yes', ]
+M_no_handcount = M_no_handcount.loc[M_no_handcount.test_case != 'yes', ]
 missing_images = M_no_handcount.camera_id[~(M_no_handcount.camera_id.isin(filelist))]
 print('Images that should be in h2_fec_images but are not:\n')
 print(missing_images)

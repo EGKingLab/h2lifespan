@@ -37,8 +37,8 @@ def sum_area(rootDir, row, lower_thresh, resize,
 
     # Check dimensions (should be almost square)
     rows, cols, _ = image.shape
-    if np.abs(rows - cols) > 5:
-        raise ValueError('Bad image dimensions. Should be square.')
+    if np.abs(rows - cols) > 150:
+        print(row.camera_id + ' is more than 150 pixels out of square')
 
     blurred = gaussian_blur(gray)
 
