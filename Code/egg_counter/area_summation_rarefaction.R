@@ -9,32 +9,32 @@ library(broom)
 library(forcats)
 library(ggrepel)
 
-outfile <- "CVs_coarse_final.csv"
-infile <- "area_summation_coarse.csv"
+coarse <- TRUE
 
-rootDir <- "hd_hand_counted_masked"
+if (coarse) {
+  outfile <- "../../Data/Processed/fecundity_rarefaction_coarse.csv"
+  infile <- "../../Data/Processed/area_summation_coarse.csv"
+  reps <- 1000  # Reps at each proportion
+  iters <- 1000 # Iterations for each CV
+} else {
+  outfile <- "../../Data/Processed/fecundity_rarefaction_fine.csv"
+  infile <- "../../Data/Processed/area_summation_fine.csv"
+  reps <- 2000  # Reps at each proportion
+  iters <- 2000 # Iterations for each CV
+}
 
 # areas estimated from thresholding
-areas <- read_csv(file.path(rootDir, infile),
-                  col_types = "cii")
+areas <- read_csv(infile, col_types = "cii")
 
 # handcounts
-actual <- read_excel("../hd_hand_counted/hd_hand_counted.xlsx") %>% 
-  filter(status != "bad") %>% 
-  select(cameraid, handcount)
+actual <- suppressWarnings(
+  read_excel("../../Data/Processed/feclife_with-image-ids.xlsx") %>% 
+  filter(!is.na(test_case)) %>% 
+  dplyr::select(camera_id, handcount)
+)
 
-# Check for mismatches
-area_ids <- unique(areas$cameraid)
-actual_ids <- unique(actual$cameraid)
-area_not_in_actual <- area_ids[!(area_ids %in% actual_ids)]
-actual_not_in_area <- actual_ids[!(actual_ids %in% area_ids)]
-message("Files not found in handcount.")
-print(area_not_in_actual)
-message("Handcounts not found in JPG file list.")
-print(actual_not_in_area)
-
-M <- full_join(areas, actual, by = "cameraid") %>% 
-  drop_na() %>% 
+M <- full_join(areas, actual, by = "camera_id") %>% 
+  drop_na(handcount) %>% 
   mutate(area = log(area),
          handcount = log(handcount))
 
@@ -80,8 +80,6 @@ n_prop <- length(prop_data)
 n_out <- n_thresh * n_prop * length(prop_train)
 r <- 0
 MSD <- 0
-reps <- 2000  # Reps at each proportion
-iters <- 2000 # Iterations for each CV
 
 CVs <- crossing(prop_data, prop_train, lower = unique(M$lower_thresh), r, MSD)
 
@@ -112,7 +110,7 @@ write_csv(CVs, path = file.path(rootDir, outfile))
 
 #####
 
-CVs <- read_csv(file.path(rootDir, outfile))
+CVs <- read_csv(outfile)
 
 CVs$lower_f <- as.factor(CVs$lower)
 CVs$prop_train_f <- as.factor(CVs$prop_train)
