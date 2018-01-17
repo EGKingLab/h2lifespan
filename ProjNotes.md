@@ -69,10 +69,20 @@ Moved h2_fec_images up to the same directory level as h2_lifespan. (KM)
 
 ### 2018-01-16
 
-Data file feclife_with-image-ids updated: 
-1) added rows with missing image previously deleted, 
-2) "Maybe" rows updated - with corresponding imaged placed in ‘h2_fec_images/’,
-3)  updated listing of handcounts in data file. (EN)
+Data file feclife_with-image-ids updated:
+
+1. added rows with missing image previously deleted, 
+2. "Maybe" rows updated - with corresponding imaged placed in ‘h2_fec_images/’,
+3.  updated listing of handcounts in data file. (EN)
 
 
+### 2018-01-17
 
+Data file feclife_with-image-ids updated:
+
+1. Marking some rows as handcounted that were missed.
+
+Analysis file Area_Summation_h2_fec_images.py updated:
+
+1. Do not expect rows marked as "test_case", "handcounted", "missing", or "visually_recheck" to have images in h2_thresh_images.
+2. Direct output to Data/Processed

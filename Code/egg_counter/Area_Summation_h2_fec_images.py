@@ -11,9 +11,9 @@ import shutil
 
 from Area import thresholding, sum_area
 
-rootDir = 'h2_fec_images/'
+rootDir = '../../../h2_fec_images/'
 
-outfile = '../h2lifespan/Data/Processed/area_summation_h2_fec_images.csv'
+outfile = '../../Data/Processed/area_summation_h2_fec_images.csv'
 
 # Erase old and create new output directory
 write_images = True
@@ -27,7 +27,10 @@ if write_images:
         if e.errno != errno.EEXIST:
             raise
 
-M = pd.read_excel('../h2lifespan/Data/Processed/feclife_with-image-ids.xlsx')
+M = pd.read_excel('../../Data/Processed/feclife_with-image-ids.xlsx')
+
+# Drop rows labeled 'missing'
+M = M.loc[M.camera_id != 'missing']
 
 # Drop rows without images
 file_list = M.camera_id.dropna()
@@ -35,6 +38,8 @@ file_list = M.camera_id.dropna()
 # Check for duplicated images names
 if len(set(file_list)) < len(file_list):
     print('There are {} duplicate rows in feclife_with-image-ids.xlsx.'.format(len(file_list) - len(set(file_list))))
+else:
+    print('No duplicate image names in feclife_with-image-ids.xlsx')  
 
 infiles = []
 
@@ -45,18 +50,18 @@ for dirName, subdirList, fileList in os.walk(rootDir, topdown=False):
             infile = os.path.join(dirName, fname)
             infiles.append(infile)
 
-filelist = [(x.split('/')[1]) for x in infiles]
+filelist = [(x.split('/')[4]) for x in infiles]
 print('{} image files'.format(len(filelist)))
 
 ##############################################################################
 # Check the images not in the filelist and vice versa
 # Keep only the rows in M that have files.
 
-# data_without_image = list(set(M.camera_id) - set(filelist))
-# image_without_data = list(set(filelist) - set(M.camera_id))
-# 
-# print(data_without_image)
-# print(image_without_data)
+M_no_handcount = M.loc[M.handcounted != 'yes', ]
+M_no_handcount = M_no_handcount.loc[M.visually_recheck != 'yes', ]
+missing_images = M_no_handcount.camera_id[~(M_no_handcount.camera_id.isin(filelist))]
+print('Images that should be in h2_fec_images but are not:\n')
+print(missing_images)
 
 M = M.loc[M.camera_id.isin(filelist), ]
 print('Using {} images.'.format(str(len(M))))
