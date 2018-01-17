@@ -50,6 +50,33 @@ HC %>%
   filter(is.na(area))
 ```
 
+## Examine possibly bad images
+
+```{r check_bad_images}
+plot_jpeg = function(path, add=FALSE) {
+  # https://stackoverflow.com/a/28729601/168137
+  require('jpeg')
+  jpg = readJPEG(path, native=T) # read the file
+  res = dim(jpg)[2:1] # get the resolution, [x, y]
+  if (!add) # initialize an empty plot area if add==FALSE
+    plot(1, 1,
+         xlim=c(1,res[1]),ylim=c(1,res[2]),
+         asp=1, type = 'n', xaxs = 'i', yaxs = 'i', xaxt = 'n', yaxt = 'n',
+         xlab = '', ylab = '', bty = 'n', main = path)
+  rasterImage(jpg, 1, 1, res[1], res[2])
+}
+
+bad_images <- HC %>% 
+  filter(area > 500000)
+
+basedir <- "../../../h2_fec_images/h2_thresh_images/"
+
+for (ii in 1:nrow(bad_images)) {
+  print(plot_jpeg(paste0(basedir, bad_images$camera_id[ii])))
+}
+
+```
+
 ## Prediction for all images
 
 Linear model predicting egg count from area
