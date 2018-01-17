@@ -35,15 +35,10 @@ def sum_area(rootDir, row, lower_thresh, resize,
         # Resize to 4000,4000
         gray = resize_image(gray, 4000)
 
-    # !!!! Check image size, if square then resize
-    # Check dimensions (should be landscape), rotate if necessary
-    # Use rotate_bound from imutils here to avoid cropping
-    # rows, cols, _ = image.shape
-    # if rows > cols:
-    #     image = imutils.rotate_bound(image, -90)
-    # 
-    # if rows != 3456 or cols != 5184:
-    #     raise ValueError('Bad image dimensions. Should be 3456 x 5184.')
+    # Check dimensions (should be almost square)
+    rows, cols, _ = image.shape
+    if np.abs(rows - cols) > 5:
+        raise ValueError('Bad image dimensions. Should be square.')
 
     blurred = gaussian_blur(gray)
 

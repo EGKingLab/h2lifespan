@@ -9,15 +9,17 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(cowplot)
 library(readxl)
+library(ggrepel)
 ```
 
 ## Load and merge data
 
 ```{r}
 M <- suppressWarnings(
-  read_excel("../h2lifespan/Data/Processed/feclife_with-image-ids.xlsx")
+  read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
 )
-areas <- read_csv("h2_fec_images/area_summation_h2_fec_images.csv") %>% 
+areas <- read_csv("../../Data/Processed/area_summation_h2_fec_images.csv",
+                  col_types = "cii") %>% 
   select(-lower_thresh)
 M <- left_join(M, areas)
 ```
@@ -29,20 +31,16 @@ Subset only train/test set
 ```{r}
 HC <- M %>% 
   filter(test_case == "yes") %>% 
-  mutate(handcount = as.numeric(handcount)) %>% 
-  select(camera_id, handcount, area)
-```
-
-Linear model predicting egg count from area
-
-```{r}
-fm <- lm(handcount ~ area, data = HC)
+  mutate(handcount = as.numeric(handcount),
+         label = if_else(area > 500000, camera_id, "")) %>% 
+  select(camera_id, handcount, area, label)
 ```
 
 ```{r}
-ggplot(HC, aes(x = area, y = handcount)) +
+ggplot(HC, aes(x = area, y = handcount, label = label)) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE)
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_text_repel()
 ```
 
 Check these areas: should be in the test_case batch but aren't.
@@ -53,6 +51,12 @@ HC %>%
 ```
 
 ## Prediction for all images
+
+Linear model predicting egg count from area
+
+```{r}
+fm <- lm(handcount ~ area, data = HC)
+```
 
 ```{r}
 M$predicted_count <- predict(fm, newdata = M)

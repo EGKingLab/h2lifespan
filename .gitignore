@@ -37,3 +37,9 @@ vignettes/*.pdf
 *.Rda
 
 */.DS_Store
+
+# Ignore pycache
+*__pycache__*
+
+# Ignore excel temporary files
+*/~*
