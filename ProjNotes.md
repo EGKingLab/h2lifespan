@@ -107,3 +107,7 @@ Resquaring some of the h2_fec_images: (KM)
 - IMG_4546.JPG
 - IMG_5056.JPG
 - IMG_5555.JPG
+
+Rarefaction analysis: (KM)
+
+- Merged the fine and coarse R rarefaction code into one file.
