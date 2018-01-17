@@ -88,4 +88,4 @@ for index, row in M.iterrows():
         if ctr % 200 == 0:
             print(str(ctr) + " complete")
 
-areas.to_csv(os.path.join(rootDir, outfile), index=False)
+areas.to_csv(outfile, index=False)
