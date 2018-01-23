@@ -121,3 +121,13 @@ Rerun egg counter analysis (KM)
 - Optimal threshold value 52
 - Run area estimation for all images
 - Run prediction to check for possible bad images.
+
+### 2018-01-23
+
+Add file with handcounts only for threshold optimization. (EN)
+
+Changes to thresholding optimization: (KM)
+
+- Pull handcounts from hd_hand_counted.xlsx
+- Remove images listed as 'bad' in bad_images.xlsx
+- Set search space to 35 to 80 using all the data to start.

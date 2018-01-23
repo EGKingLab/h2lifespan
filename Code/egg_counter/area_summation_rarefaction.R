@@ -9,15 +9,16 @@ library(broom)
 library(forcats)
 library(ggrepel)
 
-coarse <- FALSE
+coarse <- TRUE
 
 if (coarse) {
   outfile <- "../../Data/Processed/fecundity_rarefaction_coarse.csv"
   infile <- "../../Data/Processed/area_summation_coarse.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
-  prop_data <- seq(0.2, .2, by = 0.1)
-  prop_train <- seq(0.1, 0.1, by = 0.1)
+  # prop_data <- seq(0.4, .2, by = 0.1)
+  prop_data <- 1
+  prop_train <- seq(0.1, 1.0, by = 0.1)
 } else {
   outfile <- "../../Data/Processed/fecundity_rarefaction_fine.csv"
   infile <- "../../Data/Processed/area_summation_fine.csv"
@@ -32,8 +33,7 @@ areas <- read_csv(infile, col_types = "cii")
 
 # handcounts
 actual <- suppressWarnings(
-  read_excel("../../Data/Processed/feclife_with-image-ids.xlsx") %>% 
-  filter(!is.na(test_case)) %>% 
+  read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
   dplyr::select(camera_id, handcount)
 )
 
@@ -41,10 +41,6 @@ M <- full_join(areas, actual, by = "camera_id") %>%
   drop_na(handcount) %>% 
   mutate(area = log(area),
          handcount = log(handcount))
-
-# Filter a subset
-# M <- M %>% 
-#   filter(lower_thresh == 40)
 
 #########################################################################
 

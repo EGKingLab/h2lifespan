@@ -10,22 +10,26 @@ import matplotlib.pyplot as plt
 from Area import thresholding, sum_area
 
 write_images = False
-coarse = False
+coarse = True
 
-rootDir = '../../../h2_fec_images/'
+rootDir = '../../../hd_hand_counted_masked/'
 
 if coarse:
     outfile = '../../Data/Processed/area_summation_coarse.csv'
+    lower_threshes = np.arange(30, 85, 5)
 else:
     outfile = '../../Data/Processed/area_summation_fine.csv'
+    lower_threshes = np.arange(48, 55, 1)
 
-M = pd.read_excel('../../Data/Processed/feclife_with-image-ids.xlsx')
+# Get list of handcounted images from hd_hand_counted
+M = pd.read_excel('../../Data/Processed/hd_hand_counted.xlsx')
 
-# Drop rows labeled 'missing'
-M = M.loc[M.camera_id != 'missing']
+# Get list of bad images
+bad_images = pd.read_excel('../../Data/Processed/bad_images.xlsx')
+bad_images = bad_images.loc[bad_images.status == 'bad']
 
-# Drop rows not in test_case
-M = M.loc[M.test_case == 'yes']
+# Drop rows from handcounted images that are bad
+M = M.loc[~(M.camera_id.isin(bad_images.cameraid))]
 
 # Drop rows without images
 file_list = M.camera_id.dropna()
@@ -34,7 +38,7 @@ file_list = M.camera_id.dropna()
 if len(set(file_list)) < len(file_list):
     print('There are {} duplicate rows in feclife_with-image-ids.xlsx.'.format(len(file_list) - len(set(file_list))))
 else:
-    print('No duplicate image names in feclife_with-image-ids.xlsx')  
+    print('No duplicate image names in hd_hand_counted.xlsx')  
 
 infiles = []
 
@@ -51,10 +55,10 @@ print('{} image files'.format(len(filelist)))
 ##############################################################################
 # Check the images not in the filelist and vice versa
 # Keep only the rows in M that have files.
-M_no_handcount = M.loc[M.handcounted != 'yes', ]
-M_no_handcount = M_no_handcount.loc[M_no_handcount.visually_recheck != 'yes', ]
-M_no_handcount = M_no_handcount.loc[M_no_handcount.test_case != 'yes', ]
-missing_images = M_no_handcount.camera_id[~(M_no_handcount.camera_id.isin(filelist))]
+# M_no_handcount = M.loc[M.handcounted != 'yes', ]
+# M_no_handcount = M_no_handcount.loc[M_no_handcount.visually_recheck != 'yes', ]
+# M_no_handcount = M_no_handcount.loc[M_no_handcount.test_case != 'yes', ]
+missing_images = M.camera_id[~(M.camera_id.isin(filelist))]
 print('Images that should be in h2_fec_images but are not:\n')
 print(missing_images)
 
@@ -62,11 +66,6 @@ M = M.loc[M.camera_id.isin(filelist), ]
 print('Using {} images.'.format(str(len(M))))
 
 ##############################################################################
-
-if coarse:
-    lower_threshes = np.arange(30, 85, 5)
-else:
-    lower_threshes = np.arange(48, 55, 1)
 
 nrows = len(M) * len(lower_threshes)
 
