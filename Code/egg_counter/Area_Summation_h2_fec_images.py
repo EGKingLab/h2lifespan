@@ -69,7 +69,7 @@ print('Using {} images.'.format(str(len(M))))
 
 ##############################################################################
 
-lower_threshes = [46]
+lower_threshes = [52]
 
 nrows = len(M) * len(lower_threshes)
 

@@ -67,7 +67,7 @@ plot_jpeg = function(path, add=FALSE) {
 }
 
 bad_images <- HC %>% 
-  filter(area > 500000)
+  filter(area > 2.5e05)
 
 basedir <- "../../../h2_fec_images/h2_thresh_images/"
 

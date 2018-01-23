@@ -9,18 +9,22 @@ library(broom)
 library(forcats)
 library(ggrepel)
 
-coarse <- TRUE
+coarse <- FALSE
 
 if (coarse) {
   outfile <- "../../Data/Processed/fecundity_rarefaction_coarse.csv"
   infile <- "../../Data/Processed/area_summation_coarse.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
+  prop_data <- seq(0.2, .2, by = 0.1)
+  prop_train <- seq(0.1, 0.1, by = 0.1)
 } else {
   outfile <- "../../Data/Processed/fecundity_rarefaction_fine.csv"
   infile <- "../../Data/Processed/area_summation_fine.csv"
-  reps <- 2000  # Reps at each proportion
-  iters <- 2000 # Iterations for each CV
+  reps <- 1000  # Reps at each proportion
+  iters <- 1000 # Iterations for each CV
+  prop_data <- 1
+  prop_train <- seq(0.1, 1.0, by = 0.1)
 }
 
 # areas estimated from thresholding
@@ -37,6 +41,10 @@ M <- full_join(areas, actual, by = "camera_id") %>%
   drop_na(handcount) %>% 
   mutate(area = log(area),
          handcount = log(handcount))
+
+# Filter a subset
+# M <- M %>% 
+#   filter(lower_thresh == 40)
 
 #########################################################################
 
@@ -73,8 +81,6 @@ area_rarefaction <- function(M, lower,
   return(as.data.frame(x))
 }
 
-prop_data <- seq(0.2, 1, by = 0.1)
-prop_train <- seq(0.1, 0.9, by = 0.1)
 n_thresh <- length(unique(M$lower_thresh))
 n_prop <- length(prop_data)
 n_out <- n_thresh * n_prop * length(prop_train)
@@ -86,7 +92,7 @@ CVs <- crossing(prop_data, prop_train, lower = unique(M$lower_thresh), r, MSD)
 message(paste("\n", nrow(CVs), "combinations to check.\n"))
 
 ## Check number of cores
-cl <- makeCluster(25)
+cl <- makeCluster(20)
 registerDoParallel(cl)
 for (ii in 1:nrow(CVs)) {
   tic()
@@ -106,11 +112,12 @@ for (ii in 1:nrow(CVs)) {
 }
 stopCluster(cl)
 
-write_csv(CVs, path = file.path(rootDir, outfile))
+write_csv(CVs, path = outfile)
 
 #####
 
-CVs <- read_csv(outfile)
+CVs <- read_csv(outfile) %>% 
+  drop_na(r)
 
 CVs$lower_f <- as.factor(CVs$lower)
 CVs$prop_train_f <- as.factor(CVs$prop_train)
@@ -125,7 +132,7 @@ p2 <- CVs %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   geom_point() +
   facet_grid(lower_f ~ prop_train_f)
-plot_grid(p1, p2)
+# plot_grid(p1, p2)
 
 p1
 p2

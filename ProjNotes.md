@@ -111,3 +111,13 @@ Resquaring some of the h2_fec_images: (KM)
 Rarefaction analysis: (KM)
 
 - Merged the fine and coarse R rarefaction code into one file.
+
+### 2018-01-22
+
+Rerun egg counter analysis (KM)
+
+- Run coarse rarefaction
+- Run fine rarefaction
+- Optimal threshold value 52
+- Run area estimation for all images
+- Run prediction to check for possible bad images.

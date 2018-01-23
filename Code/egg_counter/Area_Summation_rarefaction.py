@@ -24,6 +24,9 @@ M = pd.read_excel('../../Data/Processed/feclife_with-image-ids.xlsx')
 # Drop rows labeled 'missing'
 M = M.loc[M.camera_id != 'missing']
 
+# Drop rows not in test_case
+M = M.loc[M.test_case == 'yes']
+
 # Drop rows without images
 file_list = M.camera_id.dropna()
 
@@ -63,7 +66,7 @@ print('Using {} images.'.format(str(len(M))))
 if coarse:
     lower_threshes = np.arange(30, 85, 5)
 else:
-    lower_threshes = np.arange(40, 51, 1)
+    lower_threshes = np.arange(48, 55, 1)
 
 nrows = len(M) * len(lower_threshes)
 
