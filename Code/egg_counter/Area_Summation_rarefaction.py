@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from Area import thresholding, sum_area
 
 write_images = False
-coarse = True
+coarse = False
 
 rootDir = '../../../hd_hand_counted_masked/'
 
@@ -19,7 +19,7 @@ if coarse:
     lower_threshes = np.arange(30, 85, 5)
 else:
     outfile = '../../Data/Processed/area_summation_fine.csv'
-    lower_threshes = np.arange(48, 55, 1)
+    lower_threshes = np.arange(43, 53, 1)
 
 # Get list of handcounted images from hd_hand_counted
 M = pd.read_excel('../../Data/Processed/hd_hand_counted.xlsx')

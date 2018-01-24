@@ -26,27 +26,36 @@ M <- left_join(M, areas)
 
 ## Regression on handcounted images
 
-Subset only train/test set
-
 ```{r}
-HC <- M %>% 
-  filter(test_case == "yes") %>% 
-  mutate(handcount = as.numeric(handcount),
-         label = if_else(area > 500000, camera_id, "")) %>% 
-  select(camera_id, handcount, area, label)
-```
+optimized_threshold <- 46
 
-```{r}
-ggplot(HC, aes(x = area, y = handcount, label = label)) +
+actual <- suppressWarnings(
+  read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
+  dplyr::select(camera_id, handcount)
+)
+
+bad_images <- read_excel("../../Data/Processed/bad_images.xlsx") %>% 
+  filter(status == "bad") %>% 
+  rename(camera_id = cameraid)
+
+# Drop bad images
+actual <- actual %>%
+  filter(!(camera_id %in% bad_images$camera_id))
+
+actual_area <- read_csv("../../Data/Processed/area_summation_fine.csv") %>% 
+  filter(lower_thresh == optimized_threshold)
+
+actual <- full_join(actual, actual_area)
+
+ggplot(actual, aes(x = area, y = handcount)) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  geom_text_repel()
+  geom_smooth(method = "lm", se = FALSE)
 ```
 
 Check these areas: should be in the test_case batch but aren't.
 
 ```{r}
-HC %>% 
+actual %>% 
   filter(is.na(area))
 ```
 
@@ -66,15 +75,16 @@ plot_jpeg = function(path, add=FALSE) {
   rasterImage(jpg, 1, 1, res[1], res[2])
 }
 
-bad_images <- HC %>% 
+flagged_images <- actual %>% 
   filter(area > 2.5e05)
 
 basedir <- "../../../h2_fec_images/h2_thresh_images/"
 
-for (ii in 1:nrow(bad_images)) {
-  print(plot_jpeg(paste0(basedir, bad_images$camera_id[ii])))
+if (nrow(flagged_images) >= 1) {
+  for (ii in 1:nrow(flagged_images)) {
+    print(plot_jpeg(paste0(basedir, flagged_images$camera_id[ii])))
+  }
 }
-
 ```
 
 ## Prediction for all images
@@ -82,7 +92,7 @@ for (ii in 1:nrow(bad_images)) {
 Linear model predicting egg count from area
 
 ```{r}
-fm <- lm(handcount ~ area, data = HC)
+fm <- lm(handcount ~ area, data = actual)
 ```
 
 ```{r}

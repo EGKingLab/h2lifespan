@@ -15,6 +15,9 @@ rootDir = '../../../h2_fec_images/'
 
 outfile = '../../Data/Processed/area_summation_h2_fec_images.csv'
 
+# Set the threshold based on output from threshold optimization
+lower_threshes = [46]
+
 # Erase old and create new output directory
 write_images = True
 if write_images:
@@ -68,8 +71,6 @@ M = M.loc[M.camera_id.isin(filelist), ]
 print('Using {} images.'.format(str(len(M))))
 
 ##############################################################################
-
-lower_threshes = [52]
 
 nrows = len(M) * len(lower_threshes)
 

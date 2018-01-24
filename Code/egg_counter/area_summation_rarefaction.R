@@ -9,7 +9,7 @@ library(broom)
 library(forcats)
 library(ggrepel)
 
-coarse <- TRUE
+coarse <- FALSE
 
 if (coarse) {
   outfile <- "../../Data/Processed/fecundity_rarefaction_coarse.csv"
@@ -92,7 +92,10 @@ cl <- makeCluster(20)
 registerDoParallel(cl)
 for (ii in 1:nrow(CVs)) {
   tic()
-  message(paste("Testing", CVs$prop_data[ii], CVs$prop_train[ii], CVs$lower[ii]))
+  message(paste("Testing",
+                CVs$prop_data[ii],
+                CVs$prop_train[ii],
+                CVs$lower[ii]))
   
   x <- foreach(jj = 1:reps, .combine = 'rbind') %dopar% {
     library(tidyverse)
@@ -110,7 +113,7 @@ stopCluster(cl)
 
 write_csv(CVs, path = outfile)
 
-#####
+## Post-processing #####################################################
 
 CVs <- read_csv(outfile) %>% 
   drop_na(r)
