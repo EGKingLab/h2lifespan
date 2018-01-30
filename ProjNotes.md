@@ -8,34 +8,32 @@
 
 ### Heritability
 
-A. DATA PREPARATION
-
-Script: "InitialProcess.R" to process the raw .txt data file:
-
-	1. Input file: feclife.txt 	- this is a raw data file converted from an xlxs file. 
-								- The data is stored in an object called "lifec"
-	
-	2. Output files: 	a. lifespan_correctedData.txt - checked and cleaned for various small things
-						b. Female_events_lifespan.txt - censoring accounted for (females only)
-						c. Male_events_lifespan.txt - censoring accounted for (males only)
-
-
-B. SURVIVAL ANALYSIS
-
-Script: "h2surv_analysis1.Rmd" - reads in either female or male output files from A.
-								:female file 'Female_events_lifespan.txt'
-							- female-only data is stored in an object "h2life" (i.e. 7531 observations, 13 variables)
-							
-	1. Exploratory analysis
-		i. Distribution histograms and density plots - baseR and ggplot2
-		
-	2. Kaplan-Meier plots of survival estimates
-		a. Summary survival curves by treatment (3 lines) - multistrata
-		b. Survival curves by sire ids (sireid), by treatment (treat) (82 levels) - multistrata
-		c. Survival curves by dam ids (damid) (246 levels?)
-		d. Comparisons of median lifespan across diets
-
 ## Project Notes
+
+### Data preparation (EN)
+
+- Load and run script: PreProcess_lifespan_functions.R (a bunch of functions)
+
+- Run InitialProcess.R  to process the raw .txt data file:
+	- Input file: lifespan_only.txt - raw data file 
+	
+- Output files: 
+	1. lifespan_correctedData.txt
+	2. Female_events_lifespan.txt - censoring accounted for (females only)
+	3. Male_events_lifespan.txt - censoring accounted for (males only)
+
+
+### Survival analysis
+
+- Load data: 'Female_events_lifespan.txt'
+- Run script: "h2surv_kaplan-meier.Rmd" 	# females only								
+	- Exploratory analysis - histograms, density plots in baseR and ggplot2	
+	- Kaplan-Meier plots of survival estimates
+		- Summary survival curves by treatment (3 lines) - multistrata
+		- Comparisons of median lifespan across diets
+
+### Heritability
+
 
 ### General Notes
 
@@ -69,11 +67,11 @@ Moved h2_fec_images up to the same directory level as h2_lifespan. (KM)
 
 ### 2018-01-16
 
-Data file feclife_with-image-ids updated:
+Data file feclife_with-image-ids updated: (EN)
 
 1. added rows with missing image previously deleted, 
 2. "Maybe" rows updated - with corresponding imaged placed in ‘h2_fec_images/’,
-3. updated listing of handcounts in data file. (EN)
+3. updated listing of handcounts in data file. 
 
 
 ### 2018-01-17
@@ -135,3 +133,17 @@ Changes to thresholding optimization: (KM)
 ### 2018-01-24
 
 Rerun threshold optimization using the full set of images, less those marked bad.
+
+### 2018-01-30 (EN)
+
+- EXCEL file lifespan_only.xlsx and text file lifespan_only.txt added to Processed folder
+- Script PreProcess_lifespan_functions.R added to Code folder
+- Run PreProcess_lifespan_functions.R (see record above)
+- Run h2surv_kaplan-meier.Rmd on Female_events_lifespan.txt
+- New folder created 'Figures' and populated
+
+
+
+
+
+
