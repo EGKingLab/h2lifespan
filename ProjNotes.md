@@ -142,8 +142,7 @@ Rerun threshold optimization using the full set of images, less those marked bad
 - Run h2surv_kaplan-meier.Rmd on Female_events_lifespan.txt
 - New folder created 'Figures' and populated
 
+### 2018-02-01
 
-
-
-
+Reran coarse and fine optimization (threshold = 45). Reran fecundity predicition. (KM)
 

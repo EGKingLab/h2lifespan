@@ -34,7 +34,8 @@ areas <- read_csv(infile, col_types = "cii")
 # handcounts
 actual <- suppressWarnings(
   read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
-  dplyr::select(camera_id, handcount)
+  dplyr::select(camera_id, handcount) %>% 
+  mutate(handcount = as.integer(handcount))
 )
 
 M <- full_join(areas, actual, by = "camera_id") %>% 
@@ -63,8 +64,11 @@ area_rarefaction <- function(M, lower,
     samps <- sample(1:nrow(M_sub), trunc(prop_train * nrow(M_sub)))
     
     # Subset rows into train/test
+    # For some reason 0 was getting changed to -Inf, fix that
     tr <- M_sub[samps, ]
+    tr$handcount[is.infinite(tr$handcount)] <- 0
     te <- M_sub[-samps, ]
+    te$handcount[is.infinite(te$handcount)] <- 0
     
     # Fit model on training set
     fm <- lm(handcount ~ area, tr)

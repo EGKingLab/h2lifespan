@@ -27,7 +27,7 @@ M <- left_join(M, areas)
 ## Regression on handcounted images
 
 ```{r}
-optimized_threshold <- 46
+optimized_threshold <- 45
 
 actual <- suppressWarnings(
   read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
@@ -133,5 +133,19 @@ M %>%
 M %>% 
   select(camera_id, predicted_count) %>% 
   arrange(predicted_count)
-```
 
+M.low <- M %>% 
+ select(camera_id, predicted_count) %>% 
+ arrange(predicted_count)
+
+M.low <- M.low[1:300,]
+
+ee <- read_excel("../../Data/Processed/egg_notes_EGK.xlsx")
+ee$Image <- paste("IMG_",ee$Image,".JPG",sep="")
+ww <- which(M.low$camera_id %in% ee$Image)
+
+M.low <- M.low[-ww,]
+
+set.seed <- 8462
+set.zeros <- M.low[sample(seq(1, nrow(M.low)), 10) , ]
+```
