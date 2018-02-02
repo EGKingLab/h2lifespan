@@ -144,5 +144,9 @@ Rerun threshold optimization using the full set of images, less those marked bad
 
 ### 2018-02-01
 
-Reran coarse and fine optimization (threshold = 45). Reran fecundity predicition. (KM)
+- Reran coarse and fine optimization (threshold = 45). Reran fecundity predicition. (KM)
+- Trying forcing the intercept through the origin. (KM)
 
+### 2018-02-02
+
+- Using an asymptotic through the origin model for prediction. (KM)

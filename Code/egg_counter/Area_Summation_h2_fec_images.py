@@ -16,7 +16,7 @@ rootDir = '../../../h2_fec_images/'
 outfile = '../../Data/Processed/area_summation_h2_fec_images.csv'
 
 # Set the threshold based on output from threshold optimization
-lower_threshes = [45]
+lower_threshes = [52]
 
 # Erase old and create new output directory
 write_images = True

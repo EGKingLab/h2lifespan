@@ -10,6 +10,8 @@ library(tidyverse)
 library(cowplot)
 library(readxl)
 library(ggrepel)
+library(rethinking)
+library(nlme)
 ```
 
 ## Load and merge data
@@ -27,7 +29,7 @@ M <- left_join(M, areas)
 ## Regression on handcounted images
 
 ```{r}
-optimized_threshold <- 45
+optimized_threshold <- 52
 
 actual <- suppressWarnings(
   read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
@@ -45,11 +47,8 @@ actual <- actual %>%
 actual_area <- read_csv("../../Data/Processed/area_summation_fine.csv") %>% 
   filter(lower_thresh == optimized_threshold)
 
-actual <- full_join(actual, actual_area)
-
-ggplot(actual, aes(x = area, y = handcount)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE)
+actual <- full_join(actual, actual_area) %>% 
+  as.data.frame()
 ```
 
 Check these areas: should be in the test_case batch but aren't.
@@ -89,14 +88,72 @@ if (nrow(flagged_images) >= 1) {
 
 ## Prediction for all images
 
-Linear model predicting egg count from area
+Linear models predicting egg count from area
 
-```{r}
-fm <- lm(handcount ~ area, data = actual)
+Asymptotic regression through the origin (following Pinheiro and Bates, 2000):
+
+$$handcount(area) = \theta_1\left[1 - \exp(-\exp(\theta_2) \cdot area)\right]$$
+
+```{r fm_linear, results="hide", cache=TRUE, warning=FALSE}
+fm_lm <- lm(handcount ~ area - 1, data = actual)
+
+fm_linear <- map2stan(
+  alist(
+    handcount ~ dnorm(mu, sigma),
+    mu <- b * area,
+    b ~ dnorm(0, 1) & T[0, ],
+    sigma ~ dcauchy(0, 5)
+  ),
+  data = actual,
+  start = list(b = 0.01),
+  iter = 2e4,
+  control = list(adapt_delta = 0.99)
+)
+```
+
+```{r echo=FALSE}
+plot(fm_linear)
+```
+
+```{r fm_asymp, results="hide", cache=TRUE, warning=FALSE}
+fm_asymp <- map2stan(
+  alist(
+    handcount ~ dnorm(mu, sigma),
+    mu <- theta1 * (1 - exp(-exp(theta2) * area)),
+    theta1 ~ dnorm(1500, 200),
+    theta2 ~ dnorm(0, 100),
+    sigma ~ dcauchy(0, 5)
+  ),
+  data = actual,
+  start = list(theta1 = 1500, theta2 = 0),
+  iter = 2e4,
+  control = list(adapt_delta = 0.99)
+)
+```
+
+```{r echo=FALSE}
+plot(fm_asymp)
 ```
 
 ```{r}
-M$predicted_count <- predict(fm, newdata = M)
+actual$lm_pred <- predict(fm_lm)
+actual$linear_pred <- actual$area * coef(fm_linear)[1]
+actual$asymp_pred <- coef(fm_asymp)[1] * 
+  (1 - exp(-exp(coef(fm_asymp)[2]) * actual$area))
+
+ggplot(actual, aes(x = area, y = handcount)) +
+  geom_point() +
+  geom_line(aes(x = area, y = linear_pred), color = "blue") +
+  geom_line(aes(x = area, y = asymp_pred), color = "red") +
+  geom_line(aes(x = area, y = lm_pred), color = "green")
+```
+
+```{r}
+rethinking::compare(fm_linear, fm_asymp)
+```
+
+```{r}
+M$predicted_count <- predict(fm_lm, newdata = M)
 ```
 
 ## Checks
