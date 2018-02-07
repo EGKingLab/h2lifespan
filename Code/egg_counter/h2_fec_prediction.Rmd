@@ -11,27 +11,15 @@ library(cowplot)
 library(readxl)
 library(ggrepel)
 library(rethinking)
-library(nlme)
-```
-
-## Load and merge data
-
-```{r}
-M <- suppressWarnings(
-  read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
-)
-areas <- read_csv("../../Data/Processed/area_summation_h2_fec_images.csv",
-                  col_types = "cii") %>% 
-  select(-lower_thresh)
-M <- left_join(M, areas)
 ```
 
 ## Regression on handcounted images
 
 ```{r}
-optimized_threshold <- 52
+asymp_threshold <- 74
+linear_threshold <- 46
 
-actual <- suppressWarnings(
+HC <- suppressWarnings(
   read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
   dplyr::select(camera_id, handcount)
 )
@@ -41,13 +29,15 @@ bad_images <- read_excel("../../Data/Processed/bad_images.xlsx") %>%
   rename(camera_id = cameraid)
 
 # Drop bad images
-actual <- actual %>%
+HC <- HC %>%
   filter(!(camera_id %in% bad_images$camera_id))
 
-actual_area <- read_csv("../../Data/Processed/area_summation_fine.csv") %>% 
-  filter(lower_thresh == optimized_threshold)
+asymp_area <- read_csv("../../Data/Processed/area_summation_asymp_fine.csv") %>% 
+  filter(lower_thresh == asymp_threshold) %>% 
+  dplyr::select(-lower_thresh) %>% 
+  rename(area_asymp = area)
 
-actual <- full_join(actual, actual_area) %>% 
+HC <- full_join(HC, asymp_area) %>% 
   as.data.frame()
 ```
 
@@ -74,7 +64,7 @@ plot_jpeg = function(path, add=FALSE) {
   rasterImage(jpg, 1, 1, res[1], res[2])
 }
 
-flagged_images <- actual %>% 
+flagged_images <- HC %>% 
   filter(area > 2.5e05)
 
 basedir <- "../../../h2_fec_images/h2_thresh_images/"
@@ -95,7 +85,16 @@ Asymptotic regression through the origin (following Pinheiro and Bates, 2000):
 $$handcount(area) = \theta_1\left[1 - \exp(-\exp(\theta_2) \cdot area)\right]$$
 
 ```{r fm_linear, results="hide", cache=TRUE, warning=FALSE}
-fm_lm <- lm(handcount ~ area - 1, data = actual)
+linear <- read_csv("../../Data/Processed/area_summation_fine.csv")
+actual_linear <- suppressWarnings(
+  read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
+  dplyr::select(camera_id, handcount)
+)
+actual_linear <- full_join(actual_linear, linear) %>% 
+  filter(lower_thresh == linear_threshold) %>% 
+  as.data.frame()
+
+fm_lm <- lm(handcount ~ area - 1, data = actual_linear)
 
 fm_linear <- map2stan(
   alist(
@@ -104,7 +103,7 @@ fm_linear <- map2stan(
     b ~ dnorm(0, 1) & T[0, ],
     sigma ~ dcauchy(0, 5)
   ),
-  data = actual,
+  data = actual_linear,
   start = list(b = 0.01),
   iter = 2e4,
   control = list(adapt_delta = 0.99)
@@ -114,6 +113,8 @@ fm_linear <- map2stan(
 ```{r echo=FALSE}
 plot(fm_linear)
 ```
+
+Asymptotic:
 
 ```{r fm_asymp, results="hide", cache=TRUE, warning=FALSE}
 fm_asymp <- map2stan(
@@ -136,24 +137,51 @@ plot(fm_asymp)
 ```
 
 ```{r}
-actual$lm_pred <- predict(fm_lm)
-actual$linear_pred <- actual$area * coef(fm_linear)[1]
-actual$asymp_pred <- coef(fm_asymp)[1] * 
-  (1 - exp(-exp(coef(fm_asymp)[2]) * actual$area))
+new_data <- data.frame(area = seq(0, 1.5 * max(actual$area), length.out = 200))
+new_data$lm_pred <- predict(fm_lm, newdata = new_data)
+new_data$linear_pred <- apply(link(fit = fm_linear, data = new_data), MARGIN = 2, FUN = median)
 
-ggplot(actual, aes(x = area, y = handcount)) +
-  geom_point() +
-  geom_line(aes(x = area, y = linear_pred), color = "blue") +
-  geom_line(aes(x = area, y = asymp_pred), color = "red") +
-  geom_line(aes(x = area, y = lm_pred), color = "green")
+asymp_link <- link(fit = fm_asymp, data = new_data)
+new_data$asymp_pred <- apply(asymp_link, MARGIN = 2, FUN = median)
+asymp_bounds <- apply(asymp_link, MARGIN = 2, FUN = HPDI) %>% as.data.frame()
+
+# new_data$asymp_pred <- coef(fm_asymp)[1] * 
+#   (1 - exp(-exp(coef(fm_asymp)[2]) * new_data$area))
+
+new_data_long <- new_data %>% 
+  gather(-area, key = "Prediction_Method", value = "Count")
+ggplot() +
+  geom_line(data = new_data_long, aes(x = area, y = Count, color = Prediction_Method)) +
+  geom_point(data = actual, aes(x = area, y = handcount))
 ```
 
 ```{r}
 rethinking::compare(fm_linear, fm_asymp)
 ```
 
+## Comparison of linear vs. asymptotic
+
 ```{r}
-M$predicted_count <- predict(fm_lm, newdata = M)
+actual$lm_pred <- predict(fm_lm)
+actual$linear_pred <- apply(link(fm_linear), 2, median)
+actual$asymp_pred <- coef(fm_asymp)[1] * 
+  (1 - exp(-exp(coef(fm_asymp)[2]) * actual$area))
+
+actual %>%
+  dplyr::select(handcount, lm_pred, asymp_pred, linear_pred) %>% 
+  gather(-handcount, key = "Prediction_Method", value = "Count") %>% 
+  ggplot(aes(x = handcount, y = Count, color = Prediction_Method)) +
+  geom_point()
+
+cor(actual$handcount, actual$lm_pred)
+cor(actual$handcount, actual$asymp_pred)
+```
+
+## Predict for new data
+
+```{r}
+M$predicted_count <- coef(fm_asymp)[1] * 
+  (1 - exp(-exp(coef(fm_asymp)[2]) * M$area))
 ```
 
 ## Checks

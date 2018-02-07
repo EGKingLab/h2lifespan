@@ -12,20 +12,20 @@ library(ggrepel)
 coarse <- FALSE
 
 if (coarse) {
-  outfile <- "../../Data/Processed/fecundity_rarefaction_coarse.csv"
-  infile <- "../../Data/Processed/area_summation_coarse.csv"
+  outfile <- "../../Data/Processed/threshold_optimization_asymp_coarse.csv"
+  infile <- "../../Data/Processed/area_summation_asymp_coarse.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
-  # prop_data <- seq(0.4, .2, by = 0.1)
+  # prop_data <- seq(0.4, 1.0, by = 0.1)
   prop_data <- 1
-  prop_train <- seq(0.1, 1.0, by = 0.1)
+  prop_train <- seq(0.1, 0.9, by = 0.1)
 } else {
-  outfile <- "../../Data/Processed/fecundity_rarefaction_fine.csv"
-  infile <- "../../Data/Processed/area_summation_fine.csv"
+  outfile <- "../../Data/Processed/threshold_optimization_asymp_fine.csv"
+  infile <- "../../Data/Processed/area_summation_asymp_fine.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
   prop_data <- 1
-  prop_train <- seq(0.1, 1.0, by = 0.1)
+  prop_train <- seq(0.5, 0.9, by = 0.1)
 }
 
 # areas estimated from thresholding
@@ -49,7 +49,6 @@ area_rarefaction <- function(M, lower,
                              prop_data,
                              prop_train,
                              iters = 1000){
-  library(tidyverse)
   M_sub <- filter(M, lower_thresh == lower)
   M_sub <- M_sub[sample(1:nrow(M_sub), trunc(prop_data * nrow(M_sub))), ]
   
@@ -59,7 +58,7 @@ area_rarefaction <- function(M, lower,
     MSD = numeric(iters)
   )
   
-  for (ii in 1:iters) {
+  for (jj in 1:iters) {
     # Create list of rows for train/test
     samps <- sample(1:nrow(M_sub), trunc(prop_train * nrow(M_sub)))
     
@@ -67,12 +66,32 @@ area_rarefaction <- function(M, lower,
     # For some reason 0 was getting changed to -Inf, fix that
     tr <- M_sub[samps, ]
     tr$handcount[is.infinite(tr$handcount)] <- 0
+    tr$area[is.infinite(tr$area)] <- 0
     te <- M_sub[-samps, ]
     te$handcount[is.infinite(te$handcount)] <- 0
+    te$area[is.infinite(te$area)] <- 0
+    tr <- as.data.frame(tr)
+    te <- as.data.frame(te)
     
     # Fit model on training set
-    fm <- lm(handcount ~ area, tr)
-    te$pred <- predict(fm, te)
+    # Define function for MSD
+    MSD <- function(thetas, area, handcount) {
+      pred <- thetas[1] * (1 - exp(-exp(thetas[2]) * area))
+      MSD <- mean((handcount - pred) ^ 2)
+      return(MSD)
+    }
+    
+    # Find theta1 and theta2 via optim, minimizing MSD
+    fm <- optim(c(1500, -10),
+                MSD,
+                area = tr$area,
+                handcount = tr$handcount,
+                control = list(maxit = 500))
+    
+    # Predict for test set
+    coefs <- fm$par
+    te$pred <- coefs[1] * (1 - exp(-exp(coefs[2]) * te$area))
+
     r <- cor(te$handcount, te$pred)
     MSD <- mean((te$handcount - te$pred) ^ 2)
     cv[ii, ] <- c(r, MSD)
@@ -116,6 +135,7 @@ for (ii in 1:nrow(CVs)) {
 stopCluster(cl)
 
 write_csv(CVs, path = outfile)
+message(paste("Wrote", outfile))
 
 ## Post-processing #####################################################
 
@@ -145,4 +165,3 @@ CVs %>%
 
 CVs %>% 
   arrange(MSD)
-

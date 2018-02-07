@@ -11,15 +11,20 @@ from Area import thresholding, sum_area
 
 write_images = False
 coarse = False
+linear = False
 
 rootDir = '../../../hd_hand_counted_masked/'
 
 if coarse:
     outfile = '../../Data/Processed/area_summation_coarse.csv'
     lower_threshes = np.arange(30, 85, 5)
-else:
-    outfile = '../../Data/Processed/area_summation_fine.csv'
-    lower_threshes = np.arange(43, 53, 1)
+else: # fine
+    if linear:
+        outfile = '../../Data/Processed/area_summation_linear_fine.csv'
+        lower_threshes = np.arange(45, 56, 1)    # linear
+    else: # Asymptotic
+        outfile = '../../Data/Processed/area_summation_asymp_fine.csv'
+        lower_threshes = np.arange(70, 81, 1)  # asymp
 
 # Get list of handcounted images from hd_hand_counted
 M = pd.read_excel('../../Data/Processed/hd_hand_counted.xlsx')

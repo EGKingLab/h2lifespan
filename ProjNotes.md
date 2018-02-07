@@ -150,3 +150,11 @@ Rerun threshold optimization using the full set of images, less those marked bad
 ### 2018-02-02
 
 - Using an asymptotic through the origin model for prediction. (KM)
+
+### 2018-02-03
+
+- Finished optimizing using new model minimizing MSD via optim. Threshold 76.
+
+### 2018-02-06
+
+- Reorganize and rename files. Use separate file names for linear vs. asymptotic analyses.
