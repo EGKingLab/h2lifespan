@@ -158,3 +158,10 @@ Rerun threshold optimization using the full set of images, less those marked bad
 ### 2018-02-06
 
 - Reorganize and rename files. Use separate file names for linear vs. asymptotic analyses.
+
+2018-02-07
+
+- made changes to lifespan data exploration script: (EN)
+- script h2surv_kaplan-meier.Rmd renamed h2surv_expore 
+- h2surv_expore produces a lifetime density plot, Kaplan-Meier plot, cummulative hazard,
+	and reaction norms
