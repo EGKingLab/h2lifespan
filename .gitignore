@@ -43,3 +43,5 @@ vignettes/*.pdf
 
 # Ignore excel temporary files
 */~*
+
+Rplots.pdf
