@@ -1,6 +1,6 @@
 ---
-title: "halfsib_survival - heritability"
-author: "Enoch Ng'oma"
+title: "Analysis of heritability of a fly half-sibling experiment"
+author: "Kevin Middleton"
 date: "3/7/2017"
 output:
   html_document:
@@ -11,21 +11,21 @@ output:
       smooth_scroll: true
 ---
 
-#Analysis of lifespan 
-#Half-sibling fly data
+```{r}
+library(MCMCglmm)
+library(tidyverse)
+library(cowplot)
+```
 
 #### Heritability ###
 
 ```{r eval=TRUE}
 set.seed(37264)
 
-library(MCMCglmm)
-library(tidyverse)
-
-iter <- 1000000
+iter <- 2000000
 burnin <- 15000
 
-h2life <- read.table('../Data/Processed/Female_events_lifespan.txt',
+h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE)
 
@@ -66,11 +66,11 @@ model <- MCMCglmm(NewAge ~ 1,
                   thin = 50,
                   verbose = FALSE)
 
-save(model, file = "../Data/Processed/HS.Rda")
+save(model, file = "../../Data/Processed/HS.Rda")
 ```
 
 ```{r}
-load("../Data/Processed/HS.Rda")
+load("../../Data/Processed/HS.Rda")
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -86,20 +86,27 @@ summary(model)
 herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
 plot(herit)
 median(herit)
-HPDinterval(herit)
+f <- HPDinterval(herit)
+k <- as.data.frame(f)
 ```
 
-```{r brms_model}
-
-```
-
+# plot hs with ggplot
 
 ```{r}
-iter <- 650000
-burnin <- 15000
+density(herit.hs)
 
-##### low yeast, LY
+hs.samp<-data.frame(('h2'=herit.hs)) # HPDinterval(as.mcmc(herit)))
 
+ggplot(hs.samp, aes(x=var1), y=k) +
+  geom_histogram()+
+  geom_vline(xintercept = median(herit.hs))
+
+rm(model) 
+```
+
+##### Low yeast, LY
+
+```{r}
 LY <- subset(h2_filtered, treat == "LY")
 
 pedigree <- LY[, c("animal", "sireid", "damid")]
@@ -129,11 +136,11 @@ model <- MCMCglmm(NewAge ~ 1,
                   thin = 50,
                   verbose = FALSE)
 
-save(model, file = "../Data/Processed/LY.Rda")
+save(model, file = "../../Data/Processed/LY.Rda")
 ```
 
 ```{r}
-load("../Data/Processed/LY.Rda")
+load("../../Data/Processed/LY.Rda")
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -146,18 +153,29 @@ effectiveSize(model$VCV)
 
 summary(model)
 
-herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
-plot(herit)
-median(herit)
-HPDinterval(herit)
+herit.dr <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit.dr)
+median(herit.dr)
+HPDinterval(herit.dr)
 ```
 
+# plot LY with ggplot
+
 ```{r}
-iter <- 650000
-burnin <- 15000
+density(herit.dr)
 
-##### control, STD
+dr.samp<-data.frame(('h2'=herit.dr)) # HPDinterval(as.mcmc(dr.herit)))
 
+ggplot(dr.samp, aes(x=var1), y=k) +
+  geom_histogram()+
+  geom_vline(xintercept = median(herit.dr))
+
+rm(model)
+```
+
+##### Standard, STD
+
+```{r}
 STD <- subset(h2_filtered, treat == "STD")
 
 pedigree <- STD[, c("animal", "sireid", "damid")]
@@ -187,11 +205,11 @@ model <- MCMCglmm(NewAge ~ 1,
                   thin = 50,
                   verbose = FALSE)
 
-save(model, file = "../Data/Processed/STD.Rda")
+save(model, file = "../../Data/Processed/STD.Rda")
 ```
 
 ```{r}
-load("../Data/Processed/STD.Rda")
+load("../../Data/Processed/STD.Rda")
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -204,8 +222,57 @@ effectiveSize(model$VCV)
 
 summary(model)
 
-herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
-plot(herit)
-median(herit)
-HPDinterval(herit)
+herit.c <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit.c)
+median(herit.c)
+p <- HPDinterval(herit.c)
+q <- as.data.frame(f)
 ```
+
+# Plot STD with ggplot
+
+```{r}
+density(herit.c)
+
+c.samp<-data.frame(('h2'=herit.c)) # HPDinterval(as.mcmc(dr.herit)))
+
+ggplot(c.samp, aes(x=var1), y=k) +
+  geom_histogram()+
+  geom_vline(xintercept = median(herit.c))
+```
+
+# The three files together
+
+```{r, }
+hs.samp$Diet <- "HS"
+dr.samp$Diet <- "DR"
+c.samp$Diet <- "C"
+
+hs.samp$HS <- NULL
+dr.samp$DR <- NULL
+c.samp$C <- NULL
+heritab <- rbind(hs.samp, dr.samp, c.samp)
+save(heritab, file = "../../Data/Processed/herit.Rda")
+```
+
+# Plot treatments together
+
+```{r, dens}
+#pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
+ ggplot(heritab, aes(var1, fill = Diet)) + 
+  geom_density(alpha = 0.2) +
+  #coord_cartesian(xlim=c(0, 1), ylim=c(0, 1)) + #adjust frame of x-axis
+  #scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
+  expand_limits(y=c(0,8)) + expand_limits(x=c(0,0.8)) +
+  theme(axis.title = element_text(face="bold", size=16)) +
+  xlab("Heritability") + ylab("Density") +
+  theme(legend.position=c(0.8, 0.8)) +
+  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
+#dev.off()
+```
+
+
+
+
+
