@@ -19,11 +19,13 @@ library(rethinking)
 asymp_threshold <- 74
 linear_threshold <- 46
 
+# Load data for handcounts
 HC <- suppressWarnings(
   read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
   dplyr::select(camera_id, handcount)
 )
 
+# Load list of bad images that were handcounted
 bad_images <- read_excel("../../Data/Processed/bad_images.xlsx") %>% 
   filter(status == "bad") %>% 
   rename(camera_id = cameraid)
@@ -32,20 +34,30 @@ bad_images <- read_excel("../../Data/Processed/bad_images.xlsx") %>%
 HC <- HC %>%
   filter(!(camera_id %in% bad_images$camera_id))
 
-asymp_area <- read_csv("../../Data/Processed/area_summation_asymp_fine.csv") %>% 
+# Area summation for asymptotic model
+asymp_area <- read_csv("../../Data/Processed/area_summation_HC_asymp_fine.csv",
+                       col_types = "cii") %>% 
   filter(lower_thresh == asymp_threshold) %>% 
   dplyr::select(-lower_thresh) %>% 
   rename(area_asymp = area)
 
-HC <- full_join(HC, asymp_area) %>% 
+linear_area <- read_csv("../../Data/Processed/area_summation_HC_linear_fine.csv",
+                       col_types = "cii") %>% 
+  filter(lower_thresh == linear_threshold) %>% 
+  dplyr::select(-lower_thresh) %>% 
+  rename(area_linear = area)
+
+# Join handcounts with areas
+HC <- inner_join(HC, asymp_area) %>% 
+  inner_join(linear_area) %>% 
   as.data.frame()
 ```
 
 Check these areas: should be in the test_case batch but aren't.
 
 ```{r}
-actual %>% 
-  filter(is.na(area))
+HC %>% 
+  filter(is.na(area_linear))
 ```
 
 ## Examine possibly bad images
@@ -65,7 +77,7 @@ plot_jpeg = function(path, add=FALSE) {
 }
 
 flagged_images <- HC %>% 
-  filter(area > 2.5e05)
+  filter(area_linear > 2.5e05 | area_asymp > 2.5e5)
 
 basedir <- "../../../h2_fec_images/h2_thresh_images/"
 
@@ -85,25 +97,16 @@ Asymptotic regression through the origin (following Pinheiro and Bates, 2000):
 $$handcount(area) = \theta_1\left[1 - \exp(-\exp(\theta_2) \cdot area)\right]$$
 
 ```{r fm_linear, results="hide", cache=TRUE, warning=FALSE}
-linear <- read_csv("../../Data/Processed/area_summation_fine.csv")
-actual_linear <- suppressWarnings(
-  read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
-  dplyr::select(camera_id, handcount)
-)
-actual_linear <- full_join(actual_linear, linear) %>% 
-  filter(lower_thresh == linear_threshold) %>% 
-  as.data.frame()
-
-fm_lm <- lm(handcount ~ area - 1, data = actual_linear)
+fm_lm <- lm(handcount ~ area_linear - 1, data = HC)
 
 fm_linear <- map2stan(
   alist(
     handcount ~ dnorm(mu, sigma),
-    mu <- b * area,
+    mu <- b * area_linear,
     b ~ dnorm(0, 1) & T[0, ],
     sigma ~ dcauchy(0, 5)
   ),
-  data = actual_linear,
+  data = HC,
   start = list(b = 0.01),
   iter = 2e4,
   control = list(adapt_delta = 0.99)
@@ -120,12 +123,12 @@ Asymptotic:
 fm_asymp <- map2stan(
   alist(
     handcount ~ dnorm(mu, sigma),
-    mu <- theta1 * (1 - exp(-exp(theta2) * area)),
+    mu <- theta1 * (1 - exp(-exp(theta2) * area_asymp)),
     theta1 ~ dnorm(1500, 200),
-    theta2 ~ dnorm(0, 100),
+    theta2 ~ dnorm(0, 20),
     sigma ~ dcauchy(0, 5)
   ),
-  data = actual,
+  data = HC,
   start = list(theta1 = 1500, theta2 = 0),
   iter = 2e4,
   control = list(adapt_delta = 0.99)
@@ -137,7 +140,13 @@ plot(fm_asymp)
 ```
 
 ```{r}
-new_data <- data.frame(area = seq(0, 1.5 * max(actual$area), length.out = 200))
+rethinking::compare(fm_linear, fm_asymp)
+```
+
+```{r}
+new_data <- tibble(area_linear = seq(0, 1.25 * max(c(HC$area_linear, HC$area_asymp)), length.out = 200),
+                   area_asymp = area_linear)
+
 new_data$lm_pred <- predict(fm_lm, newdata = new_data)
 new_data$linear_pred <- apply(link(fit = fm_linear, data = new_data), MARGIN = 2, FUN = median)
 
@@ -149,39 +158,46 @@ asymp_bounds <- apply(asymp_link, MARGIN = 2, FUN = HPDI) %>% as.data.frame()
 #   (1 - exp(-exp(coef(fm_asymp)[2]) * new_data$area))
 
 new_data_long <- new_data %>% 
+  dplyr::select(-area_linear) %>%
+  rename(area = area_asymp) %>% 
   gather(-area, key = "Prediction_Method", value = "Count")
 ggplot() +
-  geom_line(data = new_data_long, aes(x = area, y = Count, color = Prediction_Method)) +
-  geom_point(data = actual, aes(x = area, y = handcount))
-```
-
-```{r}
-rethinking::compare(fm_linear, fm_asymp)
+  geom_line(data = new_data_long, aes(x = area, y = Count, color = Prediction_Method))
 ```
 
 ## Comparison of linear vs. asymptotic
 
 ```{r}
-actual$lm_pred <- predict(fm_lm)
-actual$linear_pred <- apply(link(fm_linear), 2, median)
-actual$asymp_pred <- coef(fm_asymp)[1] * 
-  (1 - exp(-exp(coef(fm_asymp)[2]) * actual$area))
+HC$lm_pred <- predict(fm_lm)
+HC$linear_pred <- apply(link(fm_linear), 2, median)
+HC$asymp_pred <- coef(fm_asymp)[1] * 
+  (1 - exp(-exp(coef(fm_asymp)[2]) * HC$area_asymp))
 
-actual %>%
+HC %>%
   dplyr::select(handcount, lm_pred, asymp_pred, linear_pred) %>% 
   gather(-handcount, key = "Prediction_Method", value = "Count") %>% 
   ggplot(aes(x = handcount, y = Count, color = Prediction_Method)) +
   geom_point()
 
-cor(actual$handcount, actual$lm_pred)
-cor(actual$handcount, actual$asymp_pred)
+cor(HC$handcount, HC$lm_pred)
+cor(HC$handcount, HC$asymp_pred)
 ```
 
 ## Predict for new data
 
 ```{r}
-M$predicted_count <- coef(fm_asymp)[1] * 
-  (1 - exp(-exp(coef(fm_asymp)[2]) * M$area))
+suppressWarnings(
+  M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
+)
+
+# Load areas
+h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimages.csv",
+                         col_types = "cii")
+
+M <- left_join(M, h2_fec_areas) %>% 
+  rename(area_linear = area)
+
+M$predicted_count <- predict(fm_lm, newdata = M)
 ```
 
 ## Checks
@@ -218,7 +234,9 @@ M %>%
 M %>% 
   select(camera_id, predicted_count) %>% 
   arrange(predicted_count)
+```
 
+```{r}
 M.low <- M %>% 
  select(camera_id, predicted_count) %>% 
  arrange(predicted_count)
@@ -234,3 +252,19 @@ M.low <- M.low[-ww,]
 set.seed <- 8462
 set.zeros <- M.low[sample(seq(1, nrow(M.low)), 10) , ]
 ```
+
+## Examine possibly bad images
+
+```{r check_bad_images_2}
+flagged_images <- M %>% 
+  filter(predicted_count > 2000)
+
+basedir <- "../../../h2_fec_images/h2_thresh_images/"
+
+if (nrow(flagged_images) >= 1) {
+  for (ii in 1:nrow(flagged_images)) {
+    print(plot_jpeg(paste0(basedir, flagged_images$camera_id[ii])))
+  }
+}
+```
+

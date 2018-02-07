@@ -159,9 +159,57 @@ Rerun threshold optimization using the full set of images, less those marked bad
 
 - Reorganize and rename files. Use separate file names for linear vs. asymptotic analyses.
 
-2018-02-07
+### 2018-02-07
 
 - made changes to lifespan data exploration script: (EN)
 - script h2surv_kaplan-meier.Rmd renamed h2surv_expore 
 - h2surv_expore produces a lifetime density plot, Kaplan-Meier plot, cummulative hazard,
 	and reaction norms
+
+*Linear optimization, minimizing MSD* (KM)
+
+```
+   prop_data prop_train lower     r   MSD lower_f prop_train_f
+ 1         1      0.900    46 0.901 0.262 46      0.9         
+ 2         1      0.900    45 0.901 0.262 45      0.9         
+ 3         1      0.900    47 0.900 0.262 47      0.9         
+```
+
+*Asymptotic optimization, minimizing MSD*
+
+Coarse
+
+```   
+   prop_data prop_train lower     r   MSD lower_f prop_train_f
+ 1         1      0.800    75 0.848 0.627 75      0.8         
+ 2         1      0.900    75 0.787 0.628 75      0.9         
+ 3         1      0.700    75 0.866 0.628 75      0.7         
+
+```
+
+Fine
+
+```
+   prop_data prop_train lower     r   MSD lower_f prop_train_f
+ 1         1      0.900    74 0.793 0.623 74      0.9         
+ 2         1      0.800    74 0.853 0.623 74      0.8         
+ 3         1      0.700    74 0.871 0.624 74      0.7         
+```
+
+- Reprocessing h2 fecundity images for prediction. Files output: area_summation_asymp_h2_fecimages.csv and area_summation_linear_h2_fecimages.csv based on optimiztion values above.
+
+```
+##             WAIC pWAIC dWAIC weight    SE   dSE
+## fm_linear 2378.9   2.6   0.0      1 20.01    NA
+## fm_asymp  2421.7   3.8  42.8      0 20.39 21.55
+```
+
+```
+cor(HC$handcount, HC$lm_pred)
+## [1] 0.8127161
+cor(HC$handcount, HC$asymp_pred)
+## [1] 0.6756418
+```
+
+Prediction via `lm()` is much better.
+

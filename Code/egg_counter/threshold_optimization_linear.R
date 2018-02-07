@@ -59,7 +59,7 @@ area_rarefaction <- function(M, lower,
     MSD = numeric(iters)
   )
   
-  for (ii in 1:iters) {
+  for (jj in 1:iters) {
     # Create list of rows for train/test
     samps <- sample(1:nrow(M_sub), trunc(prop_train * nrow(M_sub)))
     
@@ -75,7 +75,7 @@ area_rarefaction <- function(M, lower,
     te$pred <- predict(fm, te)
     r <- cor(te$handcount, te$pred)
     MSD <- mean((te$handcount - te$pred) ^ 2)
-    cv[ii, ] <- c(r, MSD)
+    cv[jj, ] <- c(r, MSD)
   }
   x <- matrix(c(mean(cv$r), mean(cv$MSD)), nrow = 1)
   return(as.data.frame(x))

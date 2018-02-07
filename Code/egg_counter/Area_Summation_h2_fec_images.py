@@ -13,12 +13,14 @@ from Area import thresholding, sum_area
 
 rootDir = '../../../h2_fec_images/'
 
-outfile = '../../Data/Processed/area_summation_h2_fec_images.csv'
+linear = False
 
-# Set the threshold based on output from threshold optimization
-# 74 for asymptotic
-# 46 for linear
-lower_threshes = [46]
+if linear:
+    outfile = '../../Data/Processed/area_summation_linear_h2_fecimages.csv'
+    lower_threshes = [46]
+else: # Asymptotic
+    outfile = '../../Data/Processed/area_summation_asymp_h2_fecimages.csv'
+    lower_threshes = [74]
 
 # Erase old and create new output directory
 write_images = True

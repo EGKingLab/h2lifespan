@@ -18,8 +18,8 @@ if (coarse) {
   iters <- 1000 # Iterations for each CV
   # prop_data <- seq(0.4, 1.0, by = 0.1)
   prop_data <- 1
-  prop_train <- seq(0.1, 0.9, by = 0.1)
-} else {
+  prop_train <- seq(0.5, 0.9, by = 0.1)
+} else { # fine
   outfile <- "../../Data/Processed/threshold_optimization_asymp_fine.csv"
   infile <- "../../Data/Processed/area_summation_asymp_fine.csv"
   reps <- 1000  # Reps at each proportion
@@ -94,7 +94,7 @@ area_rarefaction <- function(M, lower,
 
     r <- cor(te$handcount, te$pred)
     MSD <- mean((te$handcount - te$pred) ^ 2)
-    cv[ii, ] <- c(r, MSD)
+    cv[jj, ] <- c(r, MSD)
   }
   x <- matrix(c(mean(cv$r), mean(cv$MSD)), nrow = 1)
   return(as.data.frame(x))
@@ -145,20 +145,16 @@ CVs <- read_csv(outfile) %>%
 CVs$lower_f <- as.factor(CVs$lower)
 CVs$prop_train_f <- as.factor(CVs$prop_train)
 
-p1 <- CVs %>%
+CVs %>%
   ggplot(aes(prop_data, r)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   geom_point() +
   facet_grid(lower_f ~ prop_train_f)
-p2 <- CVs %>%
+CVs %>%
   ggplot(aes(prop_data, MSD)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   geom_point() +
   facet_grid(lower_f ~ prop_train_f)
-# plot_grid(p1, p2)
-
-p1
-p2
 
 CVs %>% 
   arrange(desc(r))
