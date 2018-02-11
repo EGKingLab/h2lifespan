@@ -1,6 +1,9 @@
 library(tidyverse)
-library(tfestimators)
+library(keras)
 library(readxl)
+library(caret)
+
+set.seed(832764)
 
 D <- read_csv("../../Data/Processed/area_summation_HC_30_80.csv",
               col_types = "cii") %>% 
@@ -9,30 +12,29 @@ D <- read_csv("../../Data/Processed/area_summation_HC_30_80.csv",
 HC <- read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
   dplyr::select(camera_id, handcount)
 
-D <- full_join(D, HC)
+D <- full_join(D, HC) %>% 
+  filter(lower_thresh == 46)
 
-# return an input_fn for a given subset of data
-D_input_fn <- function(data, num_epochs = 1) {
-  input_fn(data, 
-           features = c("lower_thresh", "area"), 
-           response = "handcount",
-           batch_size = 32,
-           num_epochs = num_epochs)
+trainIndex <- createDataPartition(D$handcount, 
+                                  p = 0.8, 
+                                  list = TRUE, 
+                                  times = 1)
+
+dtrain <- D[trainIndex[['Resample1']], ]
+dtest <- D[-trainIndex[['Resample1']], ]
+
+# Function to build model
+
+build_model <- function() {
+  model <- keras_model_sequential() %>% 
+    layer_dense(units = 64, activation = "relu", 
+                input_shape = dim(train_data)[[2]]) %>% 
+    layer_dense(units = 64, activation = "relu") %>% 
+    layer_dense(units = 1) 
+  
+  model %>% compile(
+    optimizer = "rmsprop", 
+    loss = "mse", 
+    metrics = c("mae")
+  )
 }
-
-cols <- feature_columns( 
-  column_numeric("lower_thresh", "area")
-)
-
-model <- linear_regressor(feature_columns = cols)
-
-indices <- sample(1:nrow(D), size = 0.80 * nrow(D))
-train <- D[indices, ]
-test  <- D[-indices, ]
-
-# train the model
-model %>% train(D_input_fn(train, num_epochs = 50))
-model %>% evaluate(D_input_fn(test))
-
-(newdata <- D[1:3, ])
-model %>% predict(D_input_fn(newdata))
