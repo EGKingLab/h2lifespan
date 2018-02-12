@@ -66,12 +66,13 @@ HC %>%
 plot_jpeg = function(path, add=FALSE) {
   # https://stackoverflow.com/a/28729601/168137
   require('jpeg')
-  jpg = readJPEG(path, native=T) # read the file
+  jpg = readJPEG(path, native = TRUE) # read the file
   res = dim(jpg)[2:1] # get the resolution, [x, y]
   if (!add) # initialize an empty plot area if add==FALSE
     plot(1, 1,
-         xlim=c(1,res[1]),ylim=c(1,res[2]),
-         asp=1, type = 'n', xaxs = 'i', yaxs = 'i', xaxt = 'n', yaxt = 'n',
+         xlim = c(1, res[1]), ylim = c(1, res[2]),
+         asp = 1, type = 'n', xaxs = 'i',
+         yaxs = 'i', xaxt = 'n', yaxt = 'n',
          xlab = '', ylab = '', bty = 'n', main = path)
   rasterImage(jpg, 1, 1, res[1], res[2])
 }
@@ -144,8 +145,10 @@ rethinking::compare(fm_linear, fm_asymp)
 ```
 
 ```{r}
-new_data <- tibble(area_linear = seq(0, 1.25 * max(c(HC$area_linear, HC$area_asymp)), length.out = 200),
-                   area_asymp = area_linear)
+new_data <- tibble(
+  area_linear = seq(0, 1.25 * max(c(HC$area_linear, HC$area_asymp)),
+                    length.out = 200),
+  area_asymp = area_linear)
 
 new_data$lm_pred <- predict(fm_lm, newdata = new_data)
 new_data$linear_pred <- apply(link(fit = fm_linear, data = new_data), MARGIN = 2, FUN = median)
@@ -165,6 +168,96 @@ ggplot() +
   geom_line(data = new_data_long, aes(x = area, y = Count, color = Prediction_Method))
 ```
 
+## Tensor flow model
+
+```{r tf_model, cache = TRUS}
+library(keras)
+library(caret)
+
+trainIndex <- createDataPartition(HC$handcount, 
+                                  p = 0.8, 
+                                  list = TRUE, 
+                                  times = 1)
+
+train_data <- as.matrix(HC[trainIndex[['Resample1']], "area_linear"])
+train_targets <- as.array(HC[trainIndex[['Resample1']], "handcount"])
+test_data <- HC[-trainIndex[['Resample1']], "area_linear"]
+test_targets <- as.array(HC[-trainIndex[['Resample1']], "handcount"])
+
+# Function to build model
+
+build_model <- function() {
+  model <- keras_model_sequential() %>% 
+    layer_dense(units = 64, activation = "relu", 
+                input_shape = dim(train_data)[[2]]) %>% 
+    layer_dense(units = 64, activation = "relu") %>% 
+    layer_dense(units = 1) 
+  
+  model %>% compile(
+    optimizer = "rmsprop", 
+    loss = "mse", 
+    metrics = c("mae")
+  )
+}
+
+k <- 4
+indices <- sample(1:nrow(train_data))
+folds <- cut(indices, breaks = k, labels = FALSE)
+
+num_epochs <- 500
+all_mae_histories <- NULL
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE)
+  val_data <- train_data[val_indices,]
+  val_targets <- train_targets[val_indices]
+  
+  # Prepare the training data: data from all other partitions
+  partial_train_data <- train_data[-val_indices,]
+  partial_train_targets <- train_targets[-val_indices]
+  
+  # Build the Keras model (already compiled)
+  model <- build_model()
+  
+  # Train the model (in silent mode, verbose=0)
+  history <- model %>% fit(
+    partial_train_data, partial_train_targets,
+    validation_data = list(val_data, val_targets),
+    epochs = num_epochs, batch_size = 1, verbose = 1
+  )
+  mae_history <- history$metrics$val_mean_absolute_error
+  all_mae_histories <- rbind(all_mae_histories, mae_history)
+}
+
+average_mae_history <- data.frame(
+  epoch = seq(1:ncol(all_mae_histories)),
+  validation_mae = apply(all_mae_histories, 2, mean)
+)
+
+ggplot(average_mae_history, aes(x = epoch, y = validation_mae)) + 
+  geom_line()
+
+ggplot(average_mae_history, aes(x = epoch, y = validation_mae)) + 
+  geom_smooth()
+
+# Get a fresh, compiled model.
+model <- build_model()
+
+# Train it on the entirety of the data.
+model %>% fit(train_data, train_targets,
+              epochs = 150, batch_size = 16, verbose = 0)
+
+result <- model %>% evaluate(test_data, test_targets)
+
+result
+
+preds <- model %>% predict(test_data)
+cor(preds, test_targets)
+```
+
 ## Comparison of linear vs. asymptotic
 
 ```{r}
@@ -172,15 +265,17 @@ HC$lm_pred <- predict(fm_lm)
 HC$linear_pred <- apply(link(fm_linear), 2, median)
 HC$asymp_pred <- coef(fm_asymp)[1] * 
   (1 - exp(-exp(coef(fm_asymp)[2]) * HC$area_asymp))
+HC$tf_pred <- as.numeric(model %>% predict(HC$area_linear))
 
 HC %>%
-  dplyr::select(handcount, lm_pred, asymp_pred, linear_pred) %>% 
+  dplyr::select(handcount, lm_pred, asymp_pred, linear_pred, tf_pred) %>% 
   gather(-handcount, key = "Prediction_Method", value = "Count") %>% 
   ggplot(aes(x = handcount, y = Count, color = Prediction_Method)) +
   geom_point()
 
 cor(HC$handcount, HC$lm_pred)
 cor(HC$handcount, HC$asymp_pred)
+cor(HC$handcount, HC$tf_pred)
 ```
 
 ## Predict for new data
@@ -195,9 +290,11 @@ h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimage
                          col_types = "cii")
 
 M <- left_join(M, h2_fec_areas) %>% 
-  rename(area_linear = area)
+  rename(area_linear = area) %>% 
+    drop_na(area_linear)
 
-M$predicted_count <- predict(fm_lm, newdata = M)
+M$predicted_count_linear <- predict(fm_lm, newdata = M)
+M$predicted_count_tf <- as.numeric(model %>% predict(M$area_linear))
 ```
 
 ## Checks
@@ -244,7 +341,7 @@ M.low <- M %>%
 M.low <- M.low[1:300,]
 
 ee <- read_excel("../../Data/Processed/egg_notes_EGK.xlsx")
-ee$Image <- paste("IMG_",ee$Image,".JPG",sep="")
+ee$Image <- paste("IMG_", ee$Image, ".JPG", sep = "")
 ww <- which(M.low$camera_id %in% ee$Image)
 
 M.low <- M.low[-ww,]

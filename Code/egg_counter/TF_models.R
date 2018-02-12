@@ -126,8 +126,6 @@ result
 preds <- model %>% predict(test_data)
 cor(preds, test_targets)
 
-save(model, file = "tf_model.Rda")
-
 # Load new data
 suppressWarnings(
   M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
