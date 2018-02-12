@@ -64,7 +64,7 @@ HC %>%
 
 ## Examine possibly bad images
 
-```{r check_bad_images}
+```{r check_bad_images, cache = FALSE}
 plot_jpeg = function(path, add=FALSE) {
   # https://stackoverflow.com/a/28729601/168137
   require('jpeg')
@@ -203,34 +203,34 @@ k <- 4
 indices <- sample(1:nrow(train_data))
 folds <- cut(indices, breaks = k, labels = FALSE)
 
-num_epochs <- 100
-all_scores <- c()
-for (i in 1:k) {
-  cat("processing fold #", i, "\n")
-  # Prepare the validation data: data from partition # k
-  val_indices <- which(folds == i, arr.ind = TRUE) 
-  val_data <- train_data[val_indices, ]
-  val_targets <- train_targets[val_indices]
-  
-  # Prepare the training data: data from all other partitions
-  partial_train_data <- train_data[-val_indices,]
-  partial_train_targets <- train_targets[-val_indices]
-  
-  # Build the Keras model (already compiled)
-  model <- build_model()
-  
-  # Train the model (in silent mode, verbose=0)
-  model %>% fit(partial_train_data, partial_train_targets,
-                epochs = num_epochs, batch_size = 1, verbose = 0)
-  
-  # Evaluate the model on the validation data
-  results <- model %>% evaluate(val_data, val_targets, verbose = 0)
-  all_scores <- c(all_scores, results$mean_absolute_error)
-}  
-
-mean(all_scores)
-
-k_clear_session()
+# num_epochs <- 100
+# all_scores <- c()
+# for (i in 1:k) {
+#   cat("processing fold #", i, "\n")
+#   # Prepare the validation data: data from partition # k
+#   val_indices <- which(folds == i, arr.ind = TRUE) 
+#   val_data <- train_data[val_indices, ]
+#   val_targets <- train_targets[val_indices]
+#   
+#   # Prepare the training data: data from all other partitions
+#   partial_train_data <- train_data[-val_indices,]
+#   partial_train_targets <- train_targets[-val_indices]
+#   
+#   # Build the Keras model (already compiled)
+#   model <- build_model()
+#   
+#   # Train the model (in silent mode, verbose=0)
+#   model %>% fit(partial_train_data, partial_train_targets,
+#                 epochs = num_epochs, batch_size = 1, verbose = 0)
+#   
+#   # Evaluate the model on the validation data
+#   results <- model %>% evaluate(val_data, val_targets, verbose = 0)
+#   all_scores <- c(all_scores, results$mean_absolute_error)
+# }  
+# 
+# mean(all_scores)
+# 
+# k_clear_session()
 
 num_epochs <- 500
 all_mae_histories <- NULL
@@ -286,12 +286,15 @@ result <- model %>% evaluate(test_data, test_targets)
 result
 
 preds <- model %>% predict(test_data)
+```
+
+```{r}
 cor(preds, test_targets)
 ```
 
 ## Comparison of linear vs. asymptotic
 
-```{r}
+```{r cache = TRUE}
 HC$lm_pred <- predict(fm_lm)
 HC$linear_pred <- apply(link(fm_linear), 2, median)
 HC$asymp_pred <- coef(fm_asymp)[1] * 
@@ -311,7 +314,7 @@ cor(HC$handcount, HC$tf_pred)
 
 ## Predict for new data
 
-```{r}
+```{r cache=TRUE}
 suppressWarnings(
   M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
 )
@@ -339,14 +342,16 @@ M %>%
   filter(handcount != "unassessable") %>% 
   filter(handcount != "unassigned") %>% 
   mutate(handcount = as.numeric(handcount)) %>% 
-  select(camera_id, handcount, predicted_count) %>% 
-  filter(!is.na(predicted_count))
+  select(camera_id, handcount, predicted_count_linear) %>% 
+  filter(!is.na(predicted_count_linear))
 ```
 
 ## Some exploration
 
 ```{r}
-ggplot(M, aes(predicted_count)) +
+ggplot(M, aes(predicted_count_linear)) +
+  geom_histogram(bins = 30)
+ggplot(M, aes(predicted_count_tf)) +
   geom_histogram(bins = 30)
 ```
 
@@ -354,20 +359,20 @@ Check high and low predicted eggs
 
 ```{r}
 M %>% 
-  select(camera_id, predicted_count) %>% 
-  arrange(desc(predicted_count))
+  select(camera_id, predicted_count_linear) %>% 
+  arrange(desc(predicted_count_linear))
 ```
 
 ```{r}
 M %>% 
-  select(camera_id, predicted_count) %>% 
-  arrange(predicted_count)
+  select(camera_id, predicted_count_linear) %>% 
+  arrange(predicted_count_linear)
 ```
 
 ```{r}
 M.low <- M %>% 
- select(camera_id, predicted_count) %>% 
- arrange(predicted_count)
+ select(camera_id, predicted_count_linear) %>% 
+ arrange(predicted_count_linear)
 
 M.low <- M.low[1:300,]
 
@@ -383,9 +388,23 @@ set.zeros <- M.low[sample(seq(1, nrow(M.low)), 10) , ]
 
 ## Examine possibly bad images
 
-```{r check_bad_images_2}
+```{r check_bad_images_2, eval = FALSE}
+plot_jpeg = function(path, add=FALSE) {
+  # https://stackoverflow.com/a/28729601/168137
+  require('jpeg')
+  jpg = readJPEG(path, native = TRUE) # read the file
+  res = dim(jpg)[2:1] # get the resolution, [x, y]
+  if (!add) # initialize an empty plot area if add==FALSE
+    plot(1, 1,
+         xlim = c(1, res[1]), ylim = c(1, res[2]),
+         asp = 1, type = 'n', xaxs = 'i',
+         yaxs = 'i', xaxt = 'n', yaxt = 'n',
+         xlab = '', ylab = '', bty = 'n', main = path)
+  rasterImage(jpg, 1, 1, res[1], res[2])
+}
+
 flagged_images <- M %>% 
-  filter(predicted_count > 2000)
+  filter(predicted_count_linear > 2000)
 
 basedir <- "../../../h2_fec_images/h2_thresh_images/"
 
