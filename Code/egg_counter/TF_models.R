@@ -23,8 +23,15 @@ trainIndex <- createDataPartition(D$handcount,
 train_data <- as.matrix(D[trainIndex[['Resample1']], "area"])
 train_targets <- as.array(D[trainIndex[['Resample1']], "handcount"])
 
+train_mean <- apply(train_data, 2, mean)
+train_sd <- apply(train_data, 2, sd)
+
 test_data <- D[-trainIndex[['Resample1']], "area"]
 test_targets <- as.array(D[-trainIndex[['Resample1']], "handcount"])
+
+# Scale
+train_data <- scale(train_data, center = train_mean, scale = train_sd)
+test_data <- scale(test_data, center = train_mean, scale = train_sd)
 
 # Function to build model
 
@@ -42,60 +49,61 @@ build_model <- function() {
   )
 }
 
-k <- 4
+k <- 3
 indices <- sample(1:nrow(train_data))
 folds <- cut(indices, breaks = k, labels = FALSE)
 
-num_epochs <- 100
-all_scores <- c()
-for (i in 1:k) {
-  cat("processing fold #", i, "\n")
-  # Prepare the validation data: data from partition # k
-  val_indices <- which(folds == i, arr.ind = TRUE) 
-  val_data <- train_data[val_indices, ]
-  val_targets <- train_targets[val_indices]
-  
-  # Prepare the training data: data from all other partitions
-  partial_train_data <- train_data[-val_indices,]
-  partial_train_targets <- train_targets[-val_indices]
-  
-  # Build the Keras model (already compiled)
-  model <- build_model()
-  
-  # Train the model (in silent mode, verbose=0)
-  model %>% fit(partial_train_data, partial_train_targets,
-                epochs = num_epochs, batch_size = 1, verbose = 1)
-  
-  # Evaluate the model on the validation data
-  results <- model %>% evaluate(val_data, val_targets, verbose = 1)
-  all_scores <- c(all_scores, results$mean_absolute_error)
-}  
-
-mean(all_scores)
-
-suppressWarnings(
-  M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
-)
-h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimages.csv",
-                         col_types = "cii") %>% 
-  filter(lower_thresh == 46)
-
-M <- left_join(M, h2_fec_areas) %>% 
-  rename(area_linear = area) %>% 
-  drop_na(area_linear)
-
-M$predicted_count_tf <- model %>% predict(M$area_linear)
-ggplot(M, aes(predicted_count_tf)) +
-  geom_histogram(bins = 30)
-
-preds <- model %>% predict(test_data)
-cor(preds, test_targets)
+# num_epochs <- 100
+# all_scores <- c()
+# for (i in 1:k) {
+#   cat("processing fold #", i, "\n")
+#   # Prepare the validation data: data from partition # k
+#   val_indices <- which(folds == i, arr.ind = TRUE) 
+#   val_data <- train_data[val_indices, ]
+#   val_targets <- train_targets[val_indices]
+#   
+#   # Prepare the training data: data from all other partitions
+#   partial_train_data <- train_data[-val_indices,]
+#   partial_train_targets <- train_targets[-val_indices]
+#   
+#   # Build the Keras model (already compiled)
+#   model <- build_model()
+#   
+#   # Train the model (in silent mode, verbose=0)
+#   model %>% fit(partial_train_data, partial_train_targets,
+#                 epochs = num_epochs, batch_size = 1, verbose = 1)
+#   
+#   # Evaluate the model on the validation data
+#   results <- model %>% evaluate(val_data, val_targets, verbose = 1)
+#   all_scores <- c(all_scores, results$mean_absolute_error)
+# }  
+# 
+# mean(all_scores)
+# 
+# suppressWarnings(
+#   M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
+# )
+# h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimages.csv",
+#                          col_types = "cii") %>% 
+#   filter(lower_thresh == 46)
+# 
+# M <- left_join(M, h2_fec_areas) %>% 
+#   rename(area_linear = area) %>% 
+#   drop_na(area_linear) %>% 
+#   mutate(area_linear = scale(area_linear, center = train_mean, scale = train_sd))
+# 
+# M$predicted_count_tf <- model %>% predict(M$area_linear)
+# ggplot(M, aes(predicted_count_tf)) +
+#   geom_histogram(bins = 30)
+# 
+# preds <- model %>% predict(test_data)
+# cor(preds, test_targets)
 
 ###############################
 
 k_clear_session()
 
-num_epochs <- 500
+num_epochs <- 200
 all_mae_histories <- NULL
 for (i in 1:k) {
   cat("processing fold #", i, "\n")
@@ -112,7 +120,7 @@ for (i in 1:k) {
   # Build the Keras model (already compiled)
   model <- build_model()
   
-  # Train the model (in silent mode, verbose=0)
+  # Train the model
   history <- model %>% fit(
     partial_train_data, partial_train_targets,
     validation_data = list(val_data, val_targets),
@@ -128,9 +136,7 @@ average_mae_history <- data.frame(
 )
 
 ggplot(average_mae_history, aes(x = epoch, y = validation_mae)) + 
-  geom_line()
-
-ggplot(average_mae_history, aes(x = epoch, y = validation_mae)) + 
+  geom_line() +
   geom_smooth()
 
 # Get a fresh, compiled model.
@@ -138,7 +144,7 @@ model <- build_model()
 
 # Train it on the entirety of the data.
 model %>% fit(train_data, train_targets,
-              epochs = 150, batch_size = 16, verbose = 0)
+              epochs = 100, batch_size = 16, verbose = 1)
 
 result <- model %>% evaluate(test_data, test_targets)
 
@@ -146,6 +152,12 @@ result
 
 preds <- model %>% predict(test_data)
 cor(preds, test_targets)
+
+tibble(preds = as.numeric(preds), test_targets) %>%
+  ggplot(aes(x = test_targets, y = preds)) +
+  geom_point() +
+  geom_abline(slope = 1) +
+  ylim(c(0, 1500))
 
 # Load new data
 suppressWarnings(
@@ -159,7 +171,8 @@ h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimage
 
 M <- left_join(M, h2_fec_areas) %>% 
   rename(area_linear = area) %>% 
-  drop_na(area_linear)
+  drop_na(area_linear) %>% 
+  mutate(area_linear = scale(area_linear, center = train_mean, scale = train_sd))
 
 M$predicted_count_tf <- model %>% predict(M$area_linear)
 ggplot(M, aes(predicted_count_tf)) +
