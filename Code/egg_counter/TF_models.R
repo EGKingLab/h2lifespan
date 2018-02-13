@@ -22,6 +22,7 @@ trainIndex <- createDataPartition(D$handcount,
 
 train_data <- as.matrix(D[trainIndex[['Resample1']], "area"])
 train_targets <- as.array(D[trainIndex[['Resample1']], "handcount"])
+
 test_data <- D[-trainIndex[['Resample1']], "area"]
 test_targets <- as.array(D[-trainIndex[['Resample1']], "handcount"])
 
@@ -71,6 +72,26 @@ for (i in 1:k) {
 }  
 
 mean(all_scores)
+
+suppressWarnings(
+  M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
+)
+h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimages.csv",
+                         col_types = "cii") %>% 
+  filter(lower_thresh == 46)
+
+M <- left_join(M, h2_fec_areas) %>% 
+  rename(area_linear = area) %>% 
+  drop_na(area_linear)
+
+M$predicted_count_tf <- model %>% predict(M$area_linear)
+ggplot(M, aes(predicted_count_tf)) +
+  geom_histogram(bins = 30)
+
+preds <- model %>% predict(test_data)
+cor(preds, test_targets)
+
+###############################
 
 k_clear_session()
 
