@@ -29,7 +29,7 @@ genet_corr <- tibble(model = character(),
                      HS_LY = numeric(),
                      n_eff = numeric())
 
-iter <- 2.5e5
+iter <- 1e6
 burnin <- 2e4
 thinning <- 500
 chains <- 12
@@ -39,9 +39,8 @@ rerun <- TRUE
 
 ## MANOVA analysis
 
-Poster for fly meeting
-
 ```{r MANOVA_Models, cache=TRUE}
+# 19 hours run time on nivalis (6e5 would be reasonable!)
 if (rerun) {
   HS <- h2life %>% 
     filter(treat == "HS") %>% rename(Age_HS = NewAge) %>% 
@@ -114,7 +113,7 @@ if (rerun) {
                                    n_eff = mean(n_eff)))
   }
   
-  write_csv(genet_corr, path = "Genetic_Correlations.csv")
+  write_csv(genet_corr, path = "../../Data/Processed/Genetic_Correlations_1M.csv")
 }
 ```
 
@@ -198,7 +197,7 @@ ggsave(last_plot(), file = "Genetic_Correlation_Plot.pdf",
 
 ## Model following Ingleby et al. 2013
 
-Setup data as above
+# Setup data as above
 
 ```{r}
 V_nu_to_a_b <- function(V, nu) {

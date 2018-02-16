@@ -1,0 +1,2 @@
+#!/bin/bash
+Rscript manova_tri_model.R >temp.txt 2>error.txt &

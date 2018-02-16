@@ -3,7 +3,7 @@
 library(MCMCglmm)
 library(tidyverse)
 
-h2life <- read_delim('../Data/Processed/Female_events_lifespan.txt',
+h2life <- read_delim('../../Data/Processed/Female_events_lifespan.txt',
                      delim = "\t") %>% 
   filter(status != 3) %>% 
   mutate(animal = factor(seq(1, nrow(.))),
