@@ -1,0 +1,254 @@
+# Analysis of heritability of a fly half-sibling experiment
+
+library(MCMCglmm)
+library(tidyverse)
+library(cowplot)
+
+
+#### Heritability ###
+
+set.seed(37264)
+
+iter <- 2000000
+burnin <- 15000
+
+h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
+                     sep = "\t", header = TRUE,
+                     stringsAsFactors = FALSE)
+
+h2_filtered <- h2life[h2life$status!=3, ] # remove censored events
+h2_filtered$animal <- seq(1, nrow(h2_filtered))
+h2_filtered$treat <- as.factor(h2_filtered$treat)
+
+
+##### high sugar, HS
+
+HS <- subset(h2_filtered, treat == "HS")
+
+pedigree <- HS[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+
+# Inverse Gamma(0.001; 0.001)
+# a = nu / 2
+# b = nu * V / 2
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002)))
+
+model <- MCMCglmm(NewAge ~ 1,
+                  random = ~ animal,
+                  family = "gaussian",
+                  prior = prior,
+                  pedigree = pedigree,
+                  data = HS,
+                  nitt = iter,
+                  burnin = burnin,
+                  thin = 50,
+                  verbose = FALSE)
+
+save(model, file = "../../Data/Processed/HS.Rda")
+
+
+load("../../Data/Processed/HS.Rda")
+# Fixed
+plot(model$Sol)
+autocorr.diag(model$Sol)
+effectiveSize(model$Sol)
+
+# Random
+plot(model$VCV)
+autocorr.diag(model$VCV)
+effectiveSize(model$VCV)
+
+summary(model)
+
+herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit)
+median(herit)
+f <- HPDinterval(herit)
+k <- as.data.frame(f)
+
+
+# plot hs with ggplot
+
+density(herit.hs)
+
+hs.samp<-data.frame(('h2'=herit.hs)) # HPDinterval(as.mcmc(herit)))
+
+ggplot(hs.samp, aes(x=var1), y=k) +
+  geom_histogram()+
+  geom_vline(xintercept = median(herit.hs))
+
+rm(model) 
+
+
+##### Low yeast, LY
+
+LY <- subset(h2_filtered, treat == "LY")
+
+pedigree <- LY[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+
+# Inverse Gamma(0.001; 0.001)
+# a = nu / 2
+# b = nu * V / 2
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002)))
+
+model <- MCMCglmm(NewAge ~ 1,
+                  random = ~ animal,
+                  family = "gaussian",
+                  prior = prior,
+                  pedigree = pedigree,
+                  data = LY,
+                  nitt = iter,
+                  burnin = burnin,
+                  thin = 50,
+                  verbose = FALSE)
+
+save(model, file = "../../Data/Processed/LY.Rda")
+
+
+load("../../Data/Processed/LY.Rda")
+# Fixed
+plot(model$Sol)
+autocorr.diag(model$Sol)
+effectiveSize(model$Sol)
+
+# Random
+plot(model$VCV)
+autocorr.diag(model$VCV)
+effectiveSize(model$VCV)
+
+summary(model)
+
+herit.dr <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit.dr)
+median(herit.dr)
+HPDinterval(herit.dr)
+
+
+# plot LY with ggplot
+
+density(herit.dr)
+
+dr.samp<-data.frame(('h2'=herit.dr)) # HPDinterval(as.mcmc(dr.herit)))
+
+ggplot(dr.samp, aes(x=var1), y=k) +
+  geom_histogram()+
+  geom_vline(xintercept = median(herit.dr))
+
+rm(model)
+
+
+##### Standard, STD
+
+STD <- subset(h2_filtered, treat == "STD")
+
+pedigree <- STD[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+
+# Inverse Gamma(0.001; 0.001)
+# a = nu / 2
+# b = nu * V / 2
+
+prior <- list(R = list(V = 1, nu = 0.002),
+              G = list(G1 = list(V = 1, nu = 0.002)))
+
+model <- MCMCglmm(NewAge ~ 1,
+                  random = ~ animal,
+                  family = "gaussian",
+                  prior = prior,
+                  pedigree = pedigree,
+                  data = STD,
+                  nitt = iter,
+                  burnin = burnin,
+                  thin = 50,
+                  verbose = FALSE)
+
+save(model, file = "../../Data/Processed/STD.Rda")
+
+
+load("../../Data/Processed/STD.Rda")
+# Fixed
+plot(model$Sol)
+autocorr.diag(model$Sol)
+effectiveSize(model$Sol)
+
+# Random
+plot(model$VCV)
+autocorr.diag(model$VCV)
+effectiveSize(model$VCV)
+
+summary(model)
+
+herit.c <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit.c)
+median(herit.c)
+p <- HPDinterval(herit.c)
+q <- as.data.frame(f)
+
+
+# Plot STD with ggplot
+
+density(herit.c)
+
+c.samp<-data.frame(('h2'=herit.c)) # HPDinterval(as.mcmc(dr.herit)))
+
+ggplot(c.samp, aes(x=var1), y=k) +
+  geom_histogram()+
+  geom_vline(xintercept = median(herit.c))
+
+
+# The three files together
+
+hs.samp$Diet <- "HS"
+dr.samp$Diet <- "DR"
+c.samp$Diet <- "C"
+
+hs.samp$HS <- NULL
+dr.samp$DR <- NULL
+c.samp$C <- NULL
+heritab <- rbind(hs.samp, dr.samp, c.samp)
+save(heritab, file = "../../Data/Processed/herit.Rda")
+
+
+# Plot treatments together
+
+#pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
+ggplot(heritab, aes(var1, fill = Diet)) + 
+  geom_density(alpha = 0.2) +
+  #coord_cartesian(xlim=c(0, 1), ylim=c(0, 1)) + #adjust frame of x-axis
+  #scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
+  expand_limits(y=c(0,8)) + expand_limits(x=c(0,0.8)) +
+  theme(axis.title = element_text(face="bold", size=16)) +
+  xlab("Heritability") + ylab("Density") +
+  theme(legend.position=c(0.8, 0.8)) +
+  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
+#dev.off()
+
+
+
+
+
+

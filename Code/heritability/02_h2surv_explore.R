@@ -1,0 +1,160 @@
+
+# halfsib_survival - kaplan-meier"
+
+  # Analysis of lifespan 
+  # Half-sibling fly data
+  
+
+setwd("~/MyGithub/h2lifespan/Code/heritability")
+
+h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
+                     sep = "\t", header = TRUE,
+                     stringsAsFactors = FALSE)
+
+# packages
+
+library(survival)
+library(survminer)
+library(splines) #needed by survival package
+library(tidyverse) 
+library(cowplot)
+
+
+##### density (ggplot)
+
+pdf("../../Data/Figures/density_all-data_ggpl.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
+ggplot(h2life, aes(NewAge, fill = treat)) + 
+  geom_density(alpha = 0.2) +
+  coord_cartesian(xlim=c(-5, 101), ylim=c(0, 0.04)) + #adjust frame of x-axis
+  scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
+  scale_color_manual(values=c("#CC6666", "#9999CC", "#66CC99")) +
+  theme(axis.title = element_text(face="bold", size=16)) +
+  xlab("Age(days)") + ylab("Density") +
+  theme(legend.position=c(0.1, 0.9)) +
+  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
+dev.off()
+
+# Kaplan-Meier plot by diet 
+# columns: RIL, NewAge, status
+
+# by treatment groups
+h2.treat <- survfit(Surv(NewAge, status==2) ~ treat, conf.type="log", 
+                    conf.int=0.95, type="kaplan-meier", error="greenwood",
+                    data=h2life)
+# h2.treat
+summary(h2.treat)$table
+
+pdf("../../Data/Figures/K-M_treatments_summarized.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
+plot(h2.treat, conf.int = F, mark.time=FALSE, #masks censored events
+     xlab="Age (days)", ylab="Proportion alive",
+     col=c("#DD9999", "#66CC99", "#9999CC"), lwd=3,
+     cex.axis=1, cex.lab=1)
+#mtext("KM survival curve for RILs")
+abline(0.1,0, lty=3, lwd=1)
+abline(0.5,0, lty=3, lwd=1)
+legend(80,1, c("HS", "DR", "C"), lwd=3, text.font=1, bty = "n", y.intersp = 1.0, 
+       col=c("#DD9999", "#66CC99", "#9999CC"))
+dev.off()
+
+
+# cummulative hazard
+
+
+pdf("../../Data/Figures/CumHaz_treatment_summary.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
+plot(h2.treat, fun="cumhaz", lty=1,conf.int=F, mark.time=FALSE,
+     xlab="Age (days)", ylab="Proportion alive", 
+     col=c("#DD9999", "#66CC99", "#9999CC"), lwd=3,
+     cex.axis=1, cex.lab=1)
+legend(0,7.7, c("HS", "DR", "C"),lty=1, lwd=3,text.font=1, bty = "n",
+       col=c("#DD9999", "#66CC99", "#9999CC"))
+dev.off()
+
+
+# test differences in K-M curves
+
+test_all <- survdiff(Surv(NewAge, status==2) ~ treat, data=h2life, rho=0) #log-rank (Mantel-Haenszel) test
+test_all1 <- survdiff(Surv(NewAge, status==2) ~ treat, data=h2life, rho=1) # Wilcoxon (Peto & Peto test)
+
+test_all
+test_all1
+
+
+# pairwise tests
+
+test_pairwise <- pairwise_survdiff(Surv(NewAge, status==2) ~ treat, 
+                                   data=h2life, p.adjust.method = "bonferroni", rho=0)
+test_pairwise1 <- pairwise_survdiff(Surv(NewAge, status==2) ~ treat, 
+                                    data=h2life, p.adjust.method = "bonferroni", rho=1)
+
+test_pairwise
+test_pairwise1
+
+# significance symbols
+symnum(test_pairwise$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
+       symbols = c("****", "***", "**", "*", "+", " "),
+       abbr.colnames = FALSE, na = "")
+
+symnum(test_pairwise1$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
+       symbols = c("****", "***", "**", "*", "+", " "),
+       abbr.colnames = FALSE, na = "")
+
+
+
+#reaction norms for sire families
+
+# remove censored events
+h2rn_filtered <- h2life[h2life$status!=3, ] 
+
+# prep each treatment into its own column
+
+#pull HS and compute median
+HS <- subset(h2rn_filtered, treat == "HS")
+hs_trim <- cbind.data.frame(HS$sireid, HS$NewAge)
+hs_med <- aggregate(. ~ HS$sireid, data=hs_trim, FUN=median)
+hs_med[,2] <- NULL
+colnames(hs_med) <- c("sireid","age")
+hs_med$diet<-"HS"
+
+#pull LY and compute median
+DR <- subset(h2rn_filtered, treat == "LY")
+dr_trim <- cbind.data.frame(DR$sireid, DR$NewAge)
+dr_med <- aggregate(. ~ DR$sireid, data=dr_trim, FUN=median)
+dr_med[,2] <- NULL
+colnames(dr_med) <- c("sireid","age")
+dr_med$diet<-"DR"
+
+#pull STD and compute median
+C <- subset(h2rn_filtered, treat == "STD")
+c_trim <- cbind.data.frame(C$sireid, C$NewAge)
+c_med <- aggregate(. ~ C$sireid, data=c_trim, FUN=median)
+c_med[,2] <- NULL
+colnames(c_med) <- c("sireid","age")
+c_med$diet<-"C"
+
+#join data frames
+mlife1 <- rbind(hs_med, c_med, dr_med)
+mlife1<-mlife1[!(mlife1$sireid=="S39"),]
+#attach a column of diet to each data frame before joining; use that as fill
+
+#reorder x-axis (ggplot default is alphabetical)
+mlife1$diet <- as.character(mlife1$diet) #turn diet col into a char vector
+mlife1$diet <- factor(mlife1$diet, levels=unique(mlife1$diet)) #back to ordered factor
+#save(mlife1, file = "/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/h2reacts.Rda")
+
+#plot reaction norms for sire families
+#pdf("../../Data/Figures/h2life_reaction_norms.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
+ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age)) +
+  geom_point(size = 2)+
+  geom_line(aes(group = paste(sireid), alpha = 0.2)) +
+  xlab("Dietary condition") + ylab("Median lifespan (days)") +
+  theme(legend.position="none") +
+  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
+#dev.off()
+
+
+
+
