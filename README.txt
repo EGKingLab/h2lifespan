@@ -24,8 +24,30 @@ h2surv_explore.R
 HERITABILITY
 
 h2surv_analysis1.R
+	- animal is random effect
 	- input data: Female_events_lifespan.txt
 	- animal models in mcmcglmm on each diet singly
 	- output: 
 		- HS.Rda, Ly.Rda, STD.Rda
 		- heritab.Rda (combines all 3)
+		- plot of posteriors in individual diets
+		
+h2surv_MANOVA.R
+	- animal is random effect
+	- runin_background (shell script to run h2surv_MANOVA.R on server)
+	- invokes h2life_load_data.R (preps a pedigree from raw data)
+	- computes posteriors and plots correlations between diets:
+		- tri_model_prior1.Rda
+		- tri_model_prior2.Rda
+		- tri_model_prior3.Rda
+	
+h2surv_MANOVA_Ingelby.R
+	- sire is random effect
+	- runinbackground (replace name of Rscript in shell script)
+	- computes posteriors and plots correlations between diets:
+		- tri_model_prior1.Rda
+		- tri_model_prior2.Rda
+		- tri_model_prior3.Rda
+		
+
+
