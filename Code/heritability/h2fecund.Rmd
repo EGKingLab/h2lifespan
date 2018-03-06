@@ -1,11 +1,49 @@
+---
+title: "h2fecund"
+author: "Enoch Ng'oma"
+date: "3/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
 library(tidyverse)
 
-setwd("~/MyGithub/h2lifespan/Code/heritability")
+setwd("~/MyGithub/h2fecundspan/Code/heritability")
+```
 
+#Read in data
+
+```{r}
+load(file= "../../Data/Processed/predicted_egg_counts.rda")
 h2life <- read.table('../../Data/Processed/lifespan_correctedData.txt',
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE)
+```
 
+#Merge predicted counts and hand counts
+
+```{r}
+# hand count preferred where it occurs
+M$egg_count <- if_else(!is.na(M$handcount), 
+                       M$handcount, M$predicted_count_linear)
+
+# check
+#M[1:20, c(1,3,25:27)]
+#M[201:220, c(1,3,25:27)]
+
+```
+
+#Merge with lifespan to get number of females
+
+
+```{r}
+
+#strip away columns not needed
+
+# create "id" column from fID and treat
+M <- unite(M, "id", fID, treat, sep = "_", remove=FALSE)
 
 ureps <- unique(h2life$id)
 
@@ -48,7 +86,7 @@ hist(h2life[which(h2life$upN<0),'upN'])
 h2life[h2life$upN<0,'upN']<-0
 h2life[which(h2life$upN<0),]
 
-h2life[h2life$id=="S19D55_b_HS", ]
+
 
 
 # pull all Mondays from 2/29 to 6/20
@@ -60,20 +98,39 @@ xm <- seq(Mondays, by="7 days", length.out=17)
 
 # pull rows holding Monday and Tuesday flips
 dd <- subset(h2life, flipDate %in% as.character(xm))
-dd <- unite(dd, "flipD_id", flipDate, fID, treat, sep = "_", remove=FALSE)
-
-ddm <- select(dd, flipD_id, upN)
-
-#MM_ddm_join <- left_join(MM, ddm, by = c("flipDate", "id"))
 
 
+M$NewAge <- as.numeric(M$flipDate - M$setDate)+2 # for checking join
 
+M$setDate <- as.character(M$setDate)
+M$flipDate <- as.character(M$flipDate)
 
-
+test <- right_join(M, dd)
 
 
 
+#ddm$variable <- rownames(ddm)
+#MMi_ddm_join <- merge(MMi, ddm, by="flipD_id")
+
+for(i in 1:nrow(MMi)){
+  for( j in 1:nrow(ddm)){
+    if (MMi[i,1]==ddm[j,1]) MMi[i,3]<- ddm[j,2]
+  }
+}
+```
 
 
 
 
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```

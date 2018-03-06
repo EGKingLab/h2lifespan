@@ -160,6 +160,7 @@ M %>%
   arrange(predicted_count_linear)
 ```
 
+
 ```{r}
 M.low <- M %>% 
  select(camera_id, predicted_count_linear) %>% 
@@ -205,4 +206,14 @@ if (nrow(flagged_images) >= 1) {
   }
 }
 ```
+
+# Save output for further filtering & analysis
+
+```{r}
+save(M, file= "../../Data/Processed/predicted_egg_counts.rda")
+
+
+```
+
+
 
