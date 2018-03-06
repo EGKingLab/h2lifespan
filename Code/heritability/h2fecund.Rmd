@@ -9,8 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
-
-setwd("~/MyGithub/h2fecundspan/Code/heritability")
 ```
 
 #Read in data
@@ -47,46 +45,38 @@ M <- unite(M, "id", fID, treat, sep = "_", remove=FALSE)
 
 ureps <- unique(h2life$id)
 
-h2life$upN <- rep(NA, nrow(h2life))
+h2life$n_females <- rep(NA, nrow(h2life))
 
 h2life.t <- h2life[0,]
 
-
-for(k in ureps)
-{
+for(k in ureps) {
   h2life.s <- subset(h2life, id==k)
-  for(i in 1:nrow(h2life.s))
-  {
-   if(i == 1)
-   {
-     h2life.s[i,'upN'] <- h2life.s$NstartF[1]
-   }else{
-     if(is.na(h2life.s$deadF[i])|is.na(h2life.s$carriedF[(i-1)]))
-     {
-       h2life.s[i,'upN'] <- h2life.s[(i-1),'upN']
-     }else{
-     ndead <- h2life.s[i,'deadF']-h2life.s[(i-1),'carriedF']
-     
-     h2life.s[i,'upN'] <- h2life.s[(i-1),'upN']-ndead
-     }#else close
-   }#else close
+  for(i in 1:nrow(h2life.s)) {
+    if(i == 1) {
+      h2life.s[i,'n_females'] <- h2life.s$NstartF[1]
+    } else {
+      if(is.na(h2life.s$deadF[i])|is.na(h2life.s$carriedF[(i-1)])) {
+        h2life.s[i,'n_females'] <- h2life.s[(i-1),'n_females']
+      } else {
+        ndead <- h2life.s[i,'deadF']-h2life.s[(i-1),'carriedF']
+        h2life.s[i,'n_females'] <- h2life.s[(i-1),'n_females']-ndead
+      }#else close
+    }#else close
   }#for i close
   h2life.t <- rbind(h2life.t, h2life.s)
 }#for k close
 
 h2life <- h2life.t
 
-min(h2life$upN,na.rm=TRUE)
-which(is.na(h2life$upN))
-h2life[which(h2life$upN<0),]
-hist(h2life[which(h2life$upN<0),'upN'])
+min(h2life$n_females,na.rm=TRUE)
+which(is.na(h2life$n_females))
+h2life[which(h2life$n_females<0),]
+hist(h2life[which(h2life$n_females<0),'n_females'])
 
 
-# set negative upN values to zero
-h2life[h2life$upN<0,'upN']<-0
-h2life[which(h2life$upN<0),]
-
-
+# set negative n_females values to zero
+h2life[h2life$n_females<0,'n_females']<-0
+h2life[which(h2life$n_females<0),]
 
 
 # pull all Mondays from 2/29 to 6/20
@@ -96,32 +86,60 @@ weekdays(Mondays)
 xm <- seq(Mondays, by="7 days", length.out=17)
 
 
-# pull rows holding Monday and Tuesday flips
+# pull rows holding Monday flips
 dd <- subset(h2life, flipDate %in% as.character(xm))
 
+# Overwrite flipDate with +1 day to match M
+dd$flipDate <- as.character(as.Date(dd$flipDate) + 1)
 
 M$NewAge <- as.numeric(M$flipDate - M$setDate)+2 # for checking join
 
 M$setDate <- as.character(M$setDate)
 M$flipDate <- as.character(M$flipDate)
+```
 
-test <- right_join(M, dd)
+```{r}
+# Join M and dd on flipDate and id.
+# Keep only columns that we will use later.
+D <- right_join(M, dd, by = c("flipDate", "id")) %>% 
+  dplyr::select(-box, -ccoord, -rcoord, -setDate.y,
+                -X__1, -X__2, -handcount, -handcounted,
+                -visually_recheck, -area_linear,
+                -predicted_count_linear, -lower_thresh,
+                -test_case,
+                -contains(".y"))
 
+# Strip out ".x" from column names
+names(D) <- str_replace_all(names(D), ".x", "")
+```
 
+Drop rows where egg_count == 0
 
-#ddm$variable <- rownames(ddm)
-#MMi_ddm_join <- merge(MMi, ddm, by="flipD_id")
-
-for(i in 1:nrow(MMi)){
-  for( j in 1:nrow(ddm)){
-    if (MMi[i,1]==ddm[j,1]) MMi[i,3]<- ddm[j,2]
-  }
-}
+```{r}
+D <- D %>% 
+  drop_na(egg_count)
 ```
 
 
+Add column for fecundity per female. Set to 0 if no females.
 
+```{r}
+D <- D %>% 
+  mutate(eggs_per_female = if_else(n_females == 0,
+                                   0, egg_count / n_females))
 
+D %>% 
+  filter(eggs_per_female > 250) %>% 
+  ggplot(aes(eggs_per_female)) + geom_histogram()
+
+D %>% 
+  filter(eggs_per_female > 100) %>% 
+  select(camera_id, id, setDate, flipDate, egg_count, n_females, eggs_per_female) %>% 
+  arrange(desc(eggs_per_female)) %>% 
+  as.data.frame()
+
+write_csv(D, path = "../../Data/Processed/eggs_per_female.csv")
+```
 
 
 ```{r}
