@@ -213,3 +213,10 @@ cor(HC$handcount, HC$asymp_pred)
 
 Prediction via `lm()` is much better.
 
+
+### 2018-03-07
+
+The list 'high_eggs_per_female.xlsx contains females that have more than 100 each. EGK and EN
+agreed to do nothing about these unless something gets obviously odd after analysis.
+
+
