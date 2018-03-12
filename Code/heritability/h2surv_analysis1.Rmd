@@ -93,13 +93,13 @@ k <- as.data.frame(f)
 # plot hs with ggplot
 
 ```{r}
-density(herit.hs)
+density(herit)
 
-hs.samp<-data.frame(('h2'=herit.hs)) # HPDinterval(as.mcmc(herit)))
+hs.samp<-data.frame(('h2'=herit)) # HPDinterval(as.mcmc(herit)))
 
 ggplot(hs.samp, aes(x=var1), y=k) +
   geom_histogram()+
-  geom_vline(xintercept = median(herit.hs))
+  geom_vline(xintercept = median(herit))
 
 rm(model) 
 ```
@@ -107,6 +107,8 @@ rm(model)
 ##### Low yeast, LY
 
 ```{r}
+t1<-Sys.time()
+
 LY <- subset(h2_filtered, treat == "LY")
 
 pedigree <- LY[, c("animal", "sireid", "damid")]
@@ -137,6 +139,9 @@ model <- MCMCglmm(NewAge ~ 1,
                   verbose = FALSE)
 
 save(model, file = "../../Data/Processed/LY.Rda")
+
+t2<-Sys.time()
+cat(t2-t1)
 ```
 
 ```{r}
@@ -176,6 +181,8 @@ rm(model)
 ##### Standard, STD
 
 ```{r}
+s1<-Sys.time()
+
 STD <- subset(h2_filtered, treat == "STD")
 
 pedigree <- STD[, c("animal", "sireid", "damid")]
@@ -206,6 +213,9 @@ model <- MCMCglmm(NewAge ~ 1,
                   verbose = FALSE)
 
 save(model, file = "../../Data/Processed/STD.Rda")
+
+s2<-Sys.time()
+cat(s2-s1)
 ```
 
 ```{r}
@@ -258,18 +268,24 @@ save(heritab, file = "../../Data/Processed/herit.Rda")
 # Plot treatments together
 
 ```{r, dens}
-#pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
+ll<- 7.4
+ss<-0.2
+
+pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
  ggplot(heritab, aes(var1, fill = Diet)) + 
   geom_density(alpha = 0.2) +
+  geom_segment(x = 0.2479849, y = ll+ss, xend = 0.4984068, yend = ll+ss, position = "identity", colour = "mediumpurple1")+
+  geom_segment(x = 0.2071338, y = ll+ss+ss, xend = 0.4288147, yend = ll+ss+ss, position = "identity", colour = "darkseagreen2")+
+  geom_segment(x = 0.3350174, y = ll, xend = 0.6070656, yend = ll, position = "identity", colour = "lightpink")+
   #coord_cartesian(xlim=c(0, 1), ylim=c(0, 1)) + #adjust frame of x-axis
   #scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
   expand_limits(y=c(0,8)) + expand_limits(x=c(0,0.8)) +
-  theme(axis.title = element_text(face="bold", size=16)) +
+  theme(axis.title = element_text(size=16)) +
   xlab("Heritability") + ylab("Density") +
-  theme(legend.position=c(0.8, 0.8)) +
-  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
-#dev.off()
+  theme(legend.position=c(0.85, 0.85)) +
+  scale_fill_discrete(name="Diet", labels=c("C", "DR", "HS")) 
+dev.off()
 ```
 
 
