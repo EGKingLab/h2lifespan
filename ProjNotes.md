@@ -219,4 +219,11 @@ Prediction via `lm()` is much better.
 The list 'high_eggs_per_female.xlsx contains females that have more than 100 each. EGK and EN
 agreed to do nothing about these unless something gets obviously odd after analysis.
 
+### 2018-03-18
+
+Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet records:
+	- entry error at age 74 (i.e. 1 female died but was entered as 0)
+	- NstartF changed to 15 - was entered incorrectly as 11 
+	- 12 female and 6 male death events only!
+	- necessitates rerun of mcmcglmm
 
