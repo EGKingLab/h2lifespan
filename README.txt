@@ -63,7 +63,10 @@ change_values.R
 	- new data is saved as feclife_with-image-ids.csv
 	- while this data is first used in h2_fec_prediction.Rmd, affected column is used later
 
-
+h2fecund.Rmd
+	- reads predicted_egg_counts.rda and lifespan_correctedData.txt
+	- computes, matches and merges number of females each Monday with females on Tuesday
+	- computes eggs per female on each flip date
 
 
 
