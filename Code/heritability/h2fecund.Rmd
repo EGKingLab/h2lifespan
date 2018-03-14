@@ -33,15 +33,34 @@ M$egg_count <- if_else(!is.na(M$handcount),
 
 ```
 
-#Merge with lifespan to get number of females
-
+#Replace NstartF for id S11D33_a_LY from 11 to 15 (see ProjectNotes.md)
 
 ```{r}
-
-#strip away columns not needed
-
 # create "id" column from fID and treat
 M <- unite(M, "id", fID, treat, sep = "_", remove=FALSE)
+
+# needed for code to run
+M$setDate <- as.character(M$setDate)
+M$flipDate <- as.character(M$flipDate)
+
+# change NstartF for all S11D33_a_LY cases to 15
+M <- M %>% 
+  mutate(NstartF = replace(NstartF, which(id=="S11D33_a_LY"), 15))
+
+
+#write_csv(M, path = "../../Data/Processed/feclife_with-image-ids.csv")
+
+#checks
+#M[M$id=="S11D33_a_LY" ,]
+#M[M$id=="S19D55_a_HS" ,]
+```
+
+#Merge with lifespan to get number of females
+
+```{r}
+# change back to date format
+M$setDate <- as.Date(M$setDate)
+M$flipDate <- as.Date(M$flipDate)
 
 ureps <- unique(h2life$id)
 
@@ -113,7 +132,7 @@ D <- right_join(M, dd, by = c("flipDate", "id")) %>%
 names(D) <- str_replace_all(names(D), ".x", "")
 ```
 
-Drop rows where egg_count == 0
+#Drop rows where egg_count == 0
 
 ```{r}
 D <- D %>% 
@@ -121,7 +140,7 @@ D <- D %>%
 ```
 
 
-Add column for fecundity per female. Set to 0 if no females.
+#Add column for fecundity per female. Set to 0 if no females.
 
 ```{r}
 D <- D %>% 
@@ -138,17 +157,41 @@ D %>%
   arrange(desc(eggs_per_female)) %>% 
   as.data.frame()
 
-write_csv(D, path = "../../Data/Processed/eggs_per_female.csv")
+#write_csv(D, path = "../../Data/Processed/eggs_per_female.csv")
+```
+
+#IMG_2141.JPG appeares just once for 2016-03-15. Merge seems to spawn/recycle a second event at end.
+#resolved
+
+```{r}
+#D[D$id=="S17D50_a_STD",]
+#D[D$camera_id=="IMG_2141.JPG",]
+#D[D$camera_id=="IMG_2141.JPG","flipDate"]
+
+# IMG_3626.JPG, S21D63_a_STD, flipDate: 2016-04-26 set to zero (odd case)
+D[D$flipDate=="2016-04-26","eggs_per_female"]<-NA
+
+ggplot(D, aes(eggs_per_female)) + geom_histogram()
 ```
 
 
 ```{r}
+max(D$eggs_per_female)
+which.max(D$eggs_per_female)
+D[which.max(D$eggs_per_female),]
+
 ```
 
 
 ```{r}
+write.table(D, file="../../Data/Processed/eggs_per_female.txt", sep='\t',row.names = FALSE)
+
 ```
 
 
-```{r}
-```
+
+
+
+
+
+
