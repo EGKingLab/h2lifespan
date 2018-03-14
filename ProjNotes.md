@@ -227,3 +227,7 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 	- 12 female and 6 male death events only!
 	- necessitates rerun of mcmcglmm
 
+### 2018-03-14 (KMM)
+
+- Cleaning up the proliferation of image area calculations. Now just running the area summation on all the images across the range of possible threshold values. We can filter out the coarse vs. fine set of threshold values in the optimization step.
+- Using image size in the linear model now.
