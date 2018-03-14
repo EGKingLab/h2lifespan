@@ -13,7 +13,7 @@ InitialProcess.R
 
 SURVIVAL ANALYSIS
 
-h2surv_explore.R
+h2surv_explore.Rmd
 	- input data: Female_events_lifespan.txt 								
 	- histograms, density plots in baseR and ggplot2	
 	- Kaplan-Meier plots of survival estimates
@@ -21,7 +21,7 @@ h2surv_explore.R
 	- reaction norms
 
 
-HERITABILITY
+HERITABILITY: LIFESPAN
 
 h2surv_analysis1.R
 	- animal is random effect
@@ -49,5 +49,31 @@ h2surv_MANOVA_Ingelby.R
 		- tri_model_prior2.Rda
 		- tri_model_prior3.Rda
 		
+HERITABILITY: FECUNDITY
+
+Python image analysis here
+
+h2_fec_prediction.Rmd
+	- hd_hand_counted.xlsx
+	- bad_images.xlsx
+	
+change_values.R 
+(see ProjectNote 2018-03-18 for reason)
+	- replaces NstartF for id S11D33_a_LY from 11 to 15 in feclife_with-image-ids.xlsx
+	- new data is saved as feclife_with-image-ids.csv
+	- while this data is first used in h2_fec_prediction.Rmd, affected column is used later
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
