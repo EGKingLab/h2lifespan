@@ -1,7 +1,6 @@
 # devtools::install_github("dgrtwo/broom")
 library(doParallel)
 library(tictoc)
-
 library(tidyverse)
 library(readxl)
 library(cowplot)
@@ -11,25 +10,29 @@ library(ggrepel)
 
 coarse <- FALSE
 
+infile <- "../../Data/Processed/area_summation_HC.csv"
+
 if (coarse) {
   outfile <- "../../Data/Processed/threshold_optimization_linear_coarse.csv"
-  infile <- "../../Data/Processed/area_summation_linear_coarse.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
   # prop_data <- seq(0.4, 1.0, by = 0.1)
   prop_data <- 1
   prop_train <- seq(0.1, 0.9, by = 0.1)
+  thresh_values <- seq(30, 85, by = 5)
 } else {
   outfile <- "../../Data/Processed/threshold_optimization_linear_fine.csv"
-  infile <- "../../Data/Processed/area_summation_linear_fine.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
   prop_data <- 1
   prop_train <- seq(0.5, 0.9, by = 0.1)
+  thresh_values <- seq(45, 55, by = 1)
 }
 
-# areas estimated from thresholding
-areas <- read_csv(infile, col_types = "cii")
+# areas estimated from thresholding, keep only rows corresponding to
+# values for coarse or fine, respectively
+areas <- read_csv(infile, col_types = "cii") %>% 
+  filter(lower_thresh %in% thresh_values)
 
 # handcounts
 actual <- suppressWarnings(
@@ -42,6 +45,11 @@ M <- full_join(areas, actual, by = "camera_id") %>%
   drop_na(handcount) %>% 
   mutate(area = log(area),
          handcount = log(handcount))
+
+# Load image dimensions and merge
+img_size <- read_csv("../../Data/Processed/image_dimensions.csv")
+M <- left_join(M, img_size) %>% 
+  drop_na()
 
 #########################################################################
 
@@ -71,7 +79,7 @@ area_rarefaction <- function(M, lower,
     te$handcount[is.infinite(te$handcount)] <- 0
     
     # Fit model on training set
-    fm <- lm(handcount ~ area, tr)
+    fm <- lm(handcount ~ area + img_size - 1, tr)
     te$pred <- predict(fm, te)
     r <- cor(te$handcount, te$pred)
     MSD <- mean((te$handcount - te$pred) ^ 2)
@@ -103,7 +111,8 @@ for (ii in 1:nrow(CVs)) {
   
   x <- foreach(jj = 1:reps, .combine = 'rbind') %dopar% {
     library(tidyverse)
-    area_rarefaction(M, lower = CVs$lower[ii],
+    area_rarefaction(M,
+                     lower = CVs$lower[ii],
                      prop_data = CVs$prop_data[ii],
                      prop_train = CVs$prop_train[ii],
                      iters = iters)

@@ -10,24 +10,12 @@ import matplotlib.pyplot as plt
 from Area import thresholding, sum_area
 
 write_images = False
-coarse = False
-linear = True
 
 rootDir = '../../../hd_hand_counted_masked/'
 
-if coarse:
-    lower_threshes = np.arange(30, 85, 5)
-    if linear:
-        outfile = '../../Data/Processed/area_summation_HC_linear_coarse.csv'
-    else: # Asymptotic
-        outfile = '../../Data/Processed/area_summation_HC_asymp_coarse.csv'
-else: # fine
-    if linear:
-        outfile = '../../Data/Processed/area_summation_HC_linear_fine.csv'
-        lower_threshes = np.arange(45, 56, 1)    # linear
-    else: # Asymptotic
-        outfile = '../../Data/Processed/area_summation_HC_asymp_fine.csv'
-        lower_threshes = np.arange(70, 81, 1)  # asymp
+# Do all thresholds from 30 to 85 by 1. Filter them later.
+lower_threshes = np.arange(30, 86, 1)
+outfile = '../../Data/Processed/area_summation_HC.csv'
 
 # Get list of handcounted images from hd_hand_counted
 M = pd.read_excel('../../Data/Processed/hd_hand_counted.xlsx')
