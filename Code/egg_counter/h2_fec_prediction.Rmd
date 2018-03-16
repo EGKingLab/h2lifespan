@@ -31,7 +31,7 @@ bad_images <- read_excel("../../Data/Processed/bad_images.xlsx") %>%
 HC <- HC %>%
   filter(!(camera_id %in% bad_images$camera_id))
 
-linear_area <- read_csv("../../Data/Processed/area_summation_HC_linear_fine.csv",
+linear_area <- read_csv("../../Data/Processed/area_summation_HC.csv",
                        col_types = "cii") %>% 
   filter(lower_thresh == linear_threshold) %>% 
   dplyr::select(-lower_thresh) %>% 

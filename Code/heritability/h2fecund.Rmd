@@ -168,17 +168,19 @@ D %>%
 #D[D$camera_id=="IMG_2141.JPG",]
 #D[D$camera_id=="IMG_2141.JPG","flipDate"]
 
+max(D$eggs_per_female)
+which.max(D$eggs_per_female)
+D[which.max(D$eggs_per_female),]
+
 # IMG_3626.JPG, S21D63_a_STD, flipDate: 2016-04-26 set to zero (odd case)
-D[D$flipDate=="2016-04-26","eggs_per_female"]<-NA
+# 
+#D[D$flipDate=="2016-04-26","eggs_per_female"]<-NA
 
 ggplot(D, aes(eggs_per_female)) + geom_histogram()
 ```
 
 
 ```{r}
-max(D$eggs_per_female)
-which.max(D$eggs_per_female)
-D[which.max(D$eggs_per_female),]
 
 ```
 
