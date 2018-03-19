@@ -13,8 +13,8 @@ write_images = False
 
 rootDir = '../../../hd_hand_counted_masked/'
 
-# Do all thresholds from 30 to 85 by 1. Filter them later.
-lower_threshes = np.arange(30, 86, 1)
+# Do all thresholds from 30 to 151 by 1. Filter them later.
+lower_threshes = np.arange(30, 151, 1)
 outfile = '../../Data/Processed/area_summation_HC.csv'
 
 # Get list of handcounted images from hd_hand_counted

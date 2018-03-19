@@ -13,19 +13,13 @@ from Area import thresholding, sum_area
 
 rootDir = '../../../h2_fec_images/'
 
-linear = False
-
-if linear:
-    outfile = '../../Data/Processed/area_summation_linear_h2_fecimages.csv'
-    lower_threshes = [46]
-else: # Asymptotic
-    outfile = '../../Data/Processed/area_summation_asymp_h2_fecimages.csv'
-    lower_threshes = [74]
+outfile = '../../Data/Processed/area_summation_linear_h2_fecimages.csv'
+lower_threshes = [46]
 
 # Erase old and create new output directory
 write_images = True
 if write_images:
-    outdir = os.path.join(rootDir, 'h2_thresh_images')
+    outdir = os.path.join(rootDir, 'h2_thresh_fecimages')
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
     try:
@@ -85,6 +79,9 @@ areas = pd.DataFrame(index=list(range(nrows)),
 
 ctr = 0
 
+# Filter one row
+# M = M.loc[M.camera_id == 'IMG_3756.JPG', ]
+
 for index, row in M.iterrows():
     for lower_thresh in lower_threshes:
         area = sum_area(rootDir, row, lower_thresh, resize = False,
@@ -94,4 +91,4 @@ for index, row in M.iterrows():
         if ctr % 200 == 0:
             print(str(ctr) + " complete")
 
-areas.to_csv(outfile, index=False)
+#areas.to_csv(outfile, index=False)

@@ -4,11 +4,14 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = FALSE)
 
 library(tidyverse)
 library(cowplot)
 library(readxl)
+library(cvTools)
+library(rethinking)
 ```
 
 ## Regression on handcounted images
@@ -40,6 +43,21 @@ linear_area <- read_csv("../../Data/Processed/area_summation_HC.csv",
 # Join handcounts with areas
 HC <- inner_join(HC, linear_area) %>% 
   as.data.frame()
+
+# Load image dimensions and merge
+img_size <- read_csv("../../Data/Processed/image_dimensions_hd_hand_counted_masked.csv")
+HC <- left_join(HC, img_size)
+```
+
+Training image size
+
+```{r}
+img_size %>% 
+  arrange(desc(img_size))
+
+img_size %>% 
+  ggplot(aes(img_size)) +
+  geom_histogram()
 ```
 
 Check these areas: should be in the test_case batch but aren't.
@@ -51,7 +69,7 @@ HC %>%
 
 ## Examine possibly bad images
 
-```{r check_bad_images, cache = FALSE}
+```{r check_bad_images}
 plot_jpeg = function(path, add=FALSE) {
   # https://stackoverflow.com/a/28729601/168137
   require('jpeg')
@@ -82,33 +100,97 @@ if (nrow(flagged_images) >= 1) {
 
 Linear model predicting egg count from area:
 
-```{r fm_linear, results="hide", cache=TRUE, warning=FALSE}
-fm_lm <- lm(handcount ~ area_linear - 1, data = HC)
+```{r fm_linear, results="hide", warning=FALSE}
+fm_lm1 <- lm(handcount ~ I(area_linear^0.5) - 1, data = HC)
+fm_lm2 <- lm(handcount ~ I(area_linear^0.5) + img_size - 1, data = HC)
+fm_lm3 <- lm(handcount ~ I(area_linear^0.5) * img_size - 1, data = HC)
+```
+
+Cross validation
+
+```{r}
+set.seed(4357896)
+
+cv_fm1 <- cvFit(fm_lm1, K = 10, R = 1000, data = HC, y = HC$handcount)
+cv_fm2 <- cvFit(fm_lm2, K = 10, R = 1000, data = HC, y = HC$handcount)
+cv_fm3 <- cvFit(fm_lm3, K = 10, R = 1000, data = HC, y = HC$handcount)
 ```
 
 ```{r}
-new_data <- tibble(
-  area_linear = seq(0, 1.25 * max(c(HC$area_linear)),
-                    length.out = 200))
+cvSelect(cv_fm1, cv_fm2, cv_fm3)
+anova(fm_lm1, fm_lm2, fm_lm3, test = "Chisq")
+```
 
-new_data$lm_pred <- predict(fm_lm, newdata = new_data)
+```{r}
+area_linear <- seq(0, 1.25 * max(HC$area_linear),
+                   length.out = 200)
+img_size <- min(HC$img_size):max(HC$img_size)
+new_data <- crossing(area_linear, img_size) %>% 
+  filter(img_size %% 250 == 0)
+
+new_data$lm_pred <- predict(fm_lm3, newdata = new_data)
 
 ggplot() +
-  geom_line(data = new_data, aes(x = area_linear, y = lm_pred)) +
+  geom_line(data = new_data, aes(x = area_linear, y = lm_pred, color = factor(img_size))) +
+  geom_point(data = HC, aes(x = area_linear, y = handcount))
+```
+
+## Bayesian model
+
+```{r eval=FALSE}
+HC_stan <- HC %>%
+  mutate(area_linear = sqrt(area_linear)) %>% 
+  drop_na() %>% 
+  as.data.frame()
+
+fm_stan <- map2stan(
+  alist(
+    handcount ~ dnorm(mu, sigma),
+    mu <- barea * area_linear + bimg_size * img_size,
+    barea ~ dnorm(0, 5),
+    bimg_size ~ dnorm(0, 1),
+    sigma ~ dcauchy(0, 5)
+  ),
+  data = HC_stan,
+  chains = 4,
+  cores = 4,
+  control = list(max_treedepth = 15,
+                 adapt_delta = 0.95),
+  constraints = list(bimg_size = "lower=0",
+                     barea = "lower=0")
+)
+```
+
+```{r eval=FALSE}
+plot(fm_stan)
+precis(fm_stan)
+```
+
+```{r eval=FALSE}
+area_linear <- sqrt(seq(0, 1.25 * max(HC$area_linear),
+                   length.out = 200))
+img_size <- mean(HC$img_size)
+new_data <- crossing(area_linear, img_size)
+
+sims <- link(fm_stan, data = new_data)
+new_data$lm_pred <- colMeans(sims)
+
+ggplot() +
+  geom_line(data = new_data, aes(x = area_linear^2, y = lm_pred)) +
   geom_point(data = HC, aes(x = area_linear, y = handcount))
 ```
 
 ## Evaluation of linear model
 
-```{r cache = TRUE}
-HC$lm_pred <- predict(fm_lm)
+```{r}
+HC$lm_pred <- predict(fm_lm3)
 
 cor(HC$handcount, HC$lm_pred)
 ```
 
 ## Predict for new data
 
-```{r cache=TRUE}
+```{r}
 suppressWarnings(
   M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
 )
@@ -121,7 +203,22 @@ M <- left_join(M, h2_fec_areas) %>%
   rename(area_linear = area) %>% 
     drop_na(area_linear)
 
-M$predicted_count_linear <- predict(fm_lm, newdata = M)
+# Load image dimensions and merge
+img_size <- read_csv("../../Data/Processed/image_dimensions_h2_fec_images.csv")
+M <- left_join(M, img_size)
+
+M$predicted_count_linear <- predict(fm_lm1, newdata = M)
+```
+
+Prediction image size
+
+```{r}
+img_size %>% 
+  arrange(desc(img_size))
+
+img_size %>% 
+  ggplot(aes(img_size)) +
+  geom_histogram()
 ```
 
 ## Checks
@@ -136,7 +233,8 @@ M %>%
   filter(handcount != "unassigned") %>% 
   mutate(handcount = as.numeric(handcount)) %>% 
   select(camera_id, handcount, predicted_count_linear) %>% 
-  filter(!is.na(predicted_count_linear))
+  filter(!is.na(predicted_count_linear)) %>% 
+  as.data.frame()
 ```
 
 ## Some exploration
@@ -198,7 +296,7 @@ plot_jpeg = function(path, add=FALSE) {
 flagged_images <- M %>% 
   filter(predicted_count_linear > 2000)
 
-basedir <- "../../../h2_fec_images/h2_thresh_images/"
+basedir <- "../../../h2_fec_images/h2_thresh_fecimages/"
 
 if (nrow(flagged_images) >= 1) {
   for (ii in 1:nrow(flagged_images)) {
@@ -212,6 +310,3 @@ if (nrow(flagged_images) >= 1) {
 ```{r}
 save(M, file= "../../Data/Processed/predicted_egg_counts.rda")
 ```
-
-
-

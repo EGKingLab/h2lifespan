@@ -16,16 +16,17 @@ if (coarse) {
   outfile <- "../../Data/Processed/threshold_optimization_linear_coarse.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
-  # prop_data <- seq(0.4, 1.0, by = 0.1)
+  # prop_data <- seq(0.5, 1.0, by = 0.1)
   prop_data <- 1
-  prop_train <- seq(0.1, 0.9, by = 0.1)
-  thresh_values <- seq(30, 85, by = 5)
+  prop_train <- seq(0.9, 0.9, by = 0.1)
+  thresh_values <- seq(30, 150, by = 5)
 } else {
   outfile <- "../../Data/Processed/threshold_optimization_linear_fine.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
+  # prop_data <- seq(0.5, 1.0, by = 0.1)
   prop_data <- 1
-  prop_train <- seq(0.5, 0.9, by = 0.1)
+  prop_train <- seq(0.8, 0.9, by = 0.1)
   thresh_values <- seq(45, 55, by = 1)
 }
 
@@ -42,12 +43,10 @@ actual <- suppressWarnings(
 )
 
 M <- full_join(areas, actual, by = "camera_id") %>% 
-  drop_na(handcount) %>% 
-  mutate(area = log(area),
-         handcount = log(handcount))
+  drop_na(handcount)
 
 # Load image dimensions and merge
-img_size <- read_csv("../../Data/Processed/image_dimensions.csv")
+img_size <- read_csv("../../Data/Processed/image_dimensions_hd_hand_counted_masked.csv")
 M <- left_join(M, img_size) %>% 
   drop_na()
 
@@ -59,12 +58,14 @@ area_rarefaction <- function(M, lower,
                              iters = 1000){
   library(tidyverse)
   M_sub <- filter(M, lower_thresh == lower)
+  
+  # Subset for proportion of data used
   M_sub <- M_sub[sample(1:nrow(M_sub), trunc(prop_data * nrow(M_sub))), ]
   
   # Empty tibble to hold cross-validation output
   cv <- tibble(
     r = numeric(iters),
-    MSD = numeric(iters)
+    rMSD = numeric(iters)
   )
   
   for (jj in 1:iters) {
@@ -75,17 +76,19 @@ area_rarefaction <- function(M, lower,
     # For some reason 0 was getting changed to -Inf, fix that
     tr <- M_sub[samps, ]
     tr$handcount[is.infinite(tr$handcount)] <- 0
+    tr$area[is.infinite(tr$area)] <- 0
     te <- M_sub[-samps, ]
     te$handcount[is.infinite(te$handcount)] <- 0
+    te$area[is.infinite(te$area)] <- 0
     
     # Fit model on training set
-    fm <- lm(handcount ~ area + img_size - 1, tr)
+    fm <- lm(handcount ~ I(area^0.5) + img_size - 1, tr)
     te$pred <- predict(fm, te)
     r <- cor(te$handcount, te$pred)
-    MSD <- mean((te$handcount - te$pred) ^ 2)
-    cv[jj, ] <- c(r, MSD)
+    rMSD <- sqrt(mean((te$handcount - te$pred) ^ 2))
+    cv[jj, ] <- c(r, rMSD)
   }
-  x <- matrix(c(mean(cv$r), mean(cv$MSD)), nrow = 1)
+  x <- matrix(c(mean(cv$r), mean(cv$rMSD)), nrow = 1)
   return(as.data.frame(x))
 }
 
@@ -93,9 +96,9 @@ n_thresh <- length(unique(M$lower_thresh))
 n_prop <- length(prop_data)
 n_out <- n_thresh * n_prop * length(prop_train)
 r <- 0
-MSD <- 0
+rMSD <- 0
 
-CVs <- crossing(prop_data, prop_train, lower = unique(M$lower_thresh), r, MSD)
+CVs <- crossing(prop_data, prop_train, lower = unique(M$lower_thresh), r, rMSD)
 
 message(paste("\n", nrow(CVs), "combinations to check.\n"))
 
@@ -140,7 +143,7 @@ p1 <- CVs %>%
   geom_point() +
   facet_grid(lower_f ~ prop_train_f)
 p2 <- CVs %>%
-  ggplot(aes(prop_data, MSD)) +
+  ggplot(aes(prop_data, rMSD)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   geom_point() +
   facet_grid(lower_f ~ prop_train_f)
@@ -153,5 +156,5 @@ CVs %>%
   arrange(desc(r))
 
 CVs %>% 
-  arrange(MSD)
+  arrange(rMSD)
 

@@ -46,7 +46,8 @@ def sum_area(rootDir, row, lower_thresh, resize,
     
     if write_image:
       warnings.simplefilter('ignore', UserWarning)
-      io.imsave(os.path.join(outdir, row.camera_id), thresh)
+      out_file = row.camera_id[:-4] + "_" + str(lower_thresh) + ".JPG"
+      io.imsave(os.path.join(outdir, out_file), thresh)
 
     area = np.sum(thresh == 255)
     return area
