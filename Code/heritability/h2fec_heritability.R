@@ -14,17 +14,21 @@
 ## ------------------------------------------------------------------------
 library(MCMCglmm)
 library(tidyverse)
-library(cowplot)
+library(parallel)
+#library(cowplot)
 
 #' 
 #' #### Heritability ###
 #' 
 ## ----eval=TRUE-----------------------------------------------------------
+
 set.seed(33416)
 
 iter <- 2e6
 burnin <- 2e4
+chains <- 12
 
+rerun <- TRUE
 
 h2fec <- read.table('../../Data/Processed/eggs_per_female.txt',
                      sep = "\t", dec = ".", header = TRUE,
@@ -57,21 +61,28 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 # a = nu / 2
 # b = nu * V / 2
 
+t1<-Sys.time()
+
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
+model <- mclapply(1:chains, function(i) {
 model <- MCMCglmm(eggs_per_female~ 1,
-                  random = ~ animal,
-                  family = "gaussian",
-                  prior = prior,
-                  pedigree = pedigree,
-                  data = HS,
-                  nitt = iter,
-                  burnin = burnin,
-                  thin = 50,
-                  verbose = FALSE)
+                    random = ~ animal,
+                    family = "gaussian",
+                    prior = prior,
+                    pedigree = pedigree,
+                    data = HS,
+                    nitt = iter,
+                    burnin = burnin,
+                    thin = 50,
+                    verbose = FALSE)
+}, mc.cores = chains)
 
 save(model, file = "../../Data/Processed/HS_FEC.Rda")
+
+t2<-Sys.time()
+cat(t2-t1)
 
 #' 
 ## ------------------------------------------------------------------------
@@ -98,19 +109,22 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 # a = nu / 2
 # b = nu * V / 2
 
+
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(eggs_per_female ~ 1,
-                  random = ~ animal,
-                  family = "gaussian",
-                  prior = prior,
-                  pedigree = pedigree,
-                  data = LY,
-                  nitt = iter,
-                  burnin = burnin,
-                  thin = 50,
-                  verbose = FALSE)
+model <- mclapply(1:chains, function(i) {
+  model <- MCMCglmm(eggs_per_female~ 1,
+                    random = ~ animal,
+                    family = "gaussian",
+                    prior = prior,
+                    pedigree = pedigree,
+                    data = LY,
+                    nitt = iter,
+                    burnin = burnin,
+                    thin = 50,
+                    verbose = FALSE)
+}, mc.cores = chains)
 
 save(model, file = "../../Data/Processed/LY_FEC.Rda")
 
@@ -145,16 +159,18 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(eggs_per_female ~ 1,
-                  random = ~ animal,
-                  family = "gaussian",
-                  prior = prior,
-                  pedigree = pedigree,
-                  data = STD,
-                  nitt = iter,
-                  burnin = burnin,
-                  thin = 50,
-                  verbose = FALSE)
+model <- mclapply(1:chains, function(i) {
+  model <- MCMCglmm(eggs_per_female~ 1,
+                    random = ~ animal,
+                    family = "gaussian",
+                    prior = prior,
+                    pedigree = pedigree,
+                    data = STD,
+                    nitt = iter,
+                    burnin = burnin,
+                    thin = 50,
+                    verbose = FALSE)
+}, mc.cores = chains)
 
 save(model, file = "../../Data/Processed/STD_FEC.Rda")
 

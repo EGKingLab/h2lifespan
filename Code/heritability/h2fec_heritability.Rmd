@@ -25,6 +25,7 @@ set.seed(33416)
 iter <- 2e6
 burnin <- 2e4
 
+rerun <- TRUE
 
 h2fec <- read.table('../../Data/Processed/eggs_per_female.txt',
                      sep = "\t", dec = ".", header = TRUE,
@@ -57,10 +58,13 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 # a = nu / 2
 # b = nu * V / 2
 
+t1<-Sys.time()
+
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(eggs_per_female~ 1,
+#model <- mclapply(1:chains, function(i) {
+model <- MCMCglmm(eggs_per_female ~ 1,
                   random = ~ animal,
                   family = "gaussian",
                   prior = prior,
@@ -70,8 +74,13 @@ model <- MCMCglmm(eggs_per_female~ 1,
                   burnin = burnin,
                   thin = 50,
                   verbose = FALSE)
+#}, mc.cores = chains)
 
 save(model, file = "../../Data/Processed/HS_FEC.Rda")
+
+t2<-Sys.time()
+cat(t2-t1)
+
 ```
 
 ```{r}

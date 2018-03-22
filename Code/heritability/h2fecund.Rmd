@@ -172,9 +172,19 @@ max(D$eggs_per_female)
 which.max(D$eggs_per_female)
 D[which.max(D$eggs_per_female),]
 
-# IMG_3626.JPG, S21D63_a_STD, flipDate: 2016-04-26 set to zero (odd case)
-# 
-#D[D$flipDate=="2016-04-26","eggs_per_female"]<-NA
+tt <- subset(D, id=="S17D50_a_STD")
+select(tt, 1:5,16:24)
+
+# Image IMG_5532.JPG with 277 eggs/female actually has 2 eggs
+D[D$camera_id=="IMG_5532.JPG","eggs_per_female"]<-2
+
+#change value based on two conditions
+#tm <- within(D, Name[Name == 'John Smith' & State == 'WI'] <- 'John Smith1')
+
+# IMG_3626.JPG, S21D63_a_STD, flipDate: 2016-04-26 with 397 eggs: set to missing (odd case)
+D[D$camera_id=="IMG_3626.JPG","eggs_per_female"]<-NA
+tt <- subset(D, id=="S21D63_a_STD")
+select(tt, 1:5,16:24)
 
 ggplot(D, aes(eggs_per_female)) + geom_histogram()
 ```
