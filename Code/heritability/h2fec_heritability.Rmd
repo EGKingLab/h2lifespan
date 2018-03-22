@@ -22,8 +22,8 @@ library(cowplot)
 ```{r eval=TRUE}
 set.seed(33416)
 
-iter <- 2e6
-burnin <- 2e4
+iter <- 200000 #2e6
+burnin <- 20000 #2e4
 
 rerun <- TRUE
 
@@ -33,15 +33,15 @@ h2fec <- read.table('../../Data/Processed/eggs_per_female.txt',
 ```
 
 ```{r}
-h2_filtered <- h2fec[h2fec$eggs_per_female, ]
-h2_filtered$animal <- seq(1, nrow(h2_filtered))
-h2_filtered$treat <- as.factor(h2_filtered$treat)
+#h2_filtered <- h2fec[h2fec$eggs_per_female, ]
+h2fec$animal <- seq(1, nrow(h2fec))
+h2fec$treat <- as.factor(h2fec$treat)
 ```
 
 ##### high sugar, HS
 
 ```{r}
-HS <- subset(h2_filtered, treat == "HS")
+HS <- subset(h2fec, treat == "HS")
 
 pedigree <- HS[, c("animal", "sireid", "damid")]
 names(pedigree) <- c("animal", "sire", "dam")
