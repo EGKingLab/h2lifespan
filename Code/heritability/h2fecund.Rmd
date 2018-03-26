@@ -189,18 +189,34 @@ select(tt, 1:5,16:24)
 ggplot(D, aes(eggs_per_female)) + geom_histogram()
 ```
 
-
-```{r}
-
-```
-
-
 ```{r}
 write.table(D, file="../../Data/Processed/eggs_per_female.txt", sep='\t',row.names = FALSE)
 
 ```
 
+## Aggregate sum of eggs per vial across all weeks
 
+```{r}
+D %>% group_by(id) %>% tally() %>% arrange(n)
+D %>% group_by(id) %>% tally() %>% arrange(desc(n))
+```
+
+```{r}
+D_sum <- D %>% group_by(id) %>% 
+  summarize(egg_total = sum(egg_count))
+
+D_sum <- D_sum %>% 
+  mutate(siredam = str_split(id, "_", simplify = TRUE)[, 1],
+         repl = str_split(id, "_", simplify = TRUE)[, 2],
+         treat = str_split(id, "_", simplify = TRUE)[, 3],
+         sireid = str_split(siredam, "D", simplify = TRUE)[, 1],
+         damid = paste0("D", str_split(siredam, "D", simplify = TRUE)[, 2])) %>% 
+  select(-siredam)
+
+write.table(D_sum, file="../../Data/Processed/eggs_per_vial.txt",
+            sep='\t', row.names = FALSE)
+
+```
 
 
 

@@ -27,19 +27,19 @@ library(cowplot)
 ```{r eval=TRUE}
 set.seed(33416)
 
-iter <- 200000 #2e6
-burnin <- 20000 #2e4
+iter <- 2e7
+burnin <- 5e4
+thin <- 100
 
 rerun <- TRUE
 ```
 
-## Per female
-
 ```{r}
-h2fec <- read.table('../../Data/Processed/eggs_per_female.txt',
-                     sep = "\t", dec = ".", header = TRUE,
-                     stringsAsFactors = FALSE)
-#h2_filtered <- h2fec[h2fec$eggs_per_female, ]
+h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
+                    sep = '\t',
+                    dec = ".", header = TRUE,
+                    stringsAsFactors = FALSE)
+
 h2fec$animal <- seq(1, nrow(h2fec))
 h2fec$treat <- as.factor(h2fec$treat)
 ```
@@ -70,7 +70,7 @@ prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
 #model <- mclapply(1:chains, function(i) {
-model <- MCMCglmm(eggs_per_female ~ 1,
+model <- MCMCglmm(egg_total ~ 1,
                   random = ~ animal,
                   family = "gaussian",
                   prior = prior,
@@ -78,11 +78,11 @@ model <- MCMCglmm(eggs_per_female ~ 1,
                   data = HS,
                   nitt = iter,
                   burnin = burnin,
-                  thin = 50,
+                  thin = thin,
                   verbose = FALSE)
 #}, mc.cores = chains)
 
-save(model, file = "../../Data/Processed/HS_FEC.Rda")
+save(model, file = "../../Data/Processed/HS_lifetime_FEC.Rda")
 
 t2<-Sys.time()
 cat(t2-t1)
@@ -90,7 +90,7 @@ cat(t2-t1)
 ```
 
 ```{r}
-load("../../Data/Processed/HS_FEC.Rda")
+load("../../Data/Processed/HS_lifetime_FEC.Rda")
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -129,7 +129,7 @@ rm(model)
 ```{r}
 t1<-Sys.time()
 
-LY <- subset(h2_filtered, treat == "LY")
+LY <- subset(h2fec, treat == "LY")
 
 pedigree <- LY[, c("animal", "sireid", "damid")]
 names(pedigree) <- c("animal", "sire", "dam")
@@ -147,7 +147,7 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(eggs_per_female ~ 1,
+model <- MCMCglmm(egg_total ~ 1,
                   random = ~ animal,
                   family = "gaussian",
                   prior = prior,
@@ -155,17 +155,17 @@ model <- MCMCglmm(eggs_per_female ~ 1,
                   data = LY,
                   nitt = iter,
                   burnin = burnin,
-                  thin = 50,
+                  thin = thin,
                   verbose = FALSE)
 
-save(model, file = "../../Data/Processed/LY_FEC.Rda")
+save(model, file = "../../Data/Processed/LY_lifetime_FEC.Rda")
 
 t2<-Sys.time()
 cat(t2-t1)
 ```
 
 ```{r}
-load("../../Data/Processed/LY_FEC.Rda")
+load("../../Data/Processed/LY_lifetime_FEC.Rda")
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -203,7 +203,7 @@ rm(model)
 ```{r}
 s1<-Sys.time()
 
-STD <- subset(h2_filtered, treat == "STD")
+STD <- subset(h2fec, treat == "STD")
 
 pedigree <- STD[, c("animal", "sireid", "damid")]
 names(pedigree) <- c("animal", "sire", "dam")
@@ -221,7 +221,7 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(eggs_per_female ~ 1,
+model <- MCMCglmm(egg_total ~ 1,
                   random = ~ animal,
                   family = "gaussian",
                   prior = prior,
@@ -229,17 +229,17 @@ model <- MCMCglmm(eggs_per_female ~ 1,
                   data = STD,
                   nitt = iter,
                   burnin = burnin,
-                  thin = 50,
+                  thin = thin,
                   verbose = FALSE)
 
-save(model, file = "../../Data/Processed/STD_FEC.Rda")
+save(model, file = "../../Data/Processed/STD_lifetime_FEC.Rda")
 
 s2<-Sys.time()
 cat(s2-s1)
 ```
 
 ```{r}
-load("../../Data/Processed/STD_FEC.Rda")
+load("../../Data/Processed/STD_lifetime_FEC.Rda")
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -282,7 +282,7 @@ hs.samp$HS <- NULL
 dr.samp$DR <- NULL
 c.samp$C <- NULL
 heritab <- rbind(hs.samp, dr.samp, c.samp)
-save(heritab, file = "../../Data/Processed/herit.Rda")
+save(heritab, file = "../../Data/Processed/herit_lifetime.Rda")
 ```
 
 # Plot treatments together
@@ -291,7 +291,7 @@ save(heritab, file = "../../Data/Processed/herit.Rda")
 ll<- 7.4
 ss<-0.2
 
-#pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
+#pdf("../../Data/Figures/heritability_lifetime_plots.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
  ggplot(heritab, aes(var1, fill = Diet)) + 
   geom_density(alpha = 0.2) +
@@ -311,8 +311,8 @@ par(mar=c(4.5,4.5,0.5,0.5))
 # extract .R for the shell
 
 ```{r}
-#library(knitr)
-#purl("h2fec_heritability.Rmd", output = "h2fec_heritability.R", documentation = 2)
+# library(knitr)
+# purl("h2fec_lifetime_heritability.Rmd", output = "h2fec_lifetime_heritability.R", documentation = 2)
 ```
 
 

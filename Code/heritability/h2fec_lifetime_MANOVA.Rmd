@@ -21,7 +21,28 @@ library(tidyverse)
 library(parallel)
 library(knitr)
 
-source("h2fec_load_data.R")
+h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
+                    sep = '\t',
+                    dec = ".", header = TRUE,
+                    stringsAsFactors = FALSE)
+
+# Standardize egg_total
+h2fec$egg_total <- as.numeric(scale(h2fec$egg_total))
+
+h2fec$animal <- seq(1, nrow(h2fec))
+h2fec$treat <- as.factor(h2fec$treat)
+
+pedigree <- h2fec[, c("animal", "sireid", "damid")]
+names(pedigree) <- c("animal", "sire", "dam")
+pedigree$animal <- as.character(pedigree$animal)
+pedigree$sire <- as.character(pedigree$sire)
+pedigree$dam <- as.character(pedigree$dam)
+sires <- data.frame(animal = unique(pedigree$sire),
+                    sire = NA, dam = NA, stringsAsFactors = FALSE)
+dams <- data.frame(animal = unique(pedigree$dam),
+                   sire = NA, dam = NA, stringsAsFactors = FALSE)
+pedigree <- bind_rows(sires, dams, pedigree) %>%
+  as.data.frame()
 
 genet_corr <- tibble(model = character(),
                      HS_STD = numeric(),
@@ -29,8 +50,8 @@ genet_corr <- tibble(model = character(),
                      HS_LY = numeric(),
                      n_eff = numeric())
 
-iter <- 6.5e5
-burnin <- 2e4
+iter <- 6.5e6
+burnin <- 5e4
 thinning <- 500
 chains <- 12
 
@@ -42,31 +63,23 @@ rerun <- TRUE
 ```{r MANOVA_Models, cache=TRUE}
 # 19 hours run time on nivalis (6e5 would be reasonable!)
 if (rerun) {
-  HS <- h2fec_manova %>% 
-    filter(treat == "HS") %>% rename(Eggs_HS = eggs_per_female) %>% 
+  HS <- h2fec %>% 
+    filter(treat == "HS") %>% rename(Eggs_HS = egg_total) %>% 
     as.data.frame()
-  LY <- h2fec_manova %>% 
-    filter(treat == "LY") %>% rename(Eggs_LY = eggs_per_female) %>% 
+  LY <- h2fec %>% 
+    filter(treat == "LY") %>% rename(Eggs_LY = egg_total) %>% 
     as.data.frame()
-  STD <- h2fec_manova %>%
-    filter(treat == "STD") %>% rename(Eggs_STD = eggs_per_female) %>% 
+  STD <- h2fec %>%
+    filter(treat == "STD") %>% rename(Eggs_STD = egg_total) %>% 
     as.data.frame()
   
-  h2fec_manova_mrg <- full_join(full_join(HS, LY), STD)
+  h2fec_mrg <- full_join(full_join(HS, LY), STD)
   
   prior1 <- list(R = list(V = diag(3) * 1.002, nu = 1.002),
                  G = list(G1 = list(V = diag(3) * 1.002, nu = 0.002)))
   
-  prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
-                 G = list(G1 = list(V = diag(3) / 3, nu = 0.002)))
-  
-  prior3 <- list(R = list(V = diag(3) * 1.002, nu = 1),
-                 G = list(G1 = list(V = diag(3) * 0.5, nu = 0.002)))
-  
-  priors <- list(prior1, prior2, prior3)
-  prior_names <- c("Tri: V = diag(3) * 1.002, nu = 0.02",
-                   "Tri: V = diag(3) / 3, nu = 0.02",
-                   "Tri: V = diag(3) * 0.5, nu = 0.02")
+  priors <- list(prior1)
+  prior_names <- c("Tri: V = diag(3) * 1.002, nu = 0.02")
   
   for (ii in 1:length(priors)) {
     prior <- priors[[ii]]
@@ -74,7 +87,7 @@ if (rerun) {
       MCMCglmm(cbind(Eggs_STD, Eggs_HS, Eggs_LY) ~ trait - 1,
                random = ~ us(trait):animal,
                rcov = ~ idh(trait):units,
-               data = h2fec_manova_mrg,
+               data = h2fec_mrg,
                prior = prior,
                pedigree = pedigree,
                family = rep("gaussian", 3),
@@ -82,12 +95,13 @@ if (rerun) {
                burnin = burnin,
                thin = thinning)
     }, mc.cores = chains)
-    outfile <- paste0("../../Data/Processed/triFEC_model_prior", ii, ".Rda")
+    outfile <- paste0("../../Data/Processed/FEC_lifetime_model_prior", ii, ".Rda")
     save(fm, file = outfile)
     
     re <- lapply(fm, function(m) m$VCV)
     re <- do.call(mcmc.list, re)
     re <- as.mcmc(as.matrix(re))
+    
     n_eff <- effectiveSize(re)
     
     # STD vs. HS
@@ -120,7 +134,7 @@ if (rerun) {
 ### Analyze model
 
 ```{r MANOVA_Analysis}
-load("triFEC_model_prior1.Rda")
+load("FEC_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
 fe <- do.call(mcmc.list, fe)
@@ -241,13 +255,15 @@ if (rerun) {
                    "Sire: V = diag(3) * 0.5 * 0.7, nu = 0.002",
                    "Sire: V = 0.5 diag, 0.35 off-diag, nu = 0.002")
   
+  h2fec$egg_total_std <- scale(h2fec$egg_total)
+  
   for (ii in 1:length(priors)) {
     prior <- priors[[ii]]
     
     fm <- mclapply(1:chains, function(i) {
-      MCMCglmm(eggs_per_female ~ treat,
-               random = ~ us(treat):sire,
-               data = h2fec_manova,
+      MCMCglmm(egg_total_std ~ treat,
+               random = ~ us(treat):sireid,
+               data = h2fec,
                prior = prior,
                family = "gaussian",
                nitt = iter,
@@ -358,5 +374,5 @@ HPDinterval(HS_LY)
 
 ```{r}
 library(knitr)
-purl("h2fec_MANOVA.Rmd", output = "h2fec_MANOVA.R", documentation = 2)
+purl("h2fec_lifetime_MANOVA.Rmd", output = "h2fec_lifetime_MANOVA.R", documentation = 2)
 ```

@@ -200,8 +200,7 @@ h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimage
                          col_types = "cii")
 
 M <- left_join(M, h2_fec_areas) %>% 
-  rename(area_linear = area) %>% 
-    drop_na(area_linear)
+  rename(area_linear = area)
 
 # Load image dimensions and merge
 img_size <- read_csv("../../Data/Processed/image_dimensions_h2_fec_images.csv")
