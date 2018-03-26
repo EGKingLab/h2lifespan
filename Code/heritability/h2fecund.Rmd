@@ -51,8 +51,8 @@ M <- M %>%
 #write_csv(M, path = "../../Data/Processed/feclife_with-image-ids.csv")
 
 #checks
-#M[M$id=="S11D33_a_LY" ,]
-#M[M$id=="S19D55_a_HS" ,]
+#subset(M, M$id=="S11D33_a_LY")
+#subset(M, M$id=="S19D55_a_HS")
 ```
 
 #Merge with lifespan to get number of females

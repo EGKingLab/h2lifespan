@@ -1,6 +1,7 @@
 # script changes values for a specific id
 
 M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
+M <- readit::readit("../../Data/Processed/feclife_with-image-ids.xlsx")
 
 # make unique ids
 M <- unite(M, "id", fID, treat, sep = "_", remove=FALSE)

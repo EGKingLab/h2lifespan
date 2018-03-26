@@ -22,7 +22,7 @@ library(cowplot)
 ```{r eval=TRUE}
 set.seed(37264)
 
-iter <- 2000000
+iter <- 250000
 burnin <- 15000
 
 h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
@@ -47,7 +47,9 @@ sires <- data.frame(animal = unique(pedigree$sire),
 dams <- data.frame(animal = unique(pedigree$dam),
                    sire = NA, dam = NA, stringsAsFactors = FALSE)
 pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
+```
 
+```{r}
 # Inverse Gamma(0.001; 0.001)
 # a = nu / 2
 # b = nu * V / 2
