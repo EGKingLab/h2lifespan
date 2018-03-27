@@ -237,3 +237,6 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 - Rerunning optimization with sqrt(area) and imgage size. Predicting new (final) values for eggs.
 - Cleaning up old unneeded files.
 
+### 2018-03-26 (KMM)
+
+- Analyze lifetime fecundity with MCMCglmm.

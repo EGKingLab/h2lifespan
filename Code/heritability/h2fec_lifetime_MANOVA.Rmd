@@ -11,6 +11,11 @@ output:
       smooth_scroll: true
 ---
 
+```{r}
+# library(knitr)
+# purl("h2fec_lifetime_MANOVA.Rmd", output = "h2fec_lifetime_MANOVA.R", documentation = 2)
+```
+
 # Setup
 
 ```{r setup}
@@ -19,7 +24,6 @@ set.seed(224819)
 library(MCMCglmm)
 library(tidyverse)
 library(parallel)
-library(knitr)
 
 h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     sep = '\t',
@@ -50,12 +54,12 @@ genet_corr <- tibble(model = character(),
                      HS_LY = numeric(),
                      n_eff = numeric())
 
-iter <- 6.5e6
-burnin <- 5e4
+iter <- 6.5e4
+burnin <- 5e2
 thinning <- 500
 chains <- 12
 
-rerun <- TRUE
+rerun <- FALSE
 ```
 
 ## MANOVA analysis
@@ -134,7 +138,7 @@ if (rerun) {
 ### Analyze model
 
 ```{r MANOVA_Analysis}
-load("FEC_model_prior1.Rda")
+load("../../Data/Processed/FEC_lifetime_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
 fe <- do.call(mcmc.list, fe)
@@ -235,8 +239,6 @@ V_nu_to_a_b <- function(V, nu) {
 ```{r Sire_Models, cache=TRUE}
 V_nu_to_a_b(1, 0.002)
 
-genet_corr <- read_csv("Genetic_Correlations.csv")
-
 if (rerun) {
   
   prior1 <- list(R = list(V = 1, nu = 0.002),
@@ -281,21 +283,21 @@ if (rerun) {
     n_eff <- effectiveSize(re)
     
     # STD vs. HS
-    HS_STD <- re[ , "treatHS:treatSTD.sire"] /
-      sqrt(re[ , "treatHS:treatHS.sire"] *
-             re[ , "treatSTD:treatSTD.sire"])
+    HS_STD <- re[ , "treatHS:treatSTD.sireid"] /
+      sqrt(re[ , "treatHS:treatHS.sireid"] *
+             re[ , "treatSTD:treatSTD.sireid"])
     median(HS_STD)
     
     # STD vs. LY
-    LY_STD <- re[ , "treatSTD:treatLY.sire"] /
-      sqrt(re[ , "treatSTD:treatSTD.sire"] *
-             re[ , "treatLY:treatLY.sire"])
+    LY_STD <- re[ , "treatSTD:treatLY.sireid"] /
+      sqrt(re[ , "treatSTD:treatSTD.sireid"] *
+             re[ , "treatLY:treatLY.sireid"])
     median(LY_STD)
     
     # LY vs. HS
-    HS_LY <- re[ , "treatHS:treatLY.sire"] /
-      sqrt(re[ , "treatLY:treatLY.sire"] *
-             re[ , "treatHS:treatHS.sire"])
+    HS_LY <- re[ , "treatHS:treatLY.sireid"] /
+      sqrt(re[ , "treatLY:treatLY.sireid"] *
+             re[ , "treatHS:treatHS.sireid"])
     median(HS_LY)
     
     genet_corr <- bind_rows(genet_corr,
@@ -338,41 +340,36 @@ re <- as.mcmc(as.matrix(re))
 colnames(re)
 
 # ??? Heritability ????
-HS <- re[, "treatHS:treatHS.sire"] / (re[, "treatHS:treatHS.sire"] + re[, "units"])
+HS <- re[, "treatHS:treatHS.sireid"] / (re[, "treatHS:treatHS.sireid"] + re[, "units"])
 median(HS)
 
-LY <- re[, "treatLY:treatLY.sire"] / (re[, "treatLY:treatLY.sire"] + re[, "units"])
+LY <- re[, "treatLY:treatLY.sireid"] / (re[, "treatLY:treatLY.sireid"] + re[, "units"])
 median(LY)
 
-STD <- re[, "treatSTD:treatSTD.sire"] / (re[, "treatSTD:treatSTD.sire"] + re[, "units"])
+STD <- re[, "treatSTD:treatSTD.sireid"] / (re[, "treatSTD:treatSTD.sireid"] + re[, "units"])
 median(STD)
 
 # STD vs. HS
-HS_STD <- re[ , "treatHS:treatSTD.sire"] /
-  sqrt(re[ , "treatHS:treatHS.sire"] *
-         re[ , "treatSTD:treatSTD.sire"])
+HS_STD <- re[ , "treatHS:treatSTD.sireid"] /
+  sqrt(re[ , "treatHS:treatHS.sireid"] *
+         re[ , "treatSTD:treatSTD.sireid"])
 plot(HS_STD)
 median(HS_STD)
 HPDinterval(HS_STD)
 
 # STD vs. LY
-LY_STD <- re[ , "treatSTD:treatLY.sire"] /
-  sqrt(re[ , "treatSTD:treatSTD.sire"] *
-         re[ , "treatLY:treatLY.sire"])
+LY_STD <- re[ , "treatSTD:treatLY.sireid"] /
+  sqrt(re[ , "treatSTD:treatSTD.sireid"] *
+         re[ , "treatLY:treatLY.sireid"])
 plot(LY_STD)
 median(LY_STD)
 HPDinterval(LY_STD)
 
 # LY vs. HS
-HS_LY <- re[ , "treatHS:treatLY.sire"] /
-  sqrt(re[ , "treatLY:treatLY.sire"] *
-         re[ , "treatHS:treatHS.sire"])
+HS_LY <- re[ , "treatHS:treatLY.sireid"] /
+  sqrt(re[ , "treatLY:treatLY.sireid"] *
+         re[ , "treatHS:treatHS.sireid"])
 plot(HS_LY)
 median(HS_LY)
 HPDinterval(HS_LY)
-```
-
-```{r}
-library(knitr)
-purl("h2fec_lifetime_MANOVA.Rmd", output = "h2fec_lifetime_MANOVA.R", documentation = 2)
 ```
