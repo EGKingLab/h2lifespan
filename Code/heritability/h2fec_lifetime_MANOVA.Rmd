@@ -19,7 +19,7 @@ output:
 # Setup
 
 ```{r setup}
-rerun <- TRUE
+rerun <- FALSE
 
 set.seed(224819)
 
@@ -56,8 +56,8 @@ genet_corr <- tibble(model = character(),
                      HS_LY = numeric(),
                      n_eff = numeric())
 
-iter <- 6.5e4
-burnin <- 5e2
+iter <- 6.5e6
+burnin <- 5e4
 thinning <- 500
 chains <- 12
 ```
