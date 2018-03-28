@@ -29,13 +29,13 @@ library(cowplot)
 #### Heritability ###
 
 ```{r}
+rerun <- TRUE
+
 set.seed(33416)
 
 iter <- 2e7
 burnin <- 5e4
 thin <- 200
-
-rerun <- FALSE
 ```
 
 ```{r}

@@ -240,3 +240,8 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 ### 2018-03-26 (KMM)
 
 - Analyze lifetime fecundity with MCMCglmm.
+
+### 2018-03-28 (KMM)
+
+- Normalize egg_total by the starting number of females in the vial.
+

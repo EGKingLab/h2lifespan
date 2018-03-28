@@ -202,8 +202,22 @@ D %>% group_by(id) %>% tally() %>% arrange(desc(n))
 ```
 
 ```{r}
+(ch.f <- D %>% group_by(id) %>% summarise('dfem' = n_distinct(NstartF)) %>%
+   filter(dfem > 1) %>% 
+   as.data.frame())
+```
+
+```{r}
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
 D_sum <- D %>% group_by(id) %>% 
-  summarize(egg_total = sum(egg_count))
+  summarize(egg_total = sum(egg_count),
+            NstartF = getmode(NstartF),
+            egg_total = egg_total / NstartF) %>% 
+  select(-NstartF)
 
 D_sum <- D_sum %>% 
   mutate(siredam = str_split(id, "_", simplify = TRUE)[, 1],
@@ -215,11 +229,4 @@ D_sum <- D_sum %>%
 
 write.table(D_sum, file="../../Data/Processed/eggs_per_vial.txt",
             sep='\t', row.names = FALSE)
-
 ```
-
-
-
-
-
-

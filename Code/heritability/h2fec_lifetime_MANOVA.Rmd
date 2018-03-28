@@ -19,6 +19,8 @@ output:
 # Setup
 
 ```{r setup}
+rerun <- TRUE
+
 set.seed(224819)
 
 library(MCMCglmm)
@@ -58,8 +60,6 @@ iter <- 6.5e4
 burnin <- 5e2
 thinning <- 500
 chains <- 12
-
-rerun <- FALSE
 ```
 
 ## MANOVA analysis
