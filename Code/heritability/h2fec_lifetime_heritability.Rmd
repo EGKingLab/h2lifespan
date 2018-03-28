@@ -29,7 +29,7 @@ library(cowplot)
 #### Heritability ###
 
 ```{r}
-rerun <- TRUE
+rerun <- FALSE
 
 set.seed(33416)
 
