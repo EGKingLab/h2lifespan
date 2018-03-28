@@ -219,18 +219,18 @@ Prediction via `lm()` is much better.
 The list 'high_eggs_per_female.xlsx contains females that have more than 100 each. EGK and EN
 agreed to do nothing about these unless something gets obviously odd after analysis.
 
-### 2018-03-18
+### 2018-03-14 (KMM)
+
+- Cleaning up the proliferation of image area calculations. Now just running the area summation on all the images across the range of possible threshold values. We can filter out the coarse vs. fine set of threshold values in the optimization step.
+- Using image size in the linear model now.
+
+### 2018-03-18 (EN)
 
 Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet records:
 	- entry error at age 74 (i.e. 1 female died but was entered as 0)
 	- NstartF changed to 15 - was entered incorrectly as 11 
 	- 12 female and 6 male death events only!
 	- necessitates rerun of mcmcglmm
-
-### 2018-03-14 (KMM)
-
-- Cleaning up the proliferation of image area calculations. Now just running the area summation on all the images across the range of possible threshold values. We can filter out the coarse vs. fine set of threshold values in the optimization step.
-- Using image size in the linear model now.
 
 ### 2018-03-18 (KMM)
 
@@ -244,4 +244,8 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 ### 2018-03-28 (KMM)
 
 - Normalize egg_total by the starting number of females in the vial.
+
+### 2018-03-28 (EN)
+
+- Phenotype analysis of fecundity
 
