@@ -252,3 +252,17 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 ### 2018-03-29 (EGK)
 
 -Fixed a copy error between lifespan and fecundity data sheets (April 12). Code for this is in egg counter folder. Changed in the feclife_with-image-ids.xlsx file.
+
+### 2018-03-29 (EN)
+
+- a list of corrections made to lifespan_only.slsx and feclife_with-image-ids.xlsx based on correct_Apr12.R
+1. S11_D33_a_LY: NstartF chnaged to 15 based on set-up record
+2. S13D39_a_STD: NstartF chnaged to 16 based on set-up record
+3. S17D50_b_STD: box coordinates suggest a copying error resulting in repetion of row. Row is deleted from _b replicate
+4. S19D56_b_HS:  A replicate made on 3.2.16 seemed to have bee ceased and replaced on 3.28.16 without a note written. NstartF amended to 20
+5. S23D68_b_STD: N=23, was made on 3.11.16 but went missing; replaced on 3.28.16. The single row is deleted deleted
+6. S41D121_b_LY: N=22 changed to N=24 (consistency of coordinates). N=16 on 5.3.16 changed to N=25 as this seems most plausible
+7. S53D159_a_LY: N=19 (not 17) - seems to be entry error
+8. S59D175_b_LY: no set-up record; set to N=24 based on observed dead events.
+
+
