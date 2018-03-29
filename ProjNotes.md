@@ -249,3 +249,6 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 
 - Phenotype analysis of fecundity
 
+### 2018-03-29 (EGK)
+
+-Fixed a copy error between lifespan and fecundity data sheets (April 12). Code for this is in egg counter folder. Changed in the feclife_with-image-ids.xlsx file.
