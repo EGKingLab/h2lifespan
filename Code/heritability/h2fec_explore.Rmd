@@ -45,6 +45,8 @@ h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE)
 
+CC <- h2fec_phenotype   #for downstream use
+
 h2fec_phenotype <- as_tibble(h2fec_phenotype)
 h2fec_phenotype <- dplyr::rename(h2fec_phenotype, Diet = treat)
 ```
@@ -57,7 +59,7 @@ par(mar=c(4.5,4.5,0.5,0.5))
  ggplot(h2fec_phenotype, aes(egg_total, fill = Diet)) + 
   geom_density(alpha = 0.2) +
   #coord_cartesian(xlim=c(0, 1e4), ylim=c(0, 5e4)) + #adjust frame of x-axis
-  scale_x_continuous(expand=c(0, 0), limits=c(0, 1.1e4)) + #limit plot area on x-axix
+  scale_x_continuous(expand=c(0, 0), limits=c(0, 5.5e2)) + #limit plot area on x-axix
   scale_color_manual(values=c("#CC6666", "#9999CC", "#66CC99")) +
   theme(axis.title = element_text(face="bold", size=16)) +
   xlab("Lifetime fecundity") + ylab("Density") +
@@ -136,7 +138,7 @@ p <- ggplot(h2fec_phenotype, aes(x= reorder(sire_Diet, egg_total), y=egg_total, 
   #guides(fill=guide_legend(title="Diet")) +
 geom_point(aes(color=Diet), position = position_dodge(width = 0.9),size=0.75) 
 
-p +   expand_limits(y = c(1, 1e4)) 
+p +   expand_limits(y = c(1, 5e2)) 
 #tt + guides(fill=guide_legend(title="Diet"))
 
 #dev.off()
@@ -149,10 +151,6 @@ p +   expand_limits(y = c(1, 1e4))
 par(mar=c(4.5,4.5,0.5,0.5))
 
 #ascending order
-#cyl_table <- table(mtcars$cyl)
-#cyl_levels <- names(cyl_table)[order(cyl_table)]
-#mtcars$cyl2 <- factor(mtcars$cyl, levels = cyl_levels)
-
 pq <- ggplot(h2fec_phenotype, aes(x= reorder(id, -egg_total), y=egg_total, fill=Diet)) +
 
 #descending order
@@ -160,13 +158,13 @@ pq <- ggplot(h2fec_phenotype, aes(x= reorder(id, -egg_total), y=egg_total, fill=
   theme(axis.text.x = element_blank(), legend.position = 'top') +
     stat_summary(fun.ymin=min, fun.ymax=max, fun.y = mean,
                position = position_dodge(width = 0.9),
-               geom = "bar", alpha=0.8) +  xlab("Sire family") + ylab("Total eggs") +
+               geom = "bar", alpha=0.8) +  xlab("Dam family") + ylab("Total eggs") +
   scale_y_continuous(expand = c(0,0))+
   #scale_fill_discrete(name="Diet")+
   #guides(fill=guide_legend(title="Diet")) +
 geom_point(aes(color=Diet), position = position_dodge(width = 0.9),size=0.75) 
 
-pq +   expand_limits(y = c(1, 1e4)) 
+pq +   expand_limits(y = c(1, 5e2)) 
 #tt + guides(fill=guide_legend(title="Diet"))
 
 #dev.off()
@@ -189,20 +187,99 @@ head(h2fec_sire_sum)
 ```
 
 
+# reaction norms for sire families
 
 ```{r}
+# prep each treatment into its own column
 
-#plot reaction norms for sire families
+#pull HS and compute median
+HS <- subset(h2fec_phenotype, Diet == "HS")
+hs_trim <- cbind.data.frame(HS$sireid, HS$egg_total)
+hs_med <- aggregate(. ~ HS$sireid, data=hs_trim, FUN=median)
+hs_med[,2] <- NULL
+colnames(hs_med) <- c("sireid","eggs")
+hs_med$diet<-"HS"
+
+#pull LY and compute median
+DR <- subset(h2fec_phenotype, Diet == "LY")
+dr_trim <- cbind.data.frame(DR$sireid, DR$egg_total)
+dr_med <- aggregate(. ~ DR$sireid, data=dr_trim, FUN=median)
+dr_med[,2] <- NULL
+colnames(dr_med) <- c("sireid","eggs")
+dr_med$diet<-"DR"
+
+#pull STD and compute median
+C <- subset(h2fec_phenotype, Diet == "STD")
+c_trim <- cbind.data.frame(C$sireid, C$egg_total)
+c_med <- aggregate(. ~ C$sireid, data=c_trim, FUN=median)
+c_med[,2] <- NULL
+colnames(c_med) <- c("sireid","eggs")
+c_med$diet<-"C"
+```
+
+# join data frames
+
+```{r}
+B <- rbind(hs_med, c_med, dr_med)
+#B<-B[!(B$sireid=="S39"),]
+#attach a column of diet to each data frame before joining; use that as fill
+
+#reorder x-axis (ggplot default is alphabetical)
+B$diet <- as.character(B$diet) #turn diet col into a char vector
+B$diet <- factor(B$diet, levels=unique(B$diet)) #back to ordered factor
+#save(B, file = "/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/h2reacts.Rda")
+```
+
+# plot reaction norms for sire families
+
+```{r}
 #pdf("../../Data/Figures/h2life_reaction_norms.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
-ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age)) +
+ggplot(B, aes(x = B$diet, y = B$eggs)) +
   geom_point(size = 2)+
   geom_line(aes(group = paste(sireid), alpha = 0.2)) +
-  xlab("Dietary condition") + ylab("Median lifespan (days)") +
+  xlab("Dietary condition") + ylab("Total eggs") +
   theme(legend.position="none") +
   scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
 #dev.off()
-``
+```
+
+
+# per week analysis
+
+```{r}
+AA <- read.table('../../Data/Processed/eggs_per_female.txt',
+                     sep = "\t", header = TRUE,
+                     stringsAsFactors = FALSE)
+
+AA %>%
+   select(flipDate,id,fID,treat,age,sireid,damid,n_females,eggs_per_female)
+  
+#AA <- as_tibble(AA)
+```
+
+
+```{r}
+AA$flipDate <- as.Date(AA$flipDate)
+
+AA <- AA[!is.na(AA$eggs_per_female), ]
+
+A1 <- aggregate(AA$eggs_per_female, by=list(AA$flipDate), sum)
+
+#this also works
+#A1 <- aggregate(AA["eggs_per_female"], by=AA["flipDate"], sum)
+
+#start on grouping by tret
+```
+
+```{r}
+
+
+library(data.table)
+A1 <- data.table(AA)
+A1[,list(mean=mean("eggs_per_female"),sd=sd("eggs_per_female")),by=flipDate]
+```
+
 
 
 

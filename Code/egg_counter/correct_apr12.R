@@ -41,7 +41,7 @@ mm[which(!mm%in%ll)]
 
 lifespan[lifespan$fID=="S37D111_a",]
 
-ch.f <- M %>% group_by(id) %>% summarise('dfem'=n_distinct(NstartF))
+ch.f <- M %>% group_by(id) %>% dplyr::summarise('dfem'= n_distinct(NstartF))
 ii <- ch.f[which(ch.f$dfem>1),]
 
 as.data.frame(M[M$id==ii$id[1],])

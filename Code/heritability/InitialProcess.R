@@ -5,11 +5,9 @@ source("../../Code/heritability/PreProcess_lifespan_functions.R")
 
 ############FUNCTIONS##########
 
-setwd("~/MyGithub/h2lifespan/Data/Processed")
-
 library(tidyverse)
 
-lifespan<-read.table('lifespan_only.txt',sep="\t",header=TRUE,stringsAsFactors=FALSE) %>%
+lifespan<-read.table('../../Data/Processed/lifespan_only.txt',sep="\t",header=TRUE,stringsAsFactors=FALSE) %>%
   select(1, 2, 4:8, 12:16)
 
 #calculate age (day)
