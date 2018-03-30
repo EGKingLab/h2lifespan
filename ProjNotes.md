@@ -265,4 +265,6 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 7. S53D159_a_LY: N=19 (not 17) - seems to be entry error
 8. S59D175_b_LY: no set-up record; set to N=24 based on observed dead events.
 
+### 2018-03-29 (KMM)
 
+- Rerun fecundity heritabilty & genetic correlation models.

@@ -12,7 +12,7 @@ output:
 ---
 
 ```{r}
-# library(knitr)
+library(knitr)
 # purl("h2fec_lifetime_MANOVA.Rmd", output = "h2fec_lifetime_MANOVA.R", documentation = 2)
 ```
 
@@ -26,7 +26,9 @@ set.seed(224819)
 library(MCMCglmm)
 library(tidyverse)
 library(parallel)
+```
 
+```{r}
 h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     sep = '\t',
                     dec = ".", header = TRUE,
