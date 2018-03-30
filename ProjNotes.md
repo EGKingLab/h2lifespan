@@ -268,3 +268,10 @@ Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet r
 ### 2018-03-29 (KMM)
 
 - Rerun fecundity heritabilty & genetic correlation models.
+
+### 2018-03-30
+
+These two images dropped from analysis: 1) no females left in vial at this date, 2) lifespan data sheet for this date was lost, 3) high count inconsistent at end of line
+camera_id     flipDate      fID        treat days predicted_count_linear
+IMG_5736.JPG	2016-06-14	S17D50_b	HS	 82	  243.7068
+IMG_5738.JPG	2016-06-14	S57D169_b	HS	 78	  255 (handcount)
