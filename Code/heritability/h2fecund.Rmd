@@ -183,6 +183,7 @@ D[D$camera_id=="IMG_5532.JPG","eggs_per_female"]<-2
 
 # IMG_3626.JPG, S21D63_a_STD, flipDate: 2016-04-26 with 397 eggs: set to missing (odd case)
 D[D$camera_id=="IMG_3626.JPG","eggs_per_female"]<-NA
+D[D$camera_id=="IMG_5736.JPG","eggs_per_female"] <- NA
 tt <- subset(D, id=="S21D63_a_STD")
 select(tt, 1:5,16:24)
 
