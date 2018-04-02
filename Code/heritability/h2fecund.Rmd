@@ -178,16 +178,18 @@ select(tt, 1:5,16:24)
 # Image IMG_5532.JPG with 277 eggs/female actually has 2 eggs
 D[D$camera_id=="IMG_5532.JPG","eggs_per_female"]<-2
 
-#change value based on two conditions
-#tm <- within(D, Name[Name == 'John Smith' & State == 'WI'] <- 'John Smith1')
-
 # IMG_3626.JPG, S21D63_a_STD, flipDate: 2016-04-26 with 397 eggs: set to missing (odd case)
-D[D$camera_id=="IMG_3626.JPG","eggs_per_female"]<-NA
+D[D$camera_id=="IMG_3626.JPG","eggs_per_female"] <- NA
 D[D$camera_id=="IMG_5736.JPG","eggs_per_female"] <- NA
-tt <- subset(D, id=="S21D63_a_STD")
-select(tt, 1:5,16:24)
+D[D$camera_id=="IMG_5735.JPG","eggs_per_female"] <- NA
+D[D$camera_id=="IMG_5738.JPG","eggs_per_female"] <- NA
 
+#tt <- subset(D, id=="S45D134_a_HS")
+#D[D$camera_id=="IMG_5571.JPG","eggs_per_female"] <- NA #see comment in h2fec_explore.Rmd
+select(tt, 1:4,23:24)
 ggplot(D, aes(eggs_per_female)) + geom_histogram()
+
+
 ```
 
 ```{r}

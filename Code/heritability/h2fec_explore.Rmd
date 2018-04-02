@@ -19,13 +19,13 @@ output:
 # groupnames : vector of grouping variables
 
 data_summary <- function(data, varname, groupnames){
-  require(plyr)
   summary_func <- function(x, col){
     c(mean = mean(x[[col]], na.rm=TRUE),
       sd = sd(x[[col]], na.rm=TRUE))
   }
-  data_sum<-ddply(data, groupnames, .fun=summary_func,
-                  varname)
+  data_sum <- data %>%
+    group_by(groupnames) %>% 
+    summarize(summary_func(., varname))
   data_sum <- rename(data_sum, c("mean" = varname))
  return(data_sum)
 }
@@ -57,7 +57,7 @@ h2fec_phenotype <- dplyr::rename(h2fec_phenotype, Diet = treat)
 #pdf("../../Data/Figures/density_all-data_ggpl.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
  ggplot(h2fec_phenotype, aes(egg_total, fill = Diet)) + 
-  geom_density(alpha = 0.2) +
+  geom_density(alpha = 0.8) +
   #coord_cartesian(xlim=c(0, 1e4), ylim=c(0, 5e4)) + #adjust frame of x-axis
   scale_x_continuous(expand=c(0, 0), limits=c(0, 5.5e2)) + #limit plot area on x-axix
   scale_color_manual(values=c("#CC6666", "#9999CC", "#66CC99")) +
@@ -71,13 +71,18 @@ par(mar=c(4.5,4.5,0.5,0.5))
 # summarize data
 
 ```{r}
-h2fec_sum <- data_summary(h2fec_phenotype, varname="egg_total", 
-                    #groupnames=c("supp", "dose")) # if have multiple grouping variables
-                    groupnames="Diet")
+# h2fec_sum <- data_summary(h2fec_phenotype, varname="egg_total",
+#                     #groupnames=c("supp", "dose")) # if have multiple grouping variables
+#                     groupnames="Diet")
+
+h2fec_sum <- h2fec_phenotype %>% 
+  group_by(Diet) %>% 
+  summarise(egg_total_mean = mean(egg_total, na.rm = TRUE),
+            sd = sd(egg_total)) %>% 
+  rename(egg_total = egg_total_mean)
 
 # Convert dose to a factor variable
-h2fec_sum$Diet=as.factor(h2fec_sum$Diet)
-head(h2fec_sum)
+h2fec_sum
 ```
 
 
@@ -88,13 +93,13 @@ head(h2fec_sum)
 p <- ggplot(h2fec_sum, aes(x=Diet, y=egg_total, fill=Diet)) + 
     geom_bar(stat="identity", position=position_dodge(), width=0.9) +
     geom_errorbar(aes(ymin=egg_total-sd, ymax=egg_total+sd), width=.2,
-                 position=position_dodge(.9)) +
+                  position=position_dodge(.9)) +
     scale_y_continuous(expand = c(0,0))
   
 p + scale_fill_grey() + theme_minimal()
 
 p + labs(title="Lifetime eggs per diet treatment", 
-         x="Diet", y = "Total eggs")+
+         x="Diet", y = "Eggs per female")+
     scale_fill_grey(guide=FALSE) + 
    #scale_fill_manual(values=c('black','lightgray'))+ # Change color by groups
    theme_classic()
@@ -107,6 +112,24 @@ p + labs(title="Lifetime eggs per diet treatment",
 #p + scale_fill_manual(values=c('black','lightgray'))  #great black $ grey theme
 #p + scale_fill_brewer(palette="Greens") + theme_minimal() #great greens
 #p + scale_fill_brewer(palette="Reds") + theme_minimal() #great reds
+
+```{r}
+#dot plot
+
+k6 <- ggplot(data=h2fec_phenotype, aes(x=Diet, y=egg_total, color=Diet)) + #group-sire_trt
+  geom_jitter(position = position_jitter(width = 0.3), alpha = 0.5)+
+  scale_y_continuous(expand = c(0,0))
+k6 +   expand_limits(y = c(1, 5e2)) 
+
+t <- subset(h2fec_phenotype, h2fec_phenotype$Diet=="HS")
+which.max(t$egg_total)
+t[68,] # S45D134_a_HS has egg_total = 404
+# problem image is IMG_5571.JPG set 2016-03-05 flip 2016-05-24 age 80, 2 females, 48.5 eggs per female
+
+kn <- h2fec_phenotype
+
+``` 
+
 
 ```{r}
 # new grouping variable
@@ -171,22 +194,6 @@ pq +   expand_limits(y = c(1, 5e2))
 ```
 
 
-
-
-
-# standard deviation for each sire family
-
-```{r}
-h2fec_sire_sum <- data_summary(h2fec_phenotype, varname="egg_total", 
-                    #groupnames=c("supp", "dose")) # if have multiple grouping variables
-                    groupnames="sire_Diet")
-
-# Convert dose to a factor variable
-h2fec_sire_sum$sire_Diet=as.factor(h2fec_sire_sum$sire_Diet)
-head(h2fec_sire_sum)
-```
-
-
 # reaction norms for sire families
 
 ```{r}
@@ -240,7 +247,13 @@ ggplot(B, aes(x = B$diet, y = B$eggs)) +
   geom_line(aes(group = paste(sireid), alpha = 0.2)) +
   xlab("Dietary condition") + ylab("Total eggs") +
   theme(legend.position="none") +
-  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
+  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C"))
+  
+  #expand_limits(x = "diet") + scale_x_continuous(expand = c(0, 0))
+  #expand_limits(x = 0, y = 0)
+  #expand_limits(y = c(0, 4.5e2))
+  
+
 #dev.off()
 ```
 
@@ -252,10 +265,10 @@ AA <- read.table('../../Data/Processed/eggs_per_female.txt',
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE)
 
-AA %>%
+AA <- AA %>%
    select(flipDate,id,fID,treat,age,sireid,damid,n_females,eggs_per_female)
-  
-#AA <- as_tibble(AA)
+AA
+AA <- as_tibble(AA)
 ```
 
 
@@ -264,22 +277,148 @@ AA$flipDate <- as.Date(AA$flipDate)
 
 AA <- AA[!is.na(AA$eggs_per_female), ]
 
-A1 <- aggregate(AA$eggs_per_female, by=list(AA$flipDate), sum)
+A1 <- aggregate(AA["eggs_per_female"], by=AA["flipDate"], sum)
 
-#this also works
-#A1 <- aggregate(AA["eggs_per_female"], by=AA["flipDate"], sum)
+# a new grouping variable
+AA <- unite(AA, "sire_trt", sireid, treat, sep = "_", remove=FALSE)
+A2 <- aggregate(AA["eggs_per_female"], by=AA["sire_trt"], sum)
 
-#start on grouping by tret
 ```
+
+
+```{r}
+head(AA)
+
+AB <- as.data.frame(AA)
+AB$flipDate <- as.Date(AB$flipDate)
+#AA$wks <-  with(AA, ave(flipDate, flipDate, FUN = seq)) 
+
+AB$julian_date <- julian(AB$flipDate)
+head(AB)
+
+# sort by julian date
+AB <- AB[order(AB$julian_date),] 
+
+#AB$Time_Week<-1
+#AB$Time_Week<-unlist(lapply(split(AB$Time_Week, AB$julian_date), cumsum)) 
+
+
+AB.c <- transform(AB, Time_Week=match(julian_date, unique(julian_date)))
+all.equal(AB,AB.c)
+
+```
+
 
 ```{r}
 
+A3 <- AB.c %>%
+   select(Time_Week,treat,eggs_per_female)
 
-library(data.table)
-A1 <- data.table(AA)
-A1[,list(mean=mean("eggs_per_female"),sd=sd("eggs_per_female")),by=flipDate]
+
+#A3$Time_Week <- as.Date(AA$Time_Week)
+A3$treat <- as.character(AA$treat)
+
+A3 <- aggregate(.~Time_Week+treat, A3, mean)
+
+k <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female))+
+  geom_line(aes(color=treat)) +
+  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+k
+
+k1 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=treat))+
+  geom_point(aes(shape=treat))+
+  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+
+# local polynomial regression
+k1 + geom_smooth(method="loess") #try "lm"
+
+# facet
+
+k2 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=treat))+
+  geom_point(aes(shape=treat)) +  geom_smooth(method="loess") +
+  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+k2 + facet_grid(. ~ treat)#facet_grid(treat~ .) 
+
+
+k3 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=treat))+
+  geom_point(aes(shape=treat)) +  geom_smooth(method="loess")+
+  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+k3 + facet_grid(treat~ .) 
+
+#volcano
+k4 <- ggplot(data=A3, aes(x = eggs_per_female))
+k4 + stat_density(aes(ymax = ..density..,  ymin = -..density.., 
+                       fill = treat, color = treat), 
+                   geom = "ribbon", position = "identity") +
+  xlab("Time (week)") + ylab("24 Hr Average Fecundity")+
+  
+  facet_grid(. ~ treat) + coord_flip() + xlab("Time (weeks)") 
+
 ```
 
+
+```{r}
+#line plot
+ll <- ggplot(data=AB.c, aes(x=Time_Week, y=eggs_per_female, color=treat, group=id)) + #group-sire_trt
+  #geom_line() #+ ggtitle("blah-blah")+
+  geom_jitter(position = position_jitter(width = .3), alpha = 0.5) +
+  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+ll
+```
+
+```{r}
+k5 <- AB.c 
+k5 <- subset(AB.c, AB.c$eggs_per_female < 101)
+
+ggplot(data=k5, aes(x=Time_Week, y=eggs_per_female, color=treat, group=id)) + #group-sire_trt
+  geom_jitter(position = position_jitter(width = 0.3), alpha = 0.5) +
+  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+k5
+```
+
+
+
+```{r}
+# the tidy way
+AA %>%
+    group_by(flipDate, treat) %>%
+    summarize(eggs = sum(eggs_per_female))
+```
+
+
+```{r}
+library(readxl)
+suppressWarnings(
+  J <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
+)
+
+#HS <- subset(M, c(treat == "HS", flipDate=="2016-06-07"))
+HS_date <- select(J, camera_id, flipDate, fID, treat, days)
+HS_date$flipDate <- as.character(HS_date$flipDate)
+
+HS_Jun7 <- HS_date[ which( HS_date$treat == "HS" & HS_date$flipDate=="2016-06-07") , ]
+HS_Jun14 <- HS_date[ which( HS_date$treat == "HS" & HS_date$flipDate=="2016-06-14") , ]
+HS_Jun21 <- HS_date[ which( HS_date$treat == "HS" & HS_date$flipDate=="2016-06-21") , ]
+
+HS_Jun7
+HS_Jun14
+HS_Jun21
+```
+
+```{r}
+load("../../Data/Processed/predicted_egg_counts.rda")
+HS_M_date <- select(M, camera_id, flipDate, fID, treat, days, predicted_count_linear)
+HS_M_date$flipDate <- as.character(HS_M_date$flipDate)
+
+HS_M_Jun7 <- HS_M_date[ which( HS_M_date$treat == "HS" & HS_M_date$flipDate=="2016-06-07") , ]
+HS_M_Jun14 <- HS_M_date[ which( HS_M_date$treat == "HS" & HS_M_date$flipDate=="2016-06-14") , ]
+HS_M_Jun21 <- HS_M_date[ which( HS_M_date$treat == "HS" & HS_M_date$flipDate=="2016-06-21") , ]
+
+HS_M_Jun7
+HS_M_Jun14
+HS_M_Jun21
+
+```
 
 
 
