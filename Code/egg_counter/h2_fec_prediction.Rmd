@@ -221,8 +221,7 @@ suppressWarnings(
 )
 
 # Load areas
-h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimages.csv",
-                         col_types = "cii")
+h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimages.csv")
 
 M <- left_join(M, h2_fec_areas) %>% 
   rename(area_linear = area)

@@ -8,7 +8,7 @@ library(broom)
 library(forcats)
 library(ggrepel)
 
-coarse <- FALSE
+coarse <- TRUE
 
 infile <- "../../Data/Processed/area_summation_HC.csv"
 
