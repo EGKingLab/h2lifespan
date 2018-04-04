@@ -195,7 +195,9 @@ ggplot(D, aes(eggs_per_female)) + geom_histogram()
 
 ```{r}
 # Sort by eggs_per_female
-D %>% select(camera_id, treat, flipDate, eggs_per_female) %>% arrange(desc(eggs_per_female))
+D %>% select(camera_id, treat, flipDate, eggs_per_female) %>% arrange(desc(eggs_per_female)) %>% 
+  slice(1:50) %>% 
+  as.data.frame()
 
 write.table(D, file="../../Data/Processed/eggs_per_female.txt", sep='\t',row.names = FALSE)
 

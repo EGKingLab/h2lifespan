@@ -13,7 +13,7 @@ for (ii in 1:length(flist)) {
   img_path <- paste0(base_path, flist[ii])
   jpg <- readJPEG(img_path, native = TRUE)
   out[ii, "camera_id"] <- flist[ii]
-  out[ii, "img_size"] <- max(dim(jpg)[2])
+  out[ii, "img_size"] <- max(dim(jpg))
 }
 
 out
@@ -33,7 +33,7 @@ for (ii in 1:length(flist)) {
   img_path <- paste0(base_path, flist[ii])
   jpg <- readJPEG(img_path, native = TRUE)
   out[ii, "camera_id"] <- flist[ii]
-  out[ii, "img_size"] <- max(dim(jpg)[2])
+  out[ii, "img_size"] <- max(dim(jpg))
 }
 
 out

@@ -49,27 +49,46 @@ img_size <- read_csv("../../Data/Processed/image_dimensions_hd_hand_counted_mask
 HC <- left_join(HC, img_size)
 ```
 
+Round 2 of handcounts
+
+```{r}
+HC_2 <- read_excel("../../Data/Processed/handcount_new_bad_images.xlsx") %>% 
+  rename(handcount = count) %>% 
+  mutate(camera_id = paste0("IMG_", camera_id, ".JPG"))
+
+h2_fec_areas <- read_csv("../../Data/Processed/area_summation_linear_h2_fecimages.csv") %>% 
+  filter(lower_thresh == 46) %>% 
+  filter(camera_id %in% HC_2$camera_id)
+
+HC_2 <- left_join(HC_2, h2_fec_areas) %>% 
+  drop_na() %>% 
+  rename(area_linear = area) %>% 
+  mutate(area_linear = as.integer(area_linear),
+         handcount = as.numeric(handcount))
+
+img_size_HC_2 <- read_csv("../../Data/Processed/image_dimensions_h2_fec_images.csv")
+
+HC_2 <- left_join(HC_2, img_size_HC_2)
+
+# Add to original handcounts
+HC <- bind_rows(HC, HC_2) %>% 
+  select(-lower_thresh)
+```
+
 Training image size
 
 ```{r}
-img_size %>% 
-  arrange(desc(img_size))
+HC %>% 
+  arrange(img_size)
 
-img_size %>% 
+HC %>% 
   ggplot(aes(img_size)) +
   geom_histogram()
 ```
 
-Check these areas: should be in the test_case batch but aren't.
-
-```{r}
-HC %>% 
-  filter(is.na(area_linear))
-```
-
 ## Examine possibly bad images
 
-```{r check_bad_images}
+```{r check_bad_images, eval=FALSE}
 plot_jpeg = function(path, add=FALSE) {
   # https://stackoverflow.com/a/28729601/168137
   require('jpeg')
@@ -128,7 +147,7 @@ img_size <- min(HC$img_size):max(HC$img_size)
 new_data <- crossing(area_linear, img_size) %>% 
   filter(img_size %% 250 == 0)
 
-new_data$lm_pred <- predict(fm_lm3, newdata = new_data)
+new_data$lm_pred <- predict(fm_lm2, newdata = new_data)
 
 ggplot() +
   geom_line(data = new_data, aes(x = area_linear, y = lm_pred, color = factor(img_size))) +
@@ -183,9 +202,15 @@ ggplot() +
 ## Evaluation of linear model
 
 ```{r}
-HC$lm_pred <- predict(fm_lm3)
+HC$lm_pred <- predict(fm_lm2)
 
 cor(HC$handcount, HC$lm_pred)
+```
+
+Training set images with predicted negative counts
+
+```{r}
+HC %>% filter(lm_pred < 0) %>% arrange(lm_pred)
 ```
 
 ## Predict for new data
@@ -206,7 +231,7 @@ M <- left_join(M, h2_fec_areas) %>%
 img_size <- read_csv("../../Data/Processed/image_dimensions_h2_fec_images.csv")
 M <- left_join(M, img_size)
 
-M$predicted_count_linear <- predict(fm_lm1, newdata = M)
+M$predicted_count_linear <- predict(fm_lm2, newdata = M)
 ```
 
 Prediction image size
