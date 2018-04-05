@@ -1,2 +1,0 @@
-#!/bin/bash
-Rscript h2fec_heritability.R >temp.txt 2>error.txt &

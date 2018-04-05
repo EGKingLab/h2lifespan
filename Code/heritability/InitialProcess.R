@@ -42,14 +42,13 @@ duplnames
 
 # lifespan1 <- lifespan1[complete.cases(lifespan1[ , "age"]),]
 
-
 #Age Check- skipped data entry (rows)
 
 #Look for missing rows - Age gap >3 days
 check.age <- age.check(unique(lifespan1$id), lifespan1[,c('id','age')])
 dd<-lifespan1[,c('id','age')]
 check.age
-write.table(check.age,file='omitedages.txt', sep='\t',row.names = FALSE)
+write.table(check.age,file='../../Data/Processed/omitedages.txt', sep='\t',row.names = FALSE)
 
 #change NewAge
 lifespan1$NewAge<-lifespan1$age+2
@@ -58,12 +57,12 @@ lifespan1$NewAge<-lifespan1$age+2
 lifespan1 %in% letters
 
 #write out cleaned data
-write.table(lifespan1,file='lifespan_correctedData.txt', sep='\t',row.names = FALSE)
+write.table(lifespan1,file='../../Data/Processed/lifespan_correctedData.txt', sep='\t',row.names = FALSE)
 
 ################################
 
 
-lifespan1<-read.table("lifespan_correctedData.txt",sep="\t",stringsAsFactors=FALSE,header=TRUE)
+lifespan1<-read.table("../../Data/Processed/lifespan_correctedData.txt",sep="\t",stringsAsFactors=FALSE,header=TRUE)
 
 #separate all events into rows
 #females
@@ -154,8 +153,8 @@ totals$miss.m
 
 Fevent[1,]
 
-write.table(Fevent, "Female_events_lifespan.txt", row.names=FALSE, sep="\t")
-write.table(Mevent, "Male_events_lifespan.txt", row.names=FALSE, sep="\t")
+write.table(Fevent, "../../Data/Processed/Female_events_lifespan.txt", row.names=FALSE, sep="\t")
+write.table(Mevent, "../../Data/Processed/Male_events_lifespan.txt", row.names=FALSE, sep="\t")
 
 ## End of script
 

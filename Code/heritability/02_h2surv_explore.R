@@ -3,9 +3,6 @@
 
   # Analysis of lifespan 
   # Half-sibling fly data
-  
-
-setwd("~/MyGithub/h2lifespan/Code/heritability")
 
 h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
                      sep = "\t", header = TRUE,
