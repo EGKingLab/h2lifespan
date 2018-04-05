@@ -15,9 +15,9 @@
 - Load and run script: PreProcess_lifespan_functions.R (a bunch of functions)
 
 - Run InitialProcess.R  to process the raw .txt data file:
-	- Input file: lifespan_only.txt - raw data file 
-	
-- Output files: 
+	- Input file: lifespan_only.txt - raw data file
+
+- Output files:
 	1. lifespan_correctedData.txt
 	2. Female_events_lifespan.txt - censoring accounted for (females only)
 	3. Male_events_lifespan.txt - censoring accounted for (males only)
@@ -26,8 +26,8 @@
 ### Survival analysis
 
 - Load data: 'Female_events_lifespan.txt'
-- Run script: "h2surv_kaplan-meier.Rmd" 	# females only								
-	- Exploratory analysis - histograms, density plots in baseR and ggplot2	
+- Run script: "h2surv_kaplan-meier.Rmd" 	# females only
+	- Exploratory analysis - histograms, density plots in baseR and ggplot2
 	- Kaplan-Meier plots of survival estimates
 		- Summary survival curves by treatment (3 lines) - multistrata
 		- Comparisons of median lifespan across diets
@@ -69,9 +69,9 @@ Moved h2_fec_images up to the same directory level as h2_lifespan. (KM)
 
 Data file feclife_with-image-ids updated: (EN)
 
-1. added rows with missing image previously deleted, 
+1. added rows with missing image previously deleted,
 2. "Maybe" rows updated - with corresponding imaged placed in ‘h2_fec_images/’,
-3. updated listing of handcounts in data file. 
+3. updated listing of handcounts in data file.
 
 
 ### 2018-01-17
@@ -162,7 +162,7 @@ Rerun threshold optimization using the full set of images, less those marked bad
 ### 2018-02-07
 
 - made changes to lifespan data exploration script: (EN)
-- script h2surv_kaplan-meier.Rmd renamed h2surv_expore 
+- script h2surv_kaplan-meier.Rmd renamed h2surv_expore
 - h2surv_expore produces a lifetime density plot, Kaplan-Meier plot, cummulative hazard,
 	and reaction norms
 
@@ -170,20 +170,20 @@ Rerun threshold optimization using the full set of images, less those marked bad
 
 ```
    prop_data prop_train lower     r   MSD lower_f prop_train_f
- 1         1      0.900    46 0.901 0.262 46      0.9         
- 2         1      0.900    45 0.901 0.262 45      0.9         
- 3         1      0.900    47 0.900 0.262 47      0.9         
+ 1         1      0.900    46 0.901 0.262 46      0.9
+ 2         1      0.900    45 0.901 0.262 45      0.9
+ 3         1      0.900    47 0.900 0.262 47      0.9
 ```
 
 *Asymptotic optimization, minimizing MSD*
 
 Coarse
 
-```   
+```
    prop_data prop_train lower     r   MSD lower_f prop_train_f
- 1         1      0.800    75 0.848 0.627 75      0.8         
- 2         1      0.900    75 0.787 0.628 75      0.9         
- 3         1      0.700    75 0.866 0.628 75      0.7         
+ 1         1      0.800    75 0.848 0.627 75      0.8
+ 2         1      0.900    75 0.787 0.628 75      0.9
+ 3         1      0.700    75 0.866 0.628 75      0.7
 
 ```
 
@@ -191,9 +191,9 @@ Fine
 
 ```
    prop_data prop_train lower     r   MSD lower_f prop_train_f
- 1         1      0.900    74 0.793 0.623 74      0.9         
- 2         1      0.800    74 0.853 0.623 74      0.8         
- 3         1      0.700    74 0.871 0.624 74      0.7         
+ 1         1      0.900    74 0.793 0.623 74      0.9
+ 2         1      0.800    74 0.853 0.623 74      0.8
+ 3         1      0.700    74 0.871 0.624 74      0.7
 ```
 
 - Reprocessing h2 fecundity images for prediction. Files output: area_summation_asymp_h2_fecimages.csv and area_summation_linear_h2_fecimages.csv based on optimiztion values above.
@@ -228,7 +228,7 @@ agreed to do nothing about these unless something gets obviously odd after analy
 
 Original data "lifespan_only.xlsx", fID S11D33_a_LY edited to match data sheet records:
 	- entry error at age 74 (i.e. 1 female died but was entered as 0)
-	- NstartF changed to 15 - was entered incorrectly as 11 
+	- NstartF changed to 15 - was entered incorrectly as 11
 	- 12 female and 6 male death events only!
 	- necessitates rerun of mcmcglmm
 
@@ -280,3 +280,7 @@ IMG_5738.JPG	2016-06-14	S57D169_b	HS	 78	  255 (handcount)
 ### 2018-04-04 (KMM)
 
 Merge in second round of handcounted images from late in the experiment.
+
+### 2018-04-05 (KMM)
+
+Cleaning up egg counter files. Beginning work on Analysis pipeline description for egg counter.

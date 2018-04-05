@@ -13,7 +13,7 @@ write_images = False
 
 rootDir = '../../../hd_hand_counted_masked/'
 
-# Do all thresholds from 30 to 151 by 1. Filter them later.
+# Do all thresholds from 30 to 151 by 1. Filter them later in R code.
 lower_threshes = np.arange(30, 151, 1)
 outfile = '../../Data/Processed/area_summation_HC.csv'
 
@@ -29,12 +29,6 @@ M = M.loc[~(M.camera_id.isin(bad_images.cameraid))]
 
 # Drop rows without images
 file_list = M.camera_id.dropna()
-
-# Check for duplicated images names
-if len(set(file_list)) < len(file_list):
-    print('There are {} duplicate rows in feclife_with-image-ids.xlsx.'.format(len(file_list) - len(set(file_list))))
-else:
-    print('No duplicate image names in hd_hand_counted.xlsx')  
 
 infiles = []
 
