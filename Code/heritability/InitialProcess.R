@@ -8,90 +8,90 @@ source("../../Code/heritability/PreProcess_lifespan_functions.R")
 library(tidyverse)
 
 lifespan<-read.table('../../Data/Processed/lifespan_only.txt',sep="\t",header=TRUE,stringsAsFactors=FALSE) %>%
-  select(1, 2, 4:8, 12:16)
+  select(1:16)
 
 #calculate age (day)
 lifespan$setDate <- as.Date(lifespan$setDate , "%m/%d/%y")
 lifespan$flipDate <- as.Date(lifespan$flipDate , "%m/%d/%y")
 lifespan_age <- (lifespan$flipDate - lifespan$setDate)
-lifespan1 <- cbind(lifespan,lifespan_age)
-lifespan1$age<-as.numeric(lifespan1$lifespan_age)
-# all.equal(lifespan1$age, lifespan1$days)
-# wh.diff<-lifespan1$age-lifespan1$days
+lifespan <- cbind(lifespan,lifespan_age)
+lifespan$age<-as.numeric(lifespan$lifespan_age)
+# all.equal(lifespan$age, lifespan$days)
+# wh.diff<-lifespan$age-lifespan$days
 
 #create separate columns for sire and dam ids
-tempid <- strsplit(lifespan1$fID, split='_', fixed=TRUE)
+tempid <- strsplit(lifespan$fID, split='_', fixed=TRUE)
 tempid <- unlist(lapply(tempid, function(x) x[1])) 
 tempid <- strsplit(tempid, split='D', fixed=TRUE) 
 damid <- unlist(lapply(tempid, function(x) x[2]))
 sireid <- unlist(lapply(tempid, function(x) x[1])) 
 damid <- paste(rep('D', length(damid)), damid, sep='')
 
-lifespan1$sireid <- sireid
-lifespan1$damid <- damid
+lifespan$sireid <- sireid
+lifespan$damid <- damid
 
-lifespan1[1,]
-hist(lifespan1$age)
+lifespan[1,]
+hist(lifespan$age)
 
 #Make unique ids
-lifespan1$id <- paste(lifespan1$fID,'_',lifespan1$treat,sep='')
+lifespan$id <- paste(lifespan$fID,'_',lifespan$treat,sep='')
 
 #Find dupicated samples
-duplnames <- duplicate.ages(unique(lifespan1$id), lifespan1[,c('id','age')])
+duplnames <- duplicate.ages(unique(lifespan$id), lifespan[,c('id','age')])
 duplnames
 
-# lifespan1 <- lifespan1[complete.cases(lifespan1[ , "age"]),]
+# lifespan <- lifespan[complete.cases(lifespan[ , "age"]),]
 
 #Age Check- skipped data entry (rows)
 
 #Look for missing rows - Age gap >3 days
-check.age <- age.check(unique(lifespan1$id), lifespan1[,c('id','age')])
-dd<-lifespan1[,c('id','age')]
+check.age <- age.check(unique(lifespan$id), lifespan[,c('id','age')])
+dd<-lifespan[,c('id','age')]
 check.age
-write.table(check.age,file='../../Data/Processed/omitedages.txt', sep='\t',row.names = FALSE)
+#write.table(check.age,file='../../Data/Processed/omitedages.txt', sep='\t',row.names = FALSE)
 
 #change NewAge
-lifespan1$NewAge<-lifespan1$age+2
+lifespan$NewAge<-lifespan$age+2
 
 #Check if some letters in fID are in lower case (i.e. expect all names in upper case)
-lifespan1 %in% letters
+lifespan %in% letters
 
 #write out cleaned data
-write.table(lifespan1,file='../../Data/Processed/lifespan_correctedData.txt', sep='\t',row.names = FALSE)
+write.table(lifespan,file='../../Data/Processed/lifespan_correctedData.txt', sep='\t',row.names = FALSE)
 
 ################################
 
 
-lifespan1<-read.table("../../Data/Processed/lifespan_correctedData.txt",sep="\t",stringsAsFactors=FALSE,header=TRUE)
+lifespan<-read.table("../../Data/Processed/lifespan_correctedData.txt",sep="\t",stringsAsFactors=FALSE,header=TRUE)
 
 #separate all events into rows
 #females
-Flife.dat<-lifespan1[,c('setDate','flipDate','age','NewAge','fID','id','sireid','damid','repl','treat','NstartF','deadF','carriedF')]
+Flife.dat<-lifespan[,c('setDate','flipDate','age','NewAge','fID','id','sireid','damid','repl','treat','NstartF','deadF','carriedF')]
 colnames(Flife.dat)[which(colnames(Flife.dat)=='deadF')]<-'Dead'
 colnames(Flife.dat)[which(colnames(Flife.dat)=='carriedF')]<-'Carried'
 Flife.dat<-Flife.dat[-which(is.na(Flife.dat$Dead)),]
 Fevent<-Manip.Survival(Flife.dat)
 
 #males
-Mlife.dat<-lifespan1[,c('setDate','flipDate','age','NewAge','fID','id','sireid','damid','repl','treat','NstartM','deadM','carriedM')]
+Mlife.dat<-lifespan[,c('setDate','flipDate','age','NewAge','fID','id','sireid','damid','repl','treat','NstartM','deadM','carriedM')]
 colnames(Mlife.dat)[which(colnames(Mlife.dat)=='deadM')]<-'Dead'
 colnames(Mlife.dat)[which(colnames(Mlife.dat)=='carriedM')]<-'Carried'
 Mlife.dat<-Mlife.dat[-which(is.na(Mlife.dat$Dead)),]
 Mevent<-Manip.Survival(Mlife.dat)
 
 #censored events
-life.dat<-lifespan1[,c('setDate','flipDate','age','NewAge','id','cens')]
+life.dat<-lifespan[,c('setDate','flipDate','age','NewAge','id','cens')]
 colnames(life.dat)[which(colnames(life.dat)=='cens')]<-'Censored'
 life.dat<-life.dat[-which(is.na(life.dat$Censored)),]
 Cevent<-Cen.events(life.dat)
 
 ####
 
-totals <- CountEvents(lifespan1[-which(is.na(lifespan1$deadF)),])
+totals <- CountEvents(lifespan[-which(is.na(lifespan$deadF)),])
 max(totals$NCensor)
 which.max(totals$NCensor)
 totals[346, ]   # known case of escapes
-subset(lifespan1, id==totals[which.max(totals$NCensor),'id'] & cens>0)
+subset(lifespan, id==totals[which.max(totals$NCensor),'id'] & cens>0)
 
 ################################
 #Account for censored events
@@ -158,18 +158,3 @@ write.table(Mevent, "../../Data/Processed/Male_events_lifespan.txt", row.names=F
 
 ## End of script
 
-lifespan1[1,]
-lifespan1[1:5,]
-lifespan1[lifespan1$Fcens==1,]
-lifespan1[lifespan1$Mcens==1,]
-
-hist((totals$NdeadF-totals$NstartF))
-
-which.max((totals$NdeadF-totals$NstartF))
-totals[235,]
-totals$Fdiff<-totals$NdeadF-totals$NstartF
-totals$Mdiff<-totals$NdeadM-totals$NstartM
-subset(totals, Fdiff>5)
-subset(totals, Fdiff< -5)
-subset(lifespan1, id=='S17D50_b_STD')
-subset(totals, NCensor>1)

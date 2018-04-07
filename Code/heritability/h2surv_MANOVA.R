@@ -1,19 +1,19 @@
----
-title: "Survival MANOVA"
-author: "Kevin Middleton"
-date: "3/7/2017"
-output:
-  html_document:
-    theme: flatly
-    toc: true
-    toc_float:
-      collapsed: false
-      smooth_scroll: true
----
-
-# Setup
-
-```{r setup}
+#' ---
+#' title: "Survival MANOVA"
+#' author: "Kevin Middleton"
+#' date: "3/7/2017"
+#' output:
+#'   html_document:
+#'     theme: flatly
+#'     toc: true
+#'     toc_float:
+#'       collapsed: false
+#'       smooth_scroll: true
+#' ---
+#' 
+#' # Setup
+#' 
+## ----setup---------------------------------------------------------------
 set.seed(234876)
 
 library(MCMCglmm)
@@ -35,11 +35,11 @@ thinning <- 500
 chains <- 12
 
 rerun <- TRUE
-```
 
-## MANOVA analysis
-
-```{r MANOVA_Models, cache=TRUE}
+#' 
+#' ## MANOVA analysis
+#' 
+## ----MANOVA_Models, cache=TRUE-------------------------------------------
 # 19 hours run time on nivalis (6e5 would be reasonable!)
 if (rerun) {
   HS <- h2life %>% 
@@ -115,11 +115,11 @@ if (rerun) {
   
   write_csv(genet_corr, path = "../../Data/Processed/Lifespan_Genetic_Correlations.csv")
 }
-```
 
-### Analyze model
-
-```{r MANOVA_Analysis}
+#' 
+#' ### Analyze model
+#' 
+## ----MANOVA_Analysis-----------------------------------------------------
 load("tri_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
@@ -170,11 +170,11 @@ HS_LY <- re[ , "traitAge_HS:traitAge_LY.animal"] /
 plot(HS_LY)
 median(HS_LY)
 HPDinterval(HS_LY)
-```
 
-### Plot for poster
-
-```{r}
+#' 
+#' ### Plot for poster
+#' 
+## ------------------------------------------------------------------------
 library(tidyverse)
 library(cowplot)
 
@@ -193,13 +193,13 @@ M %>% gather(Comparison, value) %>%
         legend.text = element_text(size = 18))
 ggsave(last_plot(), file = "Lifespan_Genetic_Correlation_Plot.pdf",
        width = 8, height = 6)
-```
 
-## Model following Ingleby et al. 2013
-
-# Setup data as above
-
-```{r}
+#' 
+#' ## Model following Ingleby et al. 2013
+#' 
+#' # Setup data as above
+#' 
+## ------------------------------------------------------------------------
 V_nu_to_a_b <- function(V, nu) {
   require(tidyverse)
   require(invgamma)
@@ -216,9 +216,9 @@ V_nu_to_a_b <- function(V, nu) {
   
   return(list(alpha = a, beta = b))
 }
-```
 
-```{r Sire_Models, cache=TRUE}
+#' 
+## ----Sire_Models, cache=TRUE---------------------------------------------
 V_nu_to_a_b(1, 0.002)
 
 genet_corr <- read_csv("Genetic_Correlations.csv")
@@ -290,16 +290,16 @@ if (rerun) {
                                    n_eff = mean(n_eff)))
     
   }
-  write_csv(genet_corr, path = "../../Figures/Lifespan_Genetic_Correlations.csv")
+  write_csv(genet_corr, path = "../../Figures/Genetic_Correlations.csv")
   
   kable(genet_corr, digits = 3)
 }
 
-```
 
-### Analyze model
-
-```{r Sire_Analysis}
+#' 
+#' ### Analyze model
+#' 
+## ----Sire_Analysis-------------------------------------------------------
 load("sire_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
@@ -354,4 +354,4 @@ HS_LY <- re[ , "treatHS:treatLY.sire"] /
 plot(HS_LY)
 median(HS_LY)
 HPDinterval(HS_LY)
-```
+

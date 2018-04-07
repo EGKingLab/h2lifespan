@@ -1,26 +1,25 @@
----
-title: "Analysis of heritability of a fly half-sibling experiment"
-author: "Kevin Middleton"
-date: "3/7/2017"
-output:
-  html_document:
-    theme: flatly
-    toc: true
-    toc_float:
-      collapsed: false
-      smooth_scroll: true
----
-
-```{r}
+#' ---
+#' title: "Analysis of heritability of a fly half-sibling experiment"
+#' author: "Kevin Middleton"
+#' date: "3/7/2017"
+#' output:
+#'   html_document:
+#'     theme: flatly
+#'     toc: true
+#'     toc_float:
+#'       collapsed: false
+#'       smooth_scroll: true
+#' ---
+#' 
+## ------------------------------------------------------------------------
 library(MCMCglmm)
-library(rethinking)
 library(tidyverse)
 library(cowplot)
-```
 
-#### Heritability ###
-
-```{r eval=TRUE}
+#' 
+#' #### Heritability ###
+#' 
+## ----eval=TRUE-----------------------------------------------------------
 set.seed(37264)
 
 iter <- 2e6
@@ -33,11 +32,11 @@ h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
 h2_filtered <- h2life[h2life$status!=3, ] # remove censored events
 h2_filtered$animal <- seq(1, nrow(h2_filtered))
 h2_filtered$treat <- as.factor(h2_filtered$treat)
-```
 
-##### high sugar, HS
-
-```{r}
+#' 
+#' ##### high sugar, HS
+#' 
+## ------------------------------------------------------------------------
 HS <- subset(h2_filtered, treat == "HS")
 
 pedigree <- HS[, c("animal", "sireid", "damid")]
@@ -48,9 +47,9 @@ sires <- data.frame(animal = unique(pedigree$sire),
 dams <- data.frame(animal = unique(pedigree$dam),
                    sire = NA, dam = NA, stringsAsFactors = FALSE)
 pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
-```
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 # Inverse Gamma(0.001; 0.001)
 # a = nu / 2
 # b = nu * V / 2
@@ -70,9 +69,9 @@ model <- MCMCglmm(NewAge ~ 1,
                   verbose = FALSE)
 
 save(model, file = "../../Data/Processed/HS.Rda")
-```
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 load("../../Data/Processed/HS.Rda")
 # Fixed
 plot(model$Sol)
@@ -91,11 +90,11 @@ plot(herit)
 median(herit)
 f <- HPDinterval(herit)
 k <- as.data.frame(f)
-```
 
-# plot hs with ggplot
-
-```{r}
+#' 
+#' # plot hs with ggplot
+#' 
+## ------------------------------------------------------------------------
 density(herit)
 
 hs.samp<-data.frame(('h2'=herit)) # HPDinterval(as.mcmc(herit)))
@@ -105,11 +104,11 @@ ggplot(hs.samp, aes(x=var1), y=k) +
   geom_vline(xintercept = median(herit))
 
 rm(model) 
-```
 
-##### Low yeast, LY
-
-```{r}
+#' 
+#' ##### Low yeast, LY
+#' 
+## ------------------------------------------------------------------------
 t1<-Sys.time()
 
 LY <- subset(h2_filtered, treat == "LY")
@@ -145,9 +144,9 @@ save(model, file = "../../Data/Processed/LY.Rda")
 
 t2<-Sys.time()
 cat(t2-t1)
-```
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 load("../../Data/Processed/LY.Rda")
 # Fixed
 plot(model$Sol)
@@ -165,11 +164,11 @@ herit.dr <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"
 plot(herit.dr)
 median(herit.dr)
 HPDinterval(herit.dr)
-```
 
-# plot LY with ggplot
-
-```{r}
+#' 
+#' # plot LY with ggplot
+#' 
+## ------------------------------------------------------------------------
 density(herit.dr)
 
 dr.samp<-data.frame(('h2'=herit.dr)) # HPDinterval(as.mcmc(dr.herit)))
@@ -179,11 +178,11 @@ ggplot(dr.samp, aes(x=var1), y=k) +
   geom_vline(xintercept = median(herit.dr))
 
 rm(model)
-```
 
-##### Standard, STD
-
-```{r}
+#' 
+#' ##### Standard, STD
+#' 
+## ------------------------------------------------------------------------
 s1<-Sys.time()
 
 STD <- subset(h2_filtered, treat == "STD")
@@ -219,9 +218,9 @@ save(model, file = "../../Data/Processed/STD.Rda")
 
 s2<-Sys.time()
 cat(s2-s1)
-```
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 load("../../Data/Processed/STD.Rda")
 # Fixed
 plot(model$Sol)
@@ -240,11 +239,11 @@ plot(herit.c)
 median(herit.c)
 p <- HPDinterval(herit.c)
 q <- as.data.frame(f)
-```
 
-# Plot STD with ggplot
-
-```{r}
+#' 
+#' # Plot STD with ggplot
+#' 
+## ------------------------------------------------------------------------
 density(herit.c)
 
 c.samp<-data.frame(('h2'=herit.c)) # HPDinterval(as.mcmc(dr.herit)))
@@ -252,11 +251,11 @@ c.samp<-data.frame(('h2'=herit.c)) # HPDinterval(as.mcmc(dr.herit)))
 ggplot(c.samp, aes(x=var1), y=k) +
   geom_histogram()+
   geom_vline(xintercept = median(herit.c))
-```
 
-# The three files together
-
-```{r, }
+#' 
+#' # The three files together
+#' 
+## ------------------------------------------------------------------------
 hs.samp$Diet <- "HS"
 dr.samp$Diet <- "DR"
 c.samp$Diet <- "C"
@@ -266,17 +265,17 @@ dr.samp$DR <- NULL
 c.samp$C <- NULL
 heritab <- rbind(hs.samp, dr.samp, c.samp)
 save(heritab, file = "../../Data/Processed/herit.Rda")
-```
 
-# Plot treatments together
-
-```{r, dens}
+#' 
+#' # Plot treatments together
+#' 
+## ---- dens---------------------------------------------------------------
 load("../../Data/Processed/herit.Rda")
 
 ll<- 7.4
 ss<-0.2
 
-#pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
+pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
 
 #require(scales)
@@ -298,10 +297,5 @@ par(mar=c(4.5,4.5,0.5,0.5))
   xlab("Heritability") + ylab("Density") +
   theme(legend.position=c(0.85, 0.85)) +
   scale_fill_discrete(name="Diet", labels=c("C", "DR", "HS")) 
-#dev.off()
-```
-
-
-
-
+dev.off()
 
