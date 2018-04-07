@@ -11,8 +11,8 @@ This is the order in which files should be executed.
 `get_image_dimensions.R`
 
 - Loads each image file and outputs the maximum dimension. Each image is (roughly) square, so the maximum dimension is a good estimate.
-- Reads: Image files from `hd_hand_counted_masked` and `h2_fec_images`
-- Writes: `image_dimensions_hd_hand_counted_masked.csv` and `image_dimensions_h2_fec_images.csv`
+- Reads: Image files from `h2_fec_images`
+- Writes: `image_dimensions.csv`
 
 `Area_Summation_optimization_image_processing.py`
 
@@ -340,3 +340,12 @@ Merge in second round of handcounted images from late in the experiment.
 ### 2018-04-05 (KMM)
 
 Cleaning up egg counter files. Beginning work on Analysis pipeline description for egg counter.
+
+### 2018-04-06 (KMM)
+
+- Update feclife file
+- Delete old unused files
+
+### 2018-04-07 (KMM)
+
+- `get_image_dimensions.R` only writes one file for all images.
