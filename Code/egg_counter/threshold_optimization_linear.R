@@ -10,7 +10,8 @@ library(ggrepel)
 
 coarse <- TRUE
 
-infile <- "../../Data/Processed/area_summation_HC.csv"
+# Load areas tibble
+load("../../Data/Processed/area_summation.Rda")
 
 if (coarse) {
   outfile <- "../../Data/Processed/threshold_optimization_linear_coarse.csv"
@@ -32,17 +33,25 @@ if (coarse) {
 
 # areas estimated from thresholding, keep only rows corresponding to
 # values for coarse or fine, respectively
-areas <- read_csv(infile, col_types = "cii") %>% 
+areas <- areas %>% 
   filter(lower_thresh %in% thresh_values)
 
-# handcounts
+# handcounts used in training
 actual <- suppressWarnings(
-  read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
-  dplyr::select(camera_id, handcount) %>% 
-  mutate(handcount = as.integer(handcount))
+  read_excel("../../Data/Processed/feclife_with-image-ids.xlsx") %>% 
+    filter(training_set == "yes")
 )
 
-M <- full_join(areas, actual, by = "camera_id") %>% 
+# Filter areas that match training images
+areas <- areas %>% 
+  filter(cameraid %in% M$cameraid)
+
+areas$cameraid[!(areas$cameraid %in% actual$cameraid)]
+actual$cameraid[!(actual$cameraid %in% areas$cameraid)]
+
+
+
+M <- full_join(areas, actual, by = "cameraid") %>% 
   drop_na(handcount)
 
 # Load image dimensions and merge
