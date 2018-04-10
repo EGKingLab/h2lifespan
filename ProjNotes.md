@@ -65,7 +65,7 @@ This is the order in which files should be executed.
 - Load and run script: `PreProcess_lifespan_functions.R` (a bunch of functions)
 
 - Run `InitialProcess.R`  to process the raw .txt data file:
-	- Input file: `lifespan_only.txt` - raw data file saved as tab-delimited from `Original/lifespan_only.xlsx`
+- Input data: `lifespan_only.txt` - raw data file saved as tab-delimited from `Original/lifespan_only.xlsx`
 
 - Output files:
 	1. `lifespan_correctedData.txt`
@@ -75,12 +75,13 @@ This is the order in which files should be executed.
 
 ### Survival analysis
 
-- Load data: `Female_events_lifespan.txt`
-- Run script: `h2surv_kaplan-meier.Rmd` 	# females only
-	- Exploratory analysis - histograms, density plots in baseR and ggplot2
+`h2surv_models_visualization.Rmd` 	# females only
+- Input data: `Female_events_lifespan.txt`
+	- Exploratory analysis - histograms, density plots
 	- Kaplan-Meier plots of survival estimates
-		- Summary survival curves by treatment (3 lines) - multistrata
-		- Comparisons of median lifespan across diets
+		- Summary survival curves by treatment (3 curves)
+		- Tests of difference
+		- Reaction norms
 
 ### Heritability
 
