@@ -33,9 +33,6 @@ vignettes/*.pdf
 *.knit.md
 .Rproj.user
 
-# Ignore .Rda files
-*.Rda
-
 */.DS_Store
 
 # Ignore pycache

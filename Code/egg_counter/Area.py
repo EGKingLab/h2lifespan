@@ -22,23 +22,18 @@ def gaussian_blur(image):
     image = cv2.GaussianBlur(image, (5, 5), 0)
     return image
 
-def sum_area(rootDir, row, lower_thresh, resize,
+def sum_area(rootDir, f, lower_thresh, resize,
              outdir=None, write_image=False):
-    file = rootDir + row.camera_id
 
     # Read in current file
-    image = cv2.imread(file)
+    image = cv2.imread(f)
     
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    if resize:
-        # Resize to 4000,4000
-        gray = resize_image(gray, 4000)
 
     # Check dimensions (should be almost square)
     rows, cols, _ = image.shape
     if np.abs(rows - cols) > 150:
-        print(row.camera_id + ' is more than 150 pixels out of square')
+        print(f + ' is more than 150 pixels out of square')
 
     blurred = gaussian_blur(gray)
 
@@ -46,7 +41,7 @@ def sum_area(rootDir, row, lower_thresh, resize,
     
     if write_image:
       warnings.simplefilter('ignore', UserWarning)
-      out_file = row.camera_id[:-4] + "_" + str(lower_thresh) + ".JPG"
+      out_file = f[:-4] + "_" + str(lower_thresh) + ".JPG"
       io.imsave(os.path.join(outdir, out_file), thresh)
 
     area = np.sum(thresh == 255)
