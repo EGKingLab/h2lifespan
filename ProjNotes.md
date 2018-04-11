@@ -337,3 +337,9 @@ Cleaning up egg counter files. Beginning work on Analysis pipeline description f
 ### 2018-04-07 (KMM)
 
 - `get_image_dimensions.R` only writes one file for all images.
+
+### 2018-04-11 (KMM)
+
+- Reran the threshold optimization using the additional images.
+- Reran egg count prediction.
+- Set `h2fecund` to code all negative predicted egg counts as 0.

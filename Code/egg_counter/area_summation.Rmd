@@ -9,6 +9,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(reticulate)
+use_python("/usr/bin/python3")
+source_python("Area.py")
 ```
 
 Python code formerly in `area_summation.py` to calculate white areas across threshold values for all images in `h2_fec_images`.
@@ -20,8 +22,6 @@ import numpy as np
 import cv2
 import imutils
 import matplotlib.pyplot as plt
-
-from Area import thresholding, sum_area
 
 write_images = False
 
@@ -39,6 +39,8 @@ for dirName, subdirList, fileList in os.walk(rootDir, topdown=False):
         if fname.endswith(('JPG', 'jpg')):
             infile = os.path.join(dirName, fname)
             infiles.append(infile)
+
+nfiles = infiles[0:10]
 
 nrows = len(infiles) * len(lower_threshes)
 print(str(nrows) + ' combinations to check')

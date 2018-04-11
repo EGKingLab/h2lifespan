@@ -8,7 +8,7 @@ library(broom)
 library(forcats)
 library(ggrepel)
 
-coarse <- FALSE
+coarse <- TRUE
 
 # Load areas tibble
 load("../../Data/Processed/area_summation.Rda")
@@ -17,9 +17,9 @@ if (coarse) {
   outfile <- "../../Data/Processed/threshold_optimization_linear_coarse.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
-  # prop_data <- seq(0.5, 1.0, by = 0.1)
-  prop_data <- 1
-  prop_train <- seq(0.9, 0.9, by = 0.1)
+  prop_data <- seq(0.5, 1.0, by = 0.1)
+  # prop_data <- 1
+  prop_train <- seq(0.5, 0.9, by = 0.1)
   thresh_values <- seq(30, 150, by = 5)
 } else {
   outfile <- "../../Data/Processed/threshold_optimization_linear_fine.csv"
