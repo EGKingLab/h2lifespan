@@ -34,6 +34,7 @@ vignettes/*.pdf
 .Rproj.user
 
 */.DS_Store
+.DS_Store
 
 # Ignore pycache
 *__pycache__*
