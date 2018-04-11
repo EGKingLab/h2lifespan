@@ -397,8 +397,7 @@ cor(HC$handcount, HC$lm_pred)</code></pre>
 <div id="predict-for-new-data" class="section level2">
 <h2>Predict for new data</h2>
 <pre class="r"><code>suppressWarnings(
-  M &lt;- read_excel(&quot;../../Data/Processed/feclife_with-image-ids.xlsx&quot;) %&gt;% 
-    select(cameraid, handcounted, handcount, training_set, drop_from_lifespan, fID, treat)
+  M &lt;- read_excel(&quot;../../Data/Processed/feclife_with-image-ids.xlsx&quot;)
 )
 
 M$drop_from_lifespan[is.na(M$drop_from_lifespan)] &lt;- &quot;no&quot;
