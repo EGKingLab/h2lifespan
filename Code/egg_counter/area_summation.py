@@ -43,3 +43,5 @@ for f in infiles:
             print(str(ctr) + " complete")
 
 areas.to_csv(outfile, index=False)
+
+# area_summation.csv is resaved as a compressed Rda in R.
