@@ -180,7 +180,7 @@ HC %>% filter(lm_pred < 0) %>% arrange(lm_pred)
 ```{r}
 suppressWarnings(
   M <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx") %>% 
-    select(cameraid, handcounted, handcount, training_set, drop_from_lifespan)
+    select(cameraid, handcounted, handcount, training_set, drop_from_lifespan, fID)
 )
 
 M$drop_from_lifespan[is.na(M$drop_from_lifespan)] <- "no"
