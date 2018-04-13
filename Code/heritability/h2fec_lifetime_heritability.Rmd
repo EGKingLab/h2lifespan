@@ -16,7 +16,7 @@ output:
 3. Model with (week | vial) -- what does that mean?
 
 ```{r}
-# library(knitr)
+library(knitr)
 # purl("h2fec_lifetime_heritability.Rmd", output = "h2fec_lifetime_heritability.R", documentation = 2)
 ```
 
