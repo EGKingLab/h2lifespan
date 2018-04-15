@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
-#Read in data
+# Read in data
 
 ```{r}
 load(file= "../../Data/Processed/predicted_egg_counts.rda")
@@ -20,7 +20,16 @@ h2life <- read.table('../../Data/Processed/lifespan_correctedData.txt',
                      stringsAsFactors = FALSE)
 ```
 
-#Merge predicted counts and hand counts
+# Set negative predicted egg counts to 0
+
+```{r}
+M$predicted_count_linear[M$predicted_count_linear < 0] <- 0
+
+train <- M %>% filter(training_set == "yes")
+cor(train$handcount, train$predicted_count_linear, use = "complete.obs")
+```
+
+# Merge predicted counts and hand counts
 
 ```{r}
 # hand count preferred where it occurs
@@ -30,10 +39,9 @@ M$egg_count <- if_else(!is.na(M$handcount),
 # check
 #M[1:20, c(1,3,25:27)]
 #M[201:220, c(1,3,25:27)]
-
 ```
 
-#Replace NstartF for id S11D33_a_LY from 11 to 15 (see ProjectNotes.md)
+# Replace NstartF for id S11D33_a_LY from 11 to 15 (see ProjectNotes.md)
 
 ```{r}
 # create "id" column from fID and treat
@@ -55,7 +63,7 @@ M <- M %>%
 #subset(M, M$id=="S19D55_a_HS")
 ```
 
-#Merge with lifespan to get number of females
+# Merge with lifespan to get number of females
 
 ```{r}
 # change back to date format
@@ -89,7 +97,7 @@ h2life <- h2life.t
 
 min(h2life$n_females,na.rm=TRUE)
 which(is.na(h2life$n_females))
-h2life[which(h2life$n_females<0),]
+# h2life[which(h2life$n_females<0),]
 hist(h2life[which(h2life$n_females<0),'n_females'])
 
 
@@ -122,52 +130,50 @@ M$flipDate <- as.character(M$flipDate)
 # Keep only columns that we will use later.
 D <- right_join(M, dd, by = c("flipDate", "id")) %>% 
   dplyr::select(-box, -ccoord, -rcoord, -setDate.y,
-                -X__1, -X__2, -handcount, -handcounted,
-                -visually_recheck, -area_linear,
-                -predicted_count_linear, -lower_thresh,
-                -test_case,
+                -X__1, -handcount, -handcounted,
+                -visually_recheck, -area,
+                -predicted_count_linear,
+                -training_set,
                 -contains(".y"))
 
 # Strip out ".x" from column names
 names(D) <- str_replace_all(names(D), ".x", "")
 ```
 
-#Drop rows where egg_count == 0
+# Drop rows where egg_count == 0
 
 ```{r}
 D <- D %>% 
   drop_na(egg_count)
 ```
 
-
-#Add column for fecundity per female. Set to 0 if no females.
+# Add column for fecundity per female. Set to 0 if no females.
 
 ```{r}
 D <- D %>% 
   mutate(eggs_per_female = if_else(n_females == 0,
                                    0, egg_count / n_females),
-         camera_id = camera_id)
+         cameraid = cameraid)
 
 D %>% 
-  filter(eggs_per_female > 250) %>% 
   ggplot(aes(eggs_per_female)) + geom_histogram()
 
 D %>% 
   filter(eggs_per_female > 100) %>% 
-  select(camera_id, id, setDate, flipDate, egg_count, n_females, eggs_per_female) %>% 
+  select(cameraid, id, setDate, flipDate, egg_count, n_females, eggs_per_female) %>% 
   arrange(desc(eggs_per_female)) %>% 
   as.data.frame()
 
 #write_csv(D, path = "../../Data/Processed/eggs_per_female.csv")
 ```
 
-#IMG_2141.JPG appeares just once for 2016-03-15. Merge seems to spawn/recycle a second event at end.
-#resolved
+# IMG_2141.JPG appeares just once for 2016-03-15. Merge seems to spawn/recycle a second event at end.
+### resolved
 
 ```{r}
 #D[D$id=="S17D50_a_STD",]
-#D[D$camera_id=="IMG_2141.JPG",]
-#D[D$camera_id=="IMG_2141.JPG","flipDate"]
+#D[D$cameraid=="IMG_2141.JPG",]
+#D[D$cameraid=="IMG_2141.JPG","flipDate"]
 
 max(D$eggs_per_female)
 which.max(D$eggs_per_female)
@@ -177,16 +183,16 @@ tt <- subset(D, id=="S17D50_a_STD")
 select(tt, 1:5,16:24)
 
 # Image IMG_5532.JPG with 277 eggs/female actually has 2 eggs
-D[D$camera_id=="IMG_5532.JPG","eggs_per_female"]<-2
+D[D$cameraid=="IMG_5532.JPG","eggs_per_female"]<-2
 
 # IMG_3626.JPG, S21D63_a_STD, flipDate: 2016-04-26 with 397 eggs: set to missing (odd case)
-D[D$camera_id=="IMG_3626.JPG","eggs_per_female"] <- NA
-D[D$camera_id=="IMG_5736.JPG","eggs_per_female"] <- NA
-D[D$camera_id=="IMG_5735.JPG","eggs_per_female"] <- NA
-D[D$camera_id=="IMG_5738.JPG","eggs_per_female"] <- NA
+D[D$cameraid=="IMG_3626.JPG","eggs_per_female"] <- NA
+D[D$cameraid=="IMG_5736.JPG","eggs_per_female"] <- NA
+D[D$cameraid=="IMG_5735.JPG","eggs_per_female"] <- NA
+D[D$cameraid=="IMG_5738.JPG","eggs_per_female"] <- NA
 
 #tt <- subset(D, id=="S45D134_a_HS")
-#D[D$camera_id=="IMG_5571.JPG","eggs_per_female"] <- NA #see comment in h2fec_explore.Rmd
+#D[D$cameraid=="IMG_5571.JPG","eggs_per_female"] <- NA #see comment in h2fec_explore.Rmd
 select(tt, 1:4,23:24)
 ggplot(D, aes(eggs_per_female)) + geom_histogram()
 
@@ -195,12 +201,12 @@ ggplot(D, aes(eggs_per_female)) + geom_histogram()
 
 ```{r}
 # Sort by eggs_per_female
-D %>% select(camera_id, treat, flipDate, eggs_per_female) %>% arrange(desc(eggs_per_female)) %>% 
+D %>% select(cameraid, treat, flipDate, eggs_per_female) %>%
+  arrange(desc(eggs_per_female)) %>% 
   slice(1:50) %>% 
   as.data.frame()
 
 write.table(D, file="../../Data/Processed/eggs_per_female.txt", sep='\t',row.names = FALSE)
-
 ```
 
 ## Aggregate sum of eggs per vial across all weeks

@@ -11,40 +11,28 @@ This is the order in which files should be executed.
 `get_image_dimensions.R`
 
 - Loads each image file and outputs the maximum dimension. Each image is (roughly) square, so the maximum dimension is a good estimate.
-- Reads: Image files from `hd_hand_counted_masked` and `h2_fec_images`
-- Writes: `image_dimensions_hd_hand_counted_masked.csv` and `image_dimensions_h2_fec_images.csv`
+- Reads: Image files from `h2_fec_images`
+- Writes: `image_dimensions.csv`
 
-`Area_Summation_optimization_image_processing.py`
+`area_summation.py`
 
-- Estimates areas for the training set of images
+- Processes the full set of images, calcaulting area for thresholds between 30 and 150).
 - Reads:
-    - Images in `hd_hand_counted_masked`
-    - `hd_hand_counted.xlsx`: List of images with training handcounts
-    - `bad_images.xlsx`: List of images that are not suitable for training
+    - Images in `h2_fec_images`
+    - `feclife_with-image-ids.xlsx`: Excel file with information on image names and those that were manually handcounted (but not part of the training set).
 - Writes:
-    - `area_summation_HC.csv`
+    - `area_summation.Rda`
 
 `threshold_optimization_linear.R`
 
 - Performs either coarse or fine (`coarse` flag) optimization on training images to find the threshold value that minimizes MSE between prediction and handcount using a linear model with square root of 'egg' area: `handcount ~ I(area^0.5) + img_size - 1`. Uses a variable percentage of the data (for rarefaction) and a variable train/test split.
 - Reads:
-    - `area_summation_HC.csv`: Areas calculated for all thresholds from 30 to 150
-    - `hd_hand_counted.xlsx`: Excel file with handcounts
-    - `image_dimensions_hd_hand_counted_masked.csv`: CSV file with maximum image dimensions
+    - `area_summation.csv`: Areas calculated for all thresholds from 30 to 150
+    - `feclife_with-image-ids.xlsx`: Excel file with information on image names and those that were manually handcounted (but not part of the training set).
 - Writes:
     - `threshold_optimization_linear_coarse.csv`
     - `threshold_optimization_linear_fine.csv`
 - Analysis of the resulting coarse optimization are used to guide the fine optimization. Results of the fine optimization are used to determine the optimal threshold value to use for the full image set.
-
-`Area_Summation_h2_fec_images.py`
-
-- Processes the full set of images, calcaulting area for the optimal threshold value (set with `lower_threshes = [X]`).
-- Reads:
-    - Images in `h2_fec_images`
-    - `feclife_with-image-ids.xlsx`: Excel file with information on image names and those that were manually handcounted (but not part of the training set).
-- Writes:
-    - `area_summation_linear_h2_fecimages.csv`
-    - If `write_images = True` thresholded images are written to `h2_thresh_fecimages`
 
 `h2_fec_prediction.Rmd`
 
@@ -340,3 +328,18 @@ Merge in second round of handcounted images from late in the experiment.
 ### 2018-04-05 (KMM)
 
 Cleaning up egg counter files. Beginning work on Analysis pipeline description for egg counter.
+
+### 2018-04-06 (KMM)
+
+- Update feclife file
+- Delete old unused files
+
+### 2018-04-07 (KMM)
+
+- `get_image_dimensions.R` only writes one file for all images.
+
+### 2018-04-11 (KMM)
+
+- Reran the threshold optimization using the additional images.
+- Reran egg count prediction.
+- Set `h2fecund` to code all negative predicted egg counts as 0.

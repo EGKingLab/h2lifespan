@@ -10,45 +10,57 @@ library(ggrepel)
 
 coarse <- TRUE
 
-infile <- "../../Data/Processed/area_summation_HC.csv"
+# Load areas tibble
+load("../../Data/Processed/area_summation.Rda")
 
 if (coarse) {
   outfile <- "../../Data/Processed/threshold_optimization_linear_coarse.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
-  # prop_data <- seq(0.5, 1.0, by = 0.1)
-  prop_data <- 1
-  prop_train <- seq(0.9, 0.9, by = 0.1)
+  prop_data <- seq(0.5, 1.0, by = 0.1)
+  # prop_data <- 1
+  prop_train <- seq(0.5, 0.9, by = 0.1)
   thresh_values <- seq(30, 150, by = 5)
 } else {
   outfile <- "../../Data/Processed/threshold_optimization_linear_fine.csv"
   reps <- 1000  # Reps at each proportion
   iters <- 1000 # Iterations for each CV
-  # prop_data <- seq(0.5, 1.0, by = 0.1)
-  prop_data <- 1
-  prop_train <- seq(0.8, 0.9, by = 0.1)
-  thresh_values <- seq(45, 55, by = 1)
+  prop_data <- seq(0.5, 1.0, by = 0.1)
+  # prop_data <- 1
+  prop_train <- seq(0.5, 0.9, by = 0.1)
+  thresh_values <- seq(50, 60, by = 1)
 }
 
 # areas estimated from thresholding, keep only rows corresponding to
 # values for coarse or fine, respectively
-areas <- read_csv(infile, col_types = "cii") %>% 
+areas <- areas %>% 
   filter(lower_thresh %in% thresh_values)
 
-# handcounts
+# handcounts used in training
 actual <- suppressWarnings(
-  read_excel("../../Data/Processed/hd_hand_counted.xlsx") %>% 
-  dplyr::select(camera_id, handcount) %>% 
-  mutate(handcount = as.integer(handcount))
+  read_excel("../../Data/Processed/feclife_with-image-ids.xlsx") %>% 
+    filter(training_set == "yes")
 )
 
-M <- full_join(areas, actual, by = "camera_id") %>% 
-  drop_na(handcount)
+# Filter areas that match training images
+areas <- areas %>% 
+  filter(cameraid %in% actual$cameraid)
+
+areas$cameraid[!(areas$cameraid %in% actual$cameraid)]
+actual$cameraid[!(actual$cameraid %in% areas$cameraid)]
+
+actual <- actual %>% 
+  select(cameraid, handcount, training_set)
+
+M <- full_join(areas, actual, by = "cameraid")
 
 # Load image dimensions and merge
-img_size <- read_csv("../../Data/Processed/image_dimensions_hd_hand_counted_masked.csv")
-M <- left_join(M, img_size) %>% 
-  drop_na()
+img_size <- read_csv("../../Data/Processed/image_dimensions.csv")
+
+M <- left_join(M, img_size, by = "cameraid")
+
+M %>% group_by(cameraid) %>% 
+  tally()
 
 #########################################################################
 
