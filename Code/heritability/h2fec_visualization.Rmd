@@ -45,10 +45,16 @@ h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE)
 
-CC <- h2fec_phenotype   #for downstream use
-
 h2fec_phenotype <- as_tibble(h2fec_phenotype)
 h2fec_phenotype <- dplyr::rename(h2fec_phenotype, Diet = treat)
+```
+
+# change LY to DR, STD to C
+```{r}
+h2fec_phenotype %>%
+     mutate(Diet=replace(Diet, Diet=="LY", "DR")) %>%
+     mutate(Diet=replace(Diet, Diet=="STD", "C"))
+
 ```
 
 ##### density (ggplot)
@@ -119,6 +125,7 @@ p + labs(title="Lifetime eggs per diet treatment",
 k6 <- ggplot(data=h2fec_phenotype, aes(x=Diet, y=egg_total, color=Diet)) + #group-sire_trt
   geom_jitter(position = position_jitter(width = 0.3), alpha = 0.5)+
   scale_y_continuous(expand = c(0,0))
+  #xlab("Dietary condition") + ylab("Total eggs") +
 k6 +   expand_limits(y = c(1, 5e2)) 
 
 t <- subset(h2fec_phenotype, h2fec_phenotype$Diet=="HS")
@@ -271,6 +278,15 @@ AA
 AA <- as_tibble(AA)
 ```
 
+```{r}
+AA %>%
+     mutate(treat=replace(treat, treat=="LY", "DR")) %>%
+  mutate(treat=replace(treat, treat=="STD", "C"))
+
+AA <- rename(AA, Diet = treat)
+AA
+```
+
 
 ```{r}
 AA$flipDate <- as.Date(AA$flipDate)
@@ -280,7 +296,7 @@ AA <- AA[!is.na(AA$eggs_per_female), ]
 A1 <- aggregate(AA["eggs_per_female"], by=AA["flipDate"], sum)
 
 # a new grouping variable
-AA <- unite(AA, "sire_trt", sireid, treat, sep = "_", remove=FALSE)
+AA <- unite(AA, "sire_trt", sireid, Diet, sep = "_", remove=FALSE)
 A2 <- aggregate(AA["eggs_per_female"], by=AA["sire_trt"], sum)
 
 ```
@@ -312,76 +328,73 @@ all.equal(AB,AB.c)
 ```{r}
 
 A3 <- AB.c %>%
-   select(Time_Week,treat,eggs_per_female)
+   select(Time_Week,age, Diet,eggs_per_female)
 
 
 #A3$Time_Week <- as.Date(AA$Time_Week)
-A3$treat <- as.character(AA$treat)
+A3$Diet <- as.character(AA$Diet)
 
-A3 <- aggregate(.~Time_Week+treat, A3, mean)
+A3 <- aggregate(.~Time_Week+Diet, A3, mean)
 
 k <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female))+
-  geom_line(aes(color=treat)) +
-  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+  geom_line(aes(color=Diet)) +
+  xlab("Age (days))") + ylab("Mean eggs/female/day")
 k
 
-k1 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=treat))+
-  geom_point(aes(shape=treat))+
-  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+k1 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=Diet))+
+  geom_point(aes(shape=Diet))+
+  xlab("Age (days))") + ylab("Mean eggs/female/day")
 
 # local polynomial regression
 k1 + geom_smooth(method="loess") #try "lm"
 
 # facet
 
-k2 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=treat))+
-  geom_point(aes(shape=treat)) +  geom_smooth(method="loess") +
-  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
-k2 + facet_grid(. ~ treat)#facet_grid(treat~ .) 
+k2 <- ggplot(A3, aes(x=age, y=eggs_per_female, color=Diet))+
+  geom_point(aes(shape=Diet)) +  geom_smooth(method="loess") +
+  xlab("Age(days") + ylab("Mean eggs/female/day")
+k2 + facet_grid(. ~ Diet)#facet_grid(Diet~ .) 
 
 
-k3 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=treat))+
-  geom_point(aes(shape=treat)) +  geom_smooth(method="loess")+
-  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
-k3 + facet_grid(treat~ .) 
-
-#volcano
-k4 <- ggplot(data=A3, aes(x = eggs_per_female))
-k4 + stat_density(aes(ymax = ..density..,  ymin = -..density.., 
-                       fill = treat, color = treat), 
-                   geom = "ribbon", position = "identity") +
-  xlab("Time (week)") + ylab("24 Hr Average Fecundity")+
-  
-  facet_grid(. ~ treat) + coord_flip() + xlab("Time (weeks)") 
+k3 <- ggplot(A3, aes(x=age, y=eggs_per_female, color=Diet))+
+  geom_point(aes(shape=Diet)) +  geom_smooth(method="loess")+
+  xlab("Age (days)") + ylab("Mean eggs/female/day")
+k3 + facet_grid(Diet~ .) 
 
 ```
 
 
 ```{r}
 #line plot
-ll <- ggplot(data=AB.c, aes(x=Time_Week, y=eggs_per_female, color=treat, group=id)) + #group-sire_trt
+ll <- ggplot(data=AB.c, aes(x=age, y=eggs_per_female, color=Diet, group=id)) + #group-sire_trt
   #geom_line() #+ ggtitle("blah-blah")+
   geom_jitter(position = position_jitter(width = .3), alpha = 0.5) +
-  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
+  xlab("Age (days") + ylab("Mean eggs/female/day")
 ll
 ```
 
 ```{r}
-k5 <- AB.c 
-k5 <- subset(AB.c, AB.c$eggs_per_female < 101)
+#pdf("../../Figures/h2_avg_fecundity_per_female_per_day.pdf",width=6,height=4)
+par(mar=c(4.5,8.0,0.5,0.5))
 
-ggplot(data=k5, aes(x=Time_Week, y=eggs_per_female, color=treat, group=id)) + #group-sire_trt
-  geom_jitter(position = position_jitter(width = 0.3), alpha = 0.5) +
-  xlab("Time (week)") + ylab("24 Hr Average Fecundity")
-k5
+lml <- ggplot(data=AB.c, aes(x=age, y=eggs_per_female, fill=Diet)) +
+geom_point(pch=21) +
+#geom_smooth(span=0.8)+
+geom_jitter(position = position_jitter(width = .4), alpha = 0.07) +
+scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+xlab("Age (days)") + ylab("Mean eggs/female/day") +
+scale_y_continuous(limits = c(0,100), expand = c(0, 0)) +
+geom_smooth(method = "lm", se = TRUE, color="black")+
+facet_grid(.~Diet)
+lml
+#dev.off()
 ```
-
 
 
 ```{r}
 # the tidy way
 AA %>%
-    group_by(flipDate, treat) %>%
+    group_by(flipDate, Diet) %>%
     summarize(eggs = sum(eggs_per_female))
 ```
 
@@ -392,13 +405,13 @@ suppressWarnings(
   J <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
 )
 
-#HS <- subset(M, c(treat == "HS", flipDate=="2016-06-07"))
-HS_date <- select(J, camera_id, flipDate, fID, treat, days)
+#HS <- subset(M, c(Diet == "HS", flipDate=="2016-06-07"))
+HS_date <- select(J, camera_id, flipDate, fID, Diet, days)
 HS_date$flipDate <- as.character(HS_date$flipDate)
 
-HS_Jun7 <- HS_date[ which( HS_date$treat == "HS" & HS_date$flipDate=="2016-06-07") , ]
-HS_Jun14 <- HS_date[ which( HS_date$treat == "HS" & HS_date$flipDate=="2016-06-14") , ]
-HS_Jun21 <- HS_date[ which( HS_date$treat == "HS" & HS_date$flipDate=="2016-06-21") , ]
+HS_Jun7 <- HS_date[ which( HS_date$Diet == "HS" & HS_date$flipDate=="2016-06-07") , ]
+HS_Jun14 <- HS_date[ which( HS_date$Diet == "HS" & HS_date$flipDate=="2016-06-14") , ]
+HS_Jun21 <- HS_date[ which( HS_date$Diet == "HS" & HS_date$flipDate=="2016-06-21") , ]
 
 HS_Jun7
 HS_Jun14
@@ -407,18 +420,17 @@ HS_Jun21
 
 ```{r}
 load("../../Data/Processed/predicted_egg_counts.rda")
-HS_M_date <- select(M, camera_id, flipDate, fID, treat, days, predicted_count_linear)
+HS_M_date <- select(M, camera_id, flipDate, fID, Diet, days, predicted_count_linear)
 HS_M_date$flipDate <- as.character(HS_M_date$flipDate)
 
-HS_M_Jun7 <- HS_M_date[ which( HS_M_date$treat == "HS" & HS_M_date$flipDate=="2016-06-07") , ]
-HS_M_Jun14 <- HS_M_date[ which( HS_M_date$treat == "HS" & HS_M_date$flipDate=="2016-06-14") , ]
-HS_M_Jun21 <- HS_M_date[ which( HS_M_date$treat == "HS" & HS_M_date$flipDate=="2016-06-21") , ]
+HS_M_Jun7 <- HS_M_date[ which( HS_M_date$Diet == "HS" & HS_M_date$flipDate=="2016-06-07") , ]
+HS_M_Jun14 <- HS_M_date[ which( HS_M_date$Diet == "HS" & HS_M_date$flipDate=="2016-06-14") , ]
+HS_M_Jun21 <- HS_M_date[ which( HS_M_date$Diet == "HS" & HS_M_date$flipDate=="2016-06-21") , ]
 
 HS_M_Jun7
 HS_M_Jun14
 HS_M_Jun21
 
 ```
-
 
 
