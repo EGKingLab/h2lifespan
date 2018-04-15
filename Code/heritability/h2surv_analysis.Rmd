@@ -13,6 +13,7 @@ output:
 
 ```{r}
 library(MCMCglmm)
+library(rethinking)
 library(tidyverse)
 library(cowplot)
 ```
@@ -22,7 +23,7 @@ library(cowplot)
 ```{r eval=TRUE}
 set.seed(37264)
 
-iter <- 250000
+iter <- 2e6
 burnin <- 15000
 
 h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',

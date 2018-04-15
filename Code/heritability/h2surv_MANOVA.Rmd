@@ -113,7 +113,7 @@ if (rerun) {
                                    n_eff = mean(n_eff)))
   }
   
-  write_csv(genet_corr, path = "../../Data/Processed/Genetic_Correlations_1M.csv")
+  write_csv(genet_corr, path = "../../Data/Processed/Lifespan_Genetic_Correlations.csv")
 }
 ```
 
@@ -191,7 +191,7 @@ M %>% gather(Comparison, value) %>%
   theme(legend.position = c(0.15, 0.85),
         text = element_text(size = 24),
         legend.text = element_text(size = 18))
-ggsave(last_plot(), file = "Genetic_Correlation_Plot.pdf",
+ggsave(last_plot(), file = "Lifespan_Genetic_Correlation_Plot.pdf",
        width = 8, height = 6)
 ```
 
@@ -290,7 +290,7 @@ if (rerun) {
                                    n_eff = mean(n_eff)))
     
   }
-  write_csv(genet_corr, path = "Genetic_Correlations.csv")
+  write_csv(genet_corr, path = "../../Figures/Lifespan_Genetic_Correlations.csv")
   
   kable(genet_corr, digits = 3)
 }

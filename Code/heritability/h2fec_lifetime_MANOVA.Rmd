@@ -276,7 +276,7 @@ if (rerun) {
                verbose = TRUE)
     }, mc.cores = chains)
     
-    outfile <- paste0("sire_model_prior", ii, ".Rda")
+    outfile <- paste0("../../Data/Processed/sire_model_prior", ii, ".Rda")
     save(fm, file = outfile)
     
     re <- lapply(fm, function(m) m$VCV)
@@ -320,7 +320,7 @@ if (rerun) {
 ### Analyze model
 
 ```{r Sire_Analysis}
-load("sire_model_prior1.Rda")
+load("../../Data/Processed/sire_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
 fe <- do.call(mcmc.list, fe)

@@ -33,7 +33,7 @@ library(cowplot)
 
 ##### density (ggplot)
 ```{r, dens}
-#pdf("../../Data/Figures/density_all-data_ggpl.pdf",width=6,height=4)
+pdf("../../Figures/density_all-data_ggpl.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
  ggplot(h2life, aes(NewAge, fill = treat)) + 
   geom_density(alpha = 0.2) +
@@ -44,7 +44,7 @@ par(mar=c(4.5,4.5,0.5,0.5))
   xlab("Age(days)") + ylab("Density") +
   theme(legend.position=c(0.1, 0.9)) +
   scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
-#dev.off()
+dev.off()
 ```
 
 # Kaplan-Meier plot by diet 
@@ -59,7 +59,7 @@ h2.treat <- survfit(Surv(NewAge, status==2) ~ treat, conf.type="log",
 # h2.treat
 summary(h2.treat)$table
 
-pdf("../../Data/Figures/K-M_treatments_summarized.pdf",width=6,height=4)
+pdf("../../Figures/K-M_treatments_summarized.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
 plot(h2.treat, conf.int = F, mark.time=FALSE, #masks censored events
      xlab="Age (days)", ylab="Proportion alive",
@@ -76,7 +76,7 @@ dev.off()
 # cummulative hazard
 ```{r}
 
-#pdf("../../Data/Figures/CumHaz_treatment_summary.pdf",width=6,height=4)
+pdf("../../Figures/CumHaz_treatment_summary.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
 plot(h2.treat, fun="cumhaz", lty=1,conf.int=F, mark.time=FALSE,
      xlab="Age (days)", ylab="Proportion alive", 
@@ -84,7 +84,7 @@ plot(h2.treat, fun="cumhaz", lty=1,conf.int=F, mark.time=FALSE,
      cex.axis=1, cex.lab=1)
 legend(0,7.7, c("HS", "DR", "C"),lty=1, lwd=3,text.font=1, bty = "n",
        col=c("#DD9999", "#66CC99", "#9999CC"))
-#dev.off()
+dev.off()
 ```
 
 # test differences
@@ -160,7 +160,7 @@ mlife1$diet <- factor(mlife1$diet, levels=unique(mlife1$diet)) #back to ordered 
 #save(mlife1, file = "/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/h2reacts.Rda")
 
 #plot reaction norms for sire families
-#pdf("../../Data/Figures/h2life_reaction_norms.pdf",width=6,height=4)
+pdf("../../Figures/h2life_reaction_norms.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
 ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age)) +
   geom_point(size = 2)+
@@ -168,7 +168,7 @@ ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age)) +
   xlab("Dietary condition") + ylab("Median lifespan (days)") +
   theme(legend.position="none") +
   scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
-#dev.off()
+dev.off()
 ```
 
 
