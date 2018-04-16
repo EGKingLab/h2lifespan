@@ -365,15 +365,6 @@ k3 + facet_grid(Diet~ .)
 
 
 ```{r}
-#line plot
-ll <- ggplot(data=AB.c, aes(x=age, y=eggs_per_female, color=Diet, group=id)) + #group-sire_trt
-  #geom_line() #+ ggtitle("blah-blah")+
-  geom_jitter(position = position_jitter(width = .3), alpha = 0.5) +
-  xlab("Age (days") + ylab("Mean eggs/female/day")
-ll
-```
-
-```{r}
 #pdf("../../Figures/h2_avg_fecundity_per_female_per_day.pdf",width=6,height=4)
 par(mar=c(4.5,8.0,0.5,0.5))
 
@@ -398,39 +389,38 @@ AA %>%
     summarize(eggs = sum(eggs_per_female))
 ```
 
+#correlation plots
 
 ```{r}
-library(readxl)
-suppressWarnings(
-  J <- read_excel("../../Data/Processed/feclife_with-image-ids.xlsx")
-)
+# sepatate columns
+  colum_hs <- select(h2fec_phenotype, sireid,hs)
+  colum_c <- select(mlife, sireid,c)
+  colum_dr <- select(mlife, sireid, dr)
 
-#HS <- subset(M, c(Diet == "HS", flipDate=="2016-06-07"))
-HS_date <- select(J, camera_id, flipDate, fID, Diet, days)
-HS_date$flipDate <- as.character(HS_date$flipDate)
-
-HS_Jun7 <- HS_date[ which( HS_date$Diet == "HS" & HS_date$flipDate=="2016-06-07") , ]
-HS_Jun14 <- HS_date[ which( HS_date$Diet == "HS" & HS_date$flipDate=="2016-06-14") , ]
-HS_Jun21 <- HS_date[ which( HS_date$Diet == "HS" & HS_date$flipDate=="2016-06-21") , ]
-
-HS_Jun7
-HS_Jun14
-HS_Jun21
+  h2_all <- rbind(C, HS, DR) 
 ```
 
+
 ```{r}
-load("../../Data/Processed/predicted_egg_counts.rda")
-HS_M_date <- select(M, camera_id, flipDate, fID, Diet, days, predicted_count_linear)
-HS_M_date$flipDate <- as.character(HS_M_date$flipDate)
+#combine data frames
+mlife <- merge(hs_med, merge(c_med, dr_med, by="sireid", all.x=TRUE, all.y=TRUE), by = "sireid", all.x = TRUE, all.y = TRUE)
+mlife[, 3] <- NULL
+mlife[, 4] <- NULL
+mlife[, 5] <- NULL
+colnames(mlife) <- c("sireid", "hs","c","dr")
+```
 
-HS_M_Jun7 <- HS_M_date[ which( HS_M_date$Diet == "HS" & HS_M_date$flipDate=="2016-06-07") , ]
-HS_M_Jun14 <- HS_M_date[ which( HS_M_date$Diet == "HS" & HS_M_date$flipDate=="2016-06-14") , ]
-HS_M_Jun21 <- HS_M_date[ which( HS_M_date$Diet == "HS" & HS_M_date$flipDate=="2016-06-21") , ]
 
-HS_M_Jun7
-HS_M_Jun14
-HS_M_Jun21
+```{r}
+#pairs(~hs+c+dr,data=mlife)
+pdf("/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/lifecorrel_pearson.pdf",width=6,height=4)
 
+#sapply(mlife, is.numeric)   #which columns are numeric
+#p <- mlife[, sapply(mlife, is.numeric)] #grab numeric columns
+
+ggcorr(mlife, palette = "RdYlGn", name = "pearson", #use 'rho' for ranks
+       label = TRUE, label_color = "black", size=12)
+dev.off()
 ```
 
 
