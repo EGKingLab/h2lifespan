@@ -51,7 +51,7 @@ h2fec_phenotype <- dplyr::rename(h2fec_phenotype, Diet = treat)
 
 # change LY to DR, STD to C
 ```{r}
-h2fec_phenotype %>%
+h2fec_phenotype <- h2fec_phenotype %>%
      mutate(Diet=replace(Diet, Diet=="LY", "DR")) %>%
      mutate(Diet=replace(Diet, Diet=="STD", "C"))
 
@@ -122,10 +122,12 @@ p + labs(title="Lifetime eggs per diet treatment",
 ```{r}
 #dot plot
 
-k6 <- ggplot(data=h2fec_phenotype, aes(x=Diet, y=egg_total, color=Diet)) + #group-sire_trt
-  geom_jitter(position = position_jitter(width = 0.3), alpha = 0.5)+
-  scale_y_continuous(expand = c(0,0))
-  #xlab("Dietary condition") + ylab("Total eggs") +
+k6 <- ggplot(data=h2fec_phenotype, aes(x=Diet, y=egg_total, fill=Diet)) + #group-sire_trt
+  #geom_point(pch=21) +
+  geom_jitter(position = position_jitter(width = 0.4), alpha = 0.7)+
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+  scale_y_continuous(expand = c(0,0)) +
+  xlab("Diet") + ylab("Total eggs") 
 k6 +   expand_limits(y = c(1, 5e2)) 
 
 t <- subset(h2fec_phenotype, h2fec_phenotype$Diet=="HS")
@@ -174,32 +176,6 @@ p +   expand_limits(y = c(1, 5e2))
 #dev.off()
 ```
 
-```{r}
-
-#with(h2fec_phenotype, reorder(sire_Diet, egg_total)) 
-#pdf("../../Data/Figures/fecundity_family.pdf",width=6,height=4)
-par(mar=c(4.5,4.5,0.5,0.5))
-
-#ascending order
-pq <- ggplot(h2fec_phenotype, aes(x= reorder(id, -egg_total), y=egg_total, fill=Diet)) +
-
-#descending order
-#ggplot(h2fec_phenotype, aes(x= reorder(Diet, -egg_total), y=egg_total, fill=Diet)) + 
-  theme(axis.text.x = element_blank(), legend.position = 'top') +
-    stat_summary(fun.ymin=min, fun.ymax=max, fun.y = mean,
-               position = position_dodge(width = 0.9),
-               geom = "bar", alpha=0.8) +  xlab("Dam family") + ylab("Total eggs") +
-  scale_y_continuous(expand = c(0,0))+
-  #scale_fill_discrete(name="Diet")+
-  #guides(fill=guide_legend(title="Diet")) +
-geom_point(aes(color=Diet), position = position_dodge(width = 0.9),size=0.75) 
-
-pq +   expand_limits(y = c(1, 5e2)) 
-#tt + guides(fill=guide_legend(title="Diet"))
-
-#dev.off()
-```
-
 
 # reaction norms for sire families
 
@@ -215,7 +191,7 @@ colnames(hs_med) <- c("sireid","eggs")
 hs_med$diet<-"HS"
 
 #pull LY and compute median
-DR <- subset(h2fec_phenotype, Diet == "LY")
+DR <- subset(h2fec_phenotype, Diet == "DR")
 dr_trim <- cbind.data.frame(DR$sireid, DR$egg_total)
 dr_med <- aggregate(. ~ DR$sireid, data=dr_trim, FUN=median)
 dr_med[,2] <- NULL
@@ -223,7 +199,7 @@ colnames(dr_med) <- c("sireid","eggs")
 dr_med$diet<-"DR"
 
 #pull STD and compute median
-C <- subset(h2fec_phenotype, Diet == "STD")
+C <- subset(h2fec_phenotype, Diet == "C")
 c_trim <- cbind.data.frame(C$sireid, C$egg_total)
 c_med <- aggregate(. ~ C$sireid, data=c_trim, FUN=median)
 c_med[,2] <- NULL
@@ -274,17 +250,16 @@ AA <- read.table('../../Data/Processed/eggs_per_female.txt',
 
 AA <- AA %>%
    select(flipDate,id,fID,treat,age,sireid,damid,n_females,eggs_per_female)
-AA
+#AA
 AA <- as_tibble(AA)
 ```
 
 ```{r}
-AA %>%
-     mutate(treat=replace(treat, treat=="LY", "DR")) %>%
-  mutate(treat=replace(treat, treat=="STD", "C"))
-
-AA <- rename(AA, Diet = treat)
-AA
+AA <- AA %>%
+  rename(Diet = treat) %>%
+  mutate(Diet=replace(Diet, Diet=="LY", "DR")) %>%
+  mutate(Diet=replace(Diet, Diet=="STD", "C"))
+#AA
 ```
 
 
@@ -301,23 +276,19 @@ A2 <- aggregate(AA["eggs_per_female"], by=AA["sire_trt"], sum)
 
 ```
 
+# Julian dates
 
 ```{r}
-head(AA)
+#head(AA)
 
 AB <- as.data.frame(AA)
 AB$flipDate <- as.Date(AB$flipDate)
-#AA$wks <-  with(AA, ave(flipDate, flipDate, FUN = seq)) 
 
 AB$julian_date <- julian(AB$flipDate)
-head(AB)
+#head(AB)
 
 # sort by julian date
 AB <- AB[order(AB$julian_date),] 
-
-#AB$Time_Week<-1
-#AB$Time_Week<-unlist(lapply(split(AB$Time_Week, AB$julian_date), cumsum)) 
-
 
 AB.c <- transform(AB, Time_Week=match(julian_date, unique(julian_date)))
 all.equal(AB,AB.c)
@@ -330,8 +301,6 @@ all.equal(AB,AB.c)
 A3 <- AB.c %>%
    select(Time_Week,age, Diet,eggs_per_female)
 
-
-#A3$Time_Week <- as.Date(AA$Time_Week)
 A3$Diet <- as.character(AA$Diet)
 
 A3 <- aggregate(.~Time_Week+Diet, A3, mean)
@@ -339,7 +308,7 @@ A3 <- aggregate(.~Time_Week+Diet, A3, mean)
 k <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female))+
   geom_line(aes(color=Diet)) +
   xlab("Age (days))") + ylab("Mean eggs/female/day")
-k
+#k
 
 k1 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=Diet))+
   geom_point(aes(shape=Diet))+
@@ -382,45 +351,8 @@ lml
 ```
 
 
-```{r}
-# the tidy way
-AA %>%
-    group_by(flipDate, Diet) %>%
-    summarize(eggs = sum(eggs_per_female))
-```
-
-#correlation plots
-
-```{r}
-# sepatate columns
-  colum_hs <- select(h2fec_phenotype, sireid,hs)
-  colum_c <- select(mlife, sireid,c)
-  colum_dr <- select(mlife, sireid, dr)
-
-  h2_all <- rbind(C, HS, DR) 
-```
 
 
-```{r}
-#combine data frames
-mlife <- merge(hs_med, merge(c_med, dr_med, by="sireid", all.x=TRUE, all.y=TRUE), by = "sireid", all.x = TRUE, all.y = TRUE)
-mlife[, 3] <- NULL
-mlife[, 4] <- NULL
-mlife[, 5] <- NULL
-colnames(mlife) <- c("sireid", "hs","c","dr")
-```
 
-
-```{r}
-#pairs(~hs+c+dr,data=mlife)
-pdf("/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/lifecorrel_pearson.pdf",width=6,height=4)
-
-#sapply(mlife, is.numeric)   #which columns are numeric
-#p <- mlife[, sapply(mlife, is.numeric)] #grab numeric columns
-
-ggcorr(mlife, palette = "RdYlGn", name = "pearson", #use 'rho' for ranks
-       label = TRUE, label_color = "black", size=12)
-dev.off()
-```
 
 
