@@ -2,6 +2,52 @@
 
 ## Enoch Ng'oma (EN), Kevin Middleton (KM), and Elizabeth King (EK)
 
+## To Do
+
+Scripts
+
+- Check all
+- Number scripts
+- Write workflow how to for all analysis
+
+Surv model vis
+
+- ggplot colorizer
+- Reaction norm margins, color lines by sire, mean & error bars
+
+Vec model vis
+
+- Density plot of fecundity -> total fec per female (use eggs_per_female data)
+- Reaction norm margins, color lines by sire, mean & error bars
+
+TS model for fecundity (MM sire?)
+
+- Check treatment over time
+- ML or Bayes
+
+Make herit & genetic correlation visualization file
+
+- Code for plots from Rmds
+- Bars for HPDI from posteriors not hard coded
+- Same plot format for genetic correlation, add bars
+- LY to DR throughout
+
+Figure for egg counter methods
+
+Fecundity vs. Lifespan analysis
+
+Intro
+
+Methods
+
+- KM write egg counting
+- KM Bayes models
+
+Results
+
+Discussion
+
+
 ## Project Record
 
 ### Egg estimation
