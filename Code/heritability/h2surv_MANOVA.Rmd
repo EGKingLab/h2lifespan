@@ -120,7 +120,7 @@ if (rerun) {
 ### Analyze model
 
 ```{r MANOVA_Analysis}
-load("tri_model_prior1.Rda")
+load("../../Data/Processed/tri_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
 fe <- do.call(mcmc.list, fe)
@@ -186,11 +186,11 @@ colMeans(M)
 
 M %>% gather(Comparison, value) %>%
   ggplot(aes(value, color = Comparison)) +
-  geom_line(stat = "density", size = 2) +
+  geom_line(stat = "density", size = 1) +
   labs(x = "Genetic Correlation", y = "Density") +
   theme(legend.position = c(0.15, 0.85),
         text = element_text(size = 24),
-        legend.text = element_text(size = 18))
+        legend.text = element_text(size = 12))
 ggsave(last_plot(), file = "Lifespan_Genetic_Correlation_Plot.pdf",
        width = 8, height = 6)
 ```
