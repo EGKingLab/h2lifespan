@@ -132,6 +132,12 @@ Training set images with predicted negative counts
 HC %>% filter(lm_pred < 0) %>% arrange(lm_pred)
 ```
 
+```{r}
+HC %>% ggplot(aes(x = handcount, y = lm_pred)) +
+  geom_abline(slope = 1) +
+  geom_point()
+```
+
 ## Predict for new data
 
 ```{r}
@@ -185,7 +191,6 @@ M %>%
   select(cameraid, predicted_count_linear) %>% 
   arrange(predicted_count_linear)
 ```
-
 
 ```{r eval=FALSE}
 M.low <- M %>% 
