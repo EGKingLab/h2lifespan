@@ -111,9 +111,9 @@ new_data <- crossing(area, img_size) %>%
 new_data$lm_pred <- predict(fm_lm2, newdata = new_data)
 
 ggplot() +
-  geom_line(data = new_data, aes(x = area, y = lm_pred,
+  geom_line(data = new_data, aes(x = sqrt(area), y = lm_pred,
                                  color = factor(img_size))) +
-  geom_point(data = HC, aes(x = area, y = handcount))
+  geom_point(data = HC, aes(x = sqrt(area), y = handcount))
 ```
 
 ## Evaluation of linear model
