@@ -11,9 +11,9 @@ output:
       smooth_scroll: true
 ---
 
-1. "Lifespan fecundity" (sum eggs per vial across days)
-2. Fecundity at weeks 1, 5, 10, e.g.
-3. Model with (week | vial) -- what does that mean?
+#1. "Lifespan fecundity" (sum eggs per vial across days)
+#2. Fecundity at weeks 1, 5, 10, e.g.
+#3. Model with (week | vial) -- what does that mean?
 
 ```{r}
 library(knitr)
@@ -113,11 +113,11 @@ effectiveSize(model$VCV)
 
 summary(model)
 
-herit <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
-plot(herit)
-median(herit)
-f <- HPDinterval(herit)
-k <- as.data.frame(f)
+herit.hs <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit.hs)
+median(herit.hs)
+h <- HPDinterval(herit.hs)
+h1 <- as.data.frame(h)
 ```
 
 # plot hs with ggplot
@@ -194,7 +194,8 @@ summary(model)
 herit.dr <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
 plot(herit.dr)
 median(herit.dr)
-HPDinterval(herit.dr)
+d <- HPDinterval(herit.dr)
+d1 <- as.data.frame(d)
 ```
 
 # plot LY with ggplot
@@ -271,8 +272,8 @@ summary(model)
 herit.c <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
 plot(herit.c)
 median(herit.c)
-p <- HPDinterval(herit.c)
-q <- as.data.frame(f)
+c <- HPDinterval(herit.c)
+c1 <- as.data.frame(c)
 ```
 
 # Plot STD with ggplot
@@ -304,8 +305,9 @@ save(heritab, file = "../../Data/Processed/herit_lifetime.Rda")
 # Plot treatments together
 
 ```{r}
-ll <- 7.4
-ss <-0.2
+load("../../Data/Processed/herit_lifetime.Rda")
+ll <- 18
+ss <-0.6
 
 #pdf("../../Data/Figures/heritability_lifetime_plots.pdf",width=6,height=4)
 par(mar = c(4.5, 4.5, 0.5, 0.5))
@@ -317,22 +319,22 @@ par(mar = c(4.5, 4.5, 0.5, 0.5))
                yend = ll+ss,
                position = "identity",
                colour = "mediumpurple1")+
-  geom_segment(x = 0.2071338,
+  geom_segment(x = 0.2479,
                y = ll+ss+ss,
-               xend = 0.4288147,
+               xend = 0.4986,
                yend = ll+ss+ss,
                position = "identity",
                colour = "darkseagreen2")+
-  geom_segment(x = 0.3350174,
+  geom_segment(x = 0.0001595,
                y = ll,
-               xend = 0.6070656,
+               xend = 0.158,
                yend = ll,
                position = "identity",
                colour = "lightpink")+
   #coord_cartesian(xlim=c(0, 1), ylim=c(0, 1)) + #adjust frame of x-axis
   #scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
-  expand_limits(y = c(0, 8)) +
-  expand_limits(x = c(0, 0.8)) +
+  expand_limits(y = c(0, 20)) +
+  expand_limits(x = c(-0.2, 1.2)) +
   theme(axis.title = element_text(size = 16)) +
   xlab("Heritability") +
   ylab("Density") +
@@ -340,3 +342,24 @@ par(mar = c(4.5, 4.5, 0.5, 0.5))
   scale_fill_discrete(name ="Diet", labels=c("C", "DR", "HS")) 
 #dev.off()
 ```
+
+```{r}
+#Diet_treat <- c("h2.c","h2.dr","h2.hs")
+#Heritability <- c(herit.c, herit.dr, herit.hs)
+#cdh <- data.frame(Diet_treat,Heritability)
+  
+median_FEC <- c("median.C","median.DR","median.HS")
+median_HERIT <- c(median(herit.c), median(herit.dr), median(herit.hs))
+median_cdh <- data.frame(median_FEC, median_HERIT)
+
+ggplot(median_cdh, aes(x=median_FEC, y=median_HERIT, color=Diet_treat)) +
+  geom_jitter() 
+  #geom_point(median_cdh, aes(x=Diet_treat, y=median_HERIT))
+```
+
+# correlate lifespan and fecundity
+
+```{r}
+
+```
+

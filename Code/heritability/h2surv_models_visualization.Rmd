@@ -176,7 +176,7 @@ ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age)) +
   geom_line(aes(group = paste(sireid), alpha = 0.2)) +
   xlab("Dietary condition") + ylab("Median lifespan (days)") +
   theme(legend.position="none") +
-  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
+  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C"))
 #dev.off()
 ```
 
