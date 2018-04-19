@@ -68,7 +68,7 @@ par(mar=c(4.5,4.5,0.5,0.5))
   scale_x_continuous(expand=c(0, 0), limits=c(0, 5.5e2)) + #limit plot area on x-axix
   scale_color_manual(values=c("#CC6666", "#9999CC", "#66CC99")) +
   theme(axis.title = element_text(face="bold", size=16)) +
-  xlab("Lifetime fecundity") + ylab("Density") +
+  xlab("Total fecundity per female") + ylab("Density") +
   theme(legend.position=c(0.1, 0.9)) +
   scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
 #dev.off()
@@ -93,31 +93,6 @@ h2fec_sum
 
 
 # Diet groups and error bars
-
-```{r}
-# Standard deviation of the mean as error bar
-p <- ggplot(h2fec_sum, aes(x=Diet, y=egg_total, fill=Diet)) + 
-    geom_bar(stat="identity", position=position_dodge(), width=0.9) +
-    geom_errorbar(aes(ymin=egg_total-sd, ymax=egg_total+sd), width=.2,
-                  position=position_dodge(.9)) +
-    scale_y_continuous(expand = c(0,0))
-  
-p + scale_fill_grey() + theme_minimal()
-
-p + labs(title="Lifetime eggs per diet treatment", 
-         x="Diet", y = "Eggs per female")+
-    scale_fill_grey(guide=FALSE) + 
-   #scale_fill_manual(values=c('black','lightgray'))+ # Change color by groups
-   theme_classic()
-
-# change plot size
-
-```
-# optional formatting
-#p + scale_fill_brewer(palette="Paired") + theme_minimal() #paired bars
-#p + scale_fill_manual(values=c('black','lightgray'))  #great black $ grey theme
-#p + scale_fill_brewer(palette="Greens") + theme_minimal() #great greens
-#p + scale_fill_brewer(palette="Reds") + theme_minimal() #great reds
 
 ```{r}
 #dot plot
@@ -241,7 +216,7 @@ ggplot(B, aes(x = B$diet, y = B$eggs)) +
 ```
 
 
-# per week analysis
+# per female analysis
 
 ```{r}
 AA <- read.table('../../Data/Processed/eggs_per_female.txt',
@@ -254,90 +229,31 @@ AA <- AA %>%
 AA <- as_tibble(AA)
 ```
 
+# Prepare data
+
 ```{r}
 AA <- AA %>%
   rename(Diet = treat) %>%
   mutate(Diet=replace(Diet, Diet=="LY", "DR")) %>%
   mutate(Diet=replace(Diet, Diet=="STD", "C"))
 #AA
-```
 
-
-```{r}
 AA$flipDate <- as.Date(AA$flipDate)
 
 AA <- AA[!is.na(AA$eggs_per_female), ]
 
-A1 <- aggregate(AA["eggs_per_female"], by=AA["flipDate"], sum)
-
 # a new grouping variable
 AA <- unite(AA, "sire_trt", sireid, Diet, sep = "_", remove=FALSE)
 A2 <- aggregate(AA["eggs_per_female"], by=AA["sire_trt"], sum)
-
 ```
 
-# Julian dates
-
-```{r}
-#head(AA)
-
-AB <- as.data.frame(AA)
-AB$flipDate <- as.Date(AB$flipDate)
-
-AB$julian_date <- julian(AB$flipDate)
-#head(AB)
-
-# sort by julian date
-AB <- AB[order(AB$julian_date),] 
-
-AB.c <- transform(AB, Time_Week=match(julian_date, unique(julian_date)))
-all.equal(AB,AB.c)
-
-```
-
-
-```{r}
-
-A3 <- AB.c %>%
-   select(Time_Week,age, Diet,eggs_per_female)
-
-A3$Diet <- as.character(AA$Diet)
-
-A3 <- aggregate(.~Time_Week+Diet, A3, mean)
-
-k <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female))+
-  geom_line(aes(color=Diet)) +
-  xlab("Age (days))") + ylab("Mean eggs/female/day")
-#k
-
-k1 <- ggplot(A3, aes(x=Time_Week, y=eggs_per_female, color=Diet))+
-  geom_point(aes(shape=Diet))+
-  xlab("Age (days))") + ylab("Mean eggs/female/day")
-
-# local polynomial regression
-k1 + geom_smooth(method="loess") #try "lm"
-
-# facet
-
-k2 <- ggplot(A3, aes(x=age, y=eggs_per_female, color=Diet))+
-  geom_point(aes(shape=Diet)) +  geom_smooth(method="loess") +
-  xlab("Age(days") + ylab("Mean eggs/female/day")
-k2 + facet_grid(. ~ Diet)#facet_grid(Diet~ .) 
-
-
-k3 <- ggplot(A3, aes(x=age, y=eggs_per_female, color=Diet))+
-  geom_point(aes(shape=Diet)) +  geom_smooth(method="loess")+
-  xlab("Age (days)") + ylab("Mean eggs/female/day")
-k3 + facet_grid(Diet~ .) 
-
-```
-
+# Plot mean age per female per day
 
 ```{r, fig.height=4, fig.width=12}
 #pdf("../../Figures/h2_avg_fecundity_per_female_per_day.pdf",width=12,height=4)
 
-lml <- ggplot(data=AB.c, aes(x=age, y=eggs_per_female, color=Diet)) +
-geom_point(position = position_jitter(width = .4), alpha = 0.2) +
+lml <- ggplot(data=AA, aes(x=age, y=eggs_per_female, color=Diet)) +
+geom_point(position = position_jitter(width = 0.4), alpha = 0.8) +
 scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
 xlab("Age (days)") + ylab("Mean eggs/female/day") +
 scale_y_continuous(limits = c(-1,100), expand = c(0, 0)) +
