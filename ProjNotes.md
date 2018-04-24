@@ -94,30 +94,52 @@ This is the order in which files should be executed.
 
 ## Project Notes
 
-### Data preparation (EN)
+### Survival data preparation (EN)
 
-- Load and run script: `PreProcess_lifespan_functions.R` (a bunch of functions)
+`InitialProcess.R`
+	- will source `PreProcess_lifespan_functions.R` (a set of functions) to process the raw .txt data file
+	- Input data: `lifespan_only.txt` (raw data file saved as tab-delimited from `lifespan_only.xlsx`) 	
+	- Output files: 
+		- `lifespan_correctedData.txt` (all data)
+		- `Female_events_lifespan.txt` - censoring accounted for females only
+		- `Male_events_lifespan.txt` - censoring accounted for males only
 
-- Run `InitialProcess.R`  to process the raw .txt data file:
-- Input data: `lifespan_only.txt` - raw data file saved as tab-delimited from `Original/lifespan_only.xlsx`
-
-- Output files:
-	1. `lifespan_correctedData.txt`
-	2. `Female_events_lifespan.txt` - censoring accounted for (females only)
-	3. `Male_events_lifespan.txt` - censoring accounted for (males only)
-
-
-### Survival analysis
-
-`h2surv_models_visualization.Rmd` 	# females only
+`h2surv_models_visualization.Rmd`
 - Input data: `Female_events_lifespan.txt`
-	- Exploratory analysis - histograms, density plots
-	- Kaplan-Meier plots of survival estimates
-		- Summary survival curves by treatment (3 curves)
-		- Tests of difference
-		- Reaction norms
+	- density plots, Kaplan-Meier plots, test of difference, reaction norms
 
 ### Heritability
+
+`h2surv_analysis.R`
+	- animal models in Bayes form with animal as random effect (mcmcglmm)
+	- input data: `Female_events_lifespan.txt`
+	- Lifespan is analyzed as posterior distributions separately for each diet
+	- output: 
+		- `HS.Rda`, `LY.Rda`, `STD.Rda`
+		- `heritab.Rda` (combines all 3)
+		
+`h2surv_MANOVA.R`
+	- animal models compares pairwise combinations of lifespan on three diets, computes and plots correlation posteriors
+	- fetches `h2life_load_data.R` to prepare a pedigree from raw data
+	- models stored in: `tri_model_prior1.Rda`, `tri_model_prior2.Rda`, `tri_model_prior3.Rda`
+	
+`h2fecund.Rmd`
+- merges image output from `h2_fec_prediction.Rmd` with lifespan data:
+- inputs: `predicted_egg_counts.rda`, `lifespan_correctedData.txt`, `feclife_with-image-ids.csv`
+- outputs: `eggs_per_female.txt`, `eggs_per_vial.txt`
+
+`h2fec_visualization.Rmd`
+- produces plots for fecundity phenotype data: scatter plots, reaction norms
+
+`h2fec_lifetime_heritability`
+	- Bayesian animal models for fecundity data in mcmcglmm
+	- input data: `eggs_per_vial.txt`
+	- Fecundity is analyzed and plotted separately for each diet
+	- output: 
+		- `HS_lifetime_FEC.Rda`, `LY_lifetime_FEC.Rda`, `STD_lifetime_FEC.Rda`
+		- `herit_lifetime.Rda` (combines all 3)
+
+`h2fec_lifetime_MANOVA.Rmd`
 
 Run in background:
 
