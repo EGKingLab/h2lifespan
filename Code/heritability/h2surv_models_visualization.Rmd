@@ -11,19 +11,11 @@ output:
       smooth_scroll: true
 ---
 
-# Analysis of lifespan 
-# Half-sibling fly data
+# Analysis of lifespan half-sibling fly data
 
-# data
+# Load packages
+
 ```{r}
-
-h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
-                     sep = "\t", header = TRUE,
-                     stringsAsFactors = FALSE)
-```
-# packages
-```{r}
-
 library(survival)
 library(survminer)
 library(splines) #needed by survival package
@@ -32,45 +24,75 @@ library(forcats)
 library(cowplot)
 ```
 
-##### density (ggplot)
+Load functions for color mapping
+
+```{r}
+source("color_map.R")
+```
+
+## Load data
+
+Relabel LY -> DR and STD -> C.
+
+```{r}
+h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
+                     sep = "\t", header = TRUE,
+                     stringsAsFactors = FALSE) %>% 
+  mutate(treat = case_when(
+    treat == "HS" ~ "HS",
+    treat == "LY" ~ "DR",
+    treat == "STD" ~ "C"),
+    treat = factor(treat),
+    treat = fct_relevel(treat, "C"))
+```
+
+# Density
+
 ```{r, dens}
-#pdf("../../Figures/density_all-data_ggpl.pdf",width=6,height=4)
-par(mar=c(4.5,4.5,0.5,0.5))
- ggplot(h2life, aes(NewAge, fill = treat)) + 
-  geom_density(alpha = 0.2) +
-  coord_cartesian(xlim=c(-5, 101), ylim=c(0, 0.04)) + #adjust frame of x-axis
-  scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
-  scale_color_manual(values=c("#CC6666", "#9999CC", "#66CC99")) +
-  theme(axis.title = element_text(face="bold", size=16)) +
-  xlab("Age(days)") + ylab("Density") +
-  theme(legend.position=c(0.1, 0.9)) +
-  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C")) 
+# pdf("../../Figures/density_all-data_ggpl.pdf",width=6,height=4)
+# par(mar=c(4.5,4.5,0.5,0.5))
+
+ggplot(h2life, aes(NewAge, fill = treat)) + 
+  geom_density(alpha = 0.5) +
+  coord_cartesian(xlim = c(-5, 101), ylim = c(0, 0.04)) + #adjust frame of x-axis
+  scale_x_continuous(expand = c(0, 0), limits = c(-3, 100)) + #limit plot area on x-axix
+  tx_color_map() +
+  theme(axis.title = element_text(face = "bold", size = 16)) +
+  xlab("Age (days)") +
+  ylab("Density") +
+  theme(legend.position = c(0.1, 0.9)) +
+  tx_fill_map()
 #dev.off()
 ```
 
 # Kaplan-Meier plot by diet 
-# columns: RIL, NewAge, status
+
+columns: RIL, NewAge, status
 
 ```{r treat}
-
 # by treatment groups
-h2.treat <- survfit(Surv(NewAge, status==2) ~ treat, conf.type="log", 
-                    conf.int=0.95, type="kaplan-meier", error="greenwood",
-                    data=h2life)
+h2.treat <- survfit(Surv(NewAge, status == 2) ~ treat,
+                    conf.type = "log", 
+                    conf.int = 0.95,
+                    type = "kaplan-meier",
+                    error = "greenwood",
+                    data = h2life)
 # h2.treat
 summary(h2.treat)$table
 
 #pdf("../../Figures/K-M_treatments_summarized.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
 mm <- plot(h2.treat, conf.int = F, mark.time=FALSE, #masks censored events
-     xlab="Age (days)", ylab="Proportion alive",
-     col=c("#DD9999", "#66CC99", "#9999CC"), lwd=3,
+     xlab = "Age (days)",
+     ylab = "Proportion alive",
+     col = pal, lwd=3,
      cex.axis=1, cex.lab=1)
 #mtext("KM survival curve for RILs")
-abline(0.1,0, lty=3, lwd=1)
-abline(0.5,0, lty=3, lwd=1)
-legend(80,1, c("HS", "DR", "C"), lwd=3, text.font=1, bty = "n", y.intersp = 1.0, 
-       col=c("#DD9999", "#66CC99", "#9999CC"))
+abline(0.1,0, lty = 3, lwd = 1)
+abline(0.5,0, lty = 3, lwd = 1)
+legend(80,1, c("C", "DR", "HS"), lwd = 3,
+       text.font = 1, bty = "n", y.intersp = 1.0, 
+       col = pal)
 mm
 #dev.off()
 ```
@@ -80,19 +102,18 @@ mm
 summary(h2.treat)$table[, "median"]
 
 # survival
-#pdf("../Figures/S5_K-M_treat_summarized_survminer.pdf",width=6,height=4)
+#pdf("../Figures/S5_K-M_treat_summarized_survminer.pdf", width = 6, height = 4)
 par(mar=c(4.5,4.5,0.5,0.5))
 ggsurvplot(h2.treat, data = h2life, 
            conf.int = TRUE,
-           palette = c("#999999", "#E69F00", "#56B4E9"),
+           palette = pal,
            #pval = TRUE,
            fun = "pct", 
            surv.median.line = "hv",
            #title = "S5",
            legend = c(0.9,0.5),
-           legend.title = "Diet", 
-           legend.labs = c("HS","DR", "C")) +
-  xlab("Time (days")
+           legend.title = "Diet") +
+  xlab("Time (days)")
 #dev.off()
 ```
 
@@ -108,10 +129,12 @@ test_all1
 
 # pairwise tests
 ```{r}
-test_pairwise <- pairwise_survdiff(Surv(NewAge, status==2) ~ treat, 
-                                   data=h2life, p.adjust.method = "bonferroni", rho=0)
-test_pairwise1 <- pairwise_survdiff(Surv(NewAge, status==2) ~ treat, 
-                                    data=h2life, p.adjust.method = "bonferroni", rho=1)
+test_pairwise <- pairwise_survdiff(
+  Surv(NewAge, status == 2) ~ treat, 
+  data=h2life, p.adjust.method = "bonferroni", rho = 0)
+test_pairwise1 <- pairwise_survdiff(
+  Surv(NewAge, status == 2) ~ treat, 
+  data=h2life, p.adjust.method = "bonferroni", rho = 1)
 
 test_pairwise
 test_pairwise1
@@ -130,33 +153,33 @@ symnum(test_pairwise1$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 
 
 ```{r}
 # remove censored events
-h2rn_filtered <- h2life[h2life$status!=3, ] 
+h2rn_filtered <- h2life[h2life$status != 3, ] 
 
 # prep each treatment into its own column
 
 #pull HS and compute median
 HS <- subset(h2rn_filtered, treat == "HS")
 hs_trim <- cbind.data.frame(HS$sireid, HS$NewAge)
-hs_med <- aggregate(. ~ HS$sireid, data=hs_trim, FUN=median)
-hs_med[,2] <- NULL
-colnames(hs_med) <- c("sireid","age")
-hs_med$diet<-"HS"
+hs_med <- aggregate(. ~ HS$sireid, data = hs_trim, FUN = median)
+hs_med[, 2] <- NULL
+colnames(hs_med) <- c("sireid", "age")
+hs_med$diet <- "HS"
 
-#pull LY and compute median
-DR <- subset(h2rn_filtered, treat == "LY")
+#pull DR and compute median
+DR <- subset(h2rn_filtered, treat == "DR")
 dr_trim <- cbind.data.frame(DR$sireid, DR$NewAge)
-dr_med <- aggregate(. ~ DR$sireid, data=dr_trim, FUN=median)
-dr_med[,2] <- NULL
-colnames(dr_med) <- c("sireid","age")
-dr_med$diet<-"DR"
+dr_med <- aggregate(. ~ DR$sireid, data = dr_trim, FUN = median)
+dr_med[, 2] <- NULL
+colnames(dr_med) <- c("sireid", "age")
+dr_med$diet <- "DR"
 
-#pull STD and compute median
-C <- subset(h2rn_filtered, treat == "STD")
+#pull C and compute median
+C <- subset(h2rn_filtered, treat == "C")
 c_trim <- cbind.data.frame(C$sireid, C$NewAge)
-c_med <- aggregate(. ~ C$sireid, data=c_trim, FUN=median)
-c_med[,2] <- NULL
-colnames(c_med) <- c("sireid","age")
-c_med$diet<-"C"
+c_med <- aggregate(. ~ C$sireid, data = c_trim, FUN = median)
+c_med[, 2] <- NULL
+colnames(c_med) <- c("sireid", "age")
+c_med$diet <- "C"
 
 #join data frames
 mlife1 <- rbind(hs_med, c_med, dr_med)
@@ -168,15 +191,16 @@ mlife1$diet <- as.character(mlife1$diet) #turn diet col into a char vector
 mlife1$diet <- factor(mlife1$diet, levels=unique(mlife1$diet)) #back to ordered factor
 #save(mlife1, file = "/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/h2reacts.Rda")
 
-#plot reaction norms for sire families
+# plot reaction norms for sire families
 #pdf("../../Figures/h2life_reaction_norms.pdf",width=6,height=4)
-par(mar=c(4.5,4.5,0.5,0.5))
-ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age)) +
-  geom_point(size = 2)+
-  geom_line(aes(group = paste(sireid), alpha = 0.2)) +
-  xlab("Dietary condition") + ylab("Median lifespan (days)") +
-  theme(legend.position="none") +
-  scale_fill_discrete(name="Diet", labels=c("HS", "DR", "C"))
+# par(mar=c(4.5,4.5,0.5,0.5))
+ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age, color = sireid)) +
+  geom_point(size = 3) +
+  geom_line(aes(group = sireid), alpha = 0.5, size = 1.5) +
+  xlab("Diet") +
+  ylab("Median Lifespan (days)") +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim = c(1.5, 2.5))
 #dev.off()
 ```
 
@@ -185,17 +209,13 @@ ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age)) +
 ```{r}
 # read in fecundity data
 h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
-                     sep = "\t", header = TRUE,
-                     stringsAsFactors = FALSE)
-
-h2fec_phenotype <- as_tibble(h2fec_phenotype)
-h2fec_phenotype <- dplyr::rename(h2fec_phenotype, Diet = treat)
-
-# change LY to DR, STD to C
-
-h2fec_phenotype %>%
-     mutate(Diet=replace(Diet, Diet=="LY", "DR")) %>%
-     mutate(Diet=replace(Diet, Diet=="STD", "C"))
+                              sep = "\t", header = TRUE,
+                              stringsAsFactors = FALSE) %>% 
+  rename(Diet = treat) %>% 
+  mutate(Diet = case_when(
+    Diet == "HS" ~ "HS",
+    Diet == "LY" ~ "DR",
+    Diet == "STD" ~ "C"))
 ```     
 
 ```{r}
@@ -207,8 +227,7 @@ my_theme <- theme(
   legend.title=element_text(size = font_size),
   plot.title = element_text(size = font_size + 1))
 
-
-newdata<-h2life[,c('id','NewAge','treat','repl','status')]
+newdata <- h2life[, c('id', 'NewAge', 'treat', 'repl', 'status')]
 ```
 
 ```{r}
@@ -223,26 +242,29 @@ newdata <- newdata %>%
 
 
 ```{r}
-km.treat <- survfit(Surv(NewAge, status==2) ~ id, conf.type="log", 
-                    conf.int=0.95, type="kaplan-meier", error="greenwood",
+km.treat <- survfit(Surv(NewAge, status == 2) ~ id, conf.type = "log", 
+                    conf.int = 0.95,
+                    type = "kaplan-meier",
+                    error = "greenwood",
                     data=newdata)
-med.dat<-summary(km.treat)$table[,'median']
+med.dat <- summary(km.treat)$table[, 'median']
 
-ids<-strsplit(names(med.dat), split="=", fixed=TRUE)
-ids<-unlist(lapply(ids, function(x) x[2]))
-ids<-strsplit(ids, split="_",fixed=TRUE)
+ids <- strsplit(names(med.dat), split = "=", fixed = TRUE)
+ids <- unlist(lapply(ids, function(x) x[2]))
+ids <- strsplit(ids, split="_", fixed = TRUE)
 
-ll.dat<-data.frame('id'=unlist(lapply(ids, function(x) x[1])),
-                   'repl'=unlist(lapply(ids, function(x) x[2])),
-                   'Diet'=unlist(lapply(ids, function(x) x[3])),
-                   'Median'=med.dat,stringsAsFactors=FALSE)
+ll.dat <- data.frame('id' = unlist(lapply(ids, function(x) x[1])),
+                   'repl' = unlist(lapply(ids, function(x) x[2])),
+                   'Diet' = unlist(lapply(ids, function(x) x[3])),
+                   'Median' = med.dat,stringsAsFactors=FALSE)
 
 # to discard the row names column, write to file
 
-write.table(ll.dat, "../../Data/Processed/h2_median_lifespan.txt", row.names=FALSE, sep="\t")
+write.table(ll.dat, "../../Data/Processed/h2_median_lifespan.txt",
+            row.names=FALSE, sep="\t")
 
-ll.dat<-read.table("../../Data/Processed/h2_median_lifespan.txt",
-                   sep="\t",header=TRUE,stringsAsFactors=FALSE) 
+ll.dat <- read.table("../../Data/Processed/h2_median_lifespan.txt",
+                   sep="\t", header = TRUE, stringsAsFactors = FALSE) 
 
 #ll.dat.mean <- ll.dat %>%
   #group_by(id, Diet) %>% 
@@ -253,10 +275,3 @@ ll.dat<-read.table("../../Data/Processed/h2_median_lifespan.txt",
 #ll.dat <- select(ll.dat.mean, id,Mean_of_Median)
 
 ```
-
-
-
-
-
-
-

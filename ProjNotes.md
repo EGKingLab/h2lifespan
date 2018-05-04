@@ -412,3 +412,7 @@ Cleaning up egg counter files. Beginning work on Analysis pipeline description f
 - Reran the threshold optimization using the additional images.
 - Reran egg count prediction.
 - Set `h2fecund` to code all negative predicted egg counts as 0.
+
+### 2018-05-04 (KMM)
+
+- Unify color palette in h2surv_models_visualization and h2fec_visualization
