@@ -49,20 +49,21 @@ h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
 # Density
 
 ```{r, dens}
-# pdf("../../Figures/density_all-data_ggpl.pdf",width=6,height=4)
-# par(mar=c(4.5,4.5,0.5,0.5))
+pdf("../../Figures/density_all-life_data.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
 
 ggplot(h2life, aes(NewAge, fill = treat)) + 
   geom_density(alpha = 0.5) +
   coord_cartesian(xlim = c(-5, 101), ylim = c(0, 0.04)) + #adjust frame of x-axis
   scale_x_continuous(expand = c(0, 0), limits = c(-3, 100)) + #limit plot area on x-axix
+  scale_y_continuous(expand = c(0, 0)) +
   tx_color_map() +
-  theme(axis.title = element_text(face = "bold", size = 16)) +
+  theme(axis.title = element_text(size = 16)) +
   xlab("Age (days)") +
   ylab("Density") +
   theme(legend.position = c(0.1, 0.9)) +
   tx_fill_map()
-#dev.off()
+dev.off()
 ```
 
 # Kaplan-Meier plot by diet 
@@ -102,20 +103,35 @@ mm
 summary(h2.treat)$table[, "median"]
 
 # survival
-#pdf("../Figures/S5_K-M_treat_summarized_survminer.pdf", width = 6, height = 4)
-par(mar=c(4.5,4.5,0.5,0.5))
+pdf("../../Figures/K-M_treat_summarized_survminer.pdf", width = 8, height = 6)
+par(mar=c(6.0,6.0,0.5,0.5))
 ggsurvplot(h2.treat, data = h2life, 
            conf.int = TRUE,
-           palette = pal,
-           #pval = TRUE,
+           #palette = pal,
+           pval = TRUE,
            fun = "pct", 
            surv.median.line = "hv",
-           #title = "S5",
-           legend = c(0.9,0.5),
+           #title = "h2",
+           font.y = c(14),
+           surv.plot.height = 1.2,
+           risk.table = TRUE,
+           #risk.table = "abs_pct", fontsize = 3,
+           risk.table.title = "Number at risk of death",
+           risk.table.title.fontsize = 0.3,
+           size = 0.1,
+           tables.height = 0.4,
+           linetype = "strata", 
+           #palette = c("#E7B800","#2E9FDF"), 
+           legend = "bottom",
+           legend.labs = c("C", "DR", "HS"),
            legend.title = "Diet") +
   xlab("Time (days)")
-#dev.off()
+dev.off()
 ```
+ 
+           legend.title = "Diet", 
+           legend.labs = c("HS","DR", "C")) +
+  xlab("Time (days")
 
 # test differences
 ```{r testdiff}
@@ -192,8 +208,8 @@ mlife1$diet <- factor(mlife1$diet, levels=unique(mlife1$diet)) #back to ordered 
 #save(mlife1, file = "/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/h2reacts.Rda")
 
 # plot reaction norms for sire families
-#pdf("../../Figures/h2life_reaction_norms.pdf",width=6,height=4)
-# par(mar=c(4.5,4.5,0.5,0.5))
+pdf("../../Figures/h2life_reaction_norms.pdf",width=6,height=4)
+par(mar=c(4.5,4.5,0.5,0.5))
 ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age, color = sireid)) +
   geom_point(size = 3) +
   geom_line(aes(group = sireid), alpha = 0.5, size = 1.5) +
@@ -201,7 +217,7 @@ ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age, color = sireid)) +
   ylab("Median Lifespan (days)") +
   theme(legend.position = "none") +
   coord_cartesian(xlim = c(1.5, 2.5))
-#dev.off()
+dev.off()
 ```
 
 # lifespan-lifetime fecundity correlation

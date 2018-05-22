@@ -186,13 +186,15 @@ colMeans(M)
 
 M %>% gather(Comparison, value) %>%
   ggplot(aes(value, color = Comparison)) +
-  geom_line(stat = "density", size = 1) +
-  labs(x = "Genetic Correlation", y = "Density") +
+  geom_line(stat = "density", size = 1.0) +
+  labs(x = "Genetic correlation", y = "Density") +
   theme(legend.position = c(0.15, 0.85),
-        text = element_text(size = 24),
-        legend.text = element_text(size = 12))
-ggsave(last_plot(), file = "Lifespan_Genetic_Correlation_Plot.pdf",
-       width = 8, height = 6)
+        text = element_text(size = 10),
+        legend.text = element_text(size = 10)) +
+  scale_x_continuous(expand = c(0, 0), limits = c(-0.3, 0.9)) +
+  scale_y_continuous(expand = c(0, 0)) 
+ggsave(last_plot(), file = "../../Figures/Lifespan_Genetic_Correlation_Plot.pdf",
+       width = 6, height = 4)
 ```
 
 ## Model following Ingleby et al. 2013

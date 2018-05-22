@@ -38,7 +38,7 @@ data_summary <- function(data, varname, groupnames){
 }
 ```
 
-Load functions for color mapping
+# Load functions for color mapping
 
 ```{r}
 source("color_map.R")
@@ -62,20 +62,21 @@ h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
 # Density
 
 ```{r, dens}
-pdf("../../Data/Figures/density_all-data_ggpl.pdf",width=6,height=4)
+pdf("../../Figures/density_all-fec_data.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
 ggplot(h2fec_phenotype, aes(egg_total, fill = Diet)) + 
   geom_density(alpha = 0.5) +
   scale_x_continuous(expand = c(0, 0), limits = c(0, 550)) +
-  theme(axis.title = element_text(face = "bold", size = 16)) +
-  xlab("Total Fecundity per Female") +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.title = element_text(size = 16)) +
+  xlab("Total fecundity per female") +
   ylab("Density") +
-  theme(legend.position=c(0.1, 0.9)) +
+  theme(legend.position=c(0.8, 0.85)) +
   tx_fill_map() 
 dev.off()
 ```
 
-# Summarize data
+# Summarize data for each diet
 
 ```{r}
 h2fec_sum <- h2fec_phenotype %>% 
@@ -98,6 +99,7 @@ k6 <- ggplot(data=h2fec_phenotype, aes(x = Diet, y = egg_total, color = Diet)) +
   scale_y_continuous(expand = c(0,0)) +
   xlab("Diet") + ylab("Total eggs") + 
   expand_limits(y = c(1, 5e2)) 
+k6
 
 t <- subset(h2fec_phenotype, h2fec_phenotype$Diet=="HS")
 which.max(t$egg_total)
@@ -107,6 +109,7 @@ t[68,] # S45D134_a_HS has egg_total = 404
 kn <- h2fec_phenotype
 ``` 
 
+# Summarize data for each sire family in each diet
 
 ```{r}
 # new grouping variable
@@ -114,11 +117,11 @@ h2fec_phenotype <- unite(h2fec_phenotype, "sire_Diet", sireid,
                          Diet, sep = "_", remove=FALSE)  
 
 #h2fec_phenotype <- select(h2fec_phenotype, sire_Diet, Diet, egg_total)
-```
 
-```{r}
+
+
 #with(h2fec_phenotype, reorder(sire_Diet, egg_total)) 
-pdf("../../Data/Figures/fecundity_family.pdf",width=6,height=4)
+pdf("../../Figures/mean_family_fecundity.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
 
 #ascending order
@@ -132,7 +135,7 @@ ggplot(h2fec_phenotype, aes(x = reorder(sire_Diet, egg_total),
   geom_point(position = position_dodge(width = 0.9),
              size = 0.75) +
   xlab("Sire family") +
-  ylab("Total eggs") +
+  ylab("Mean fecundity") +
   scale_y_continuous(expand = c(0, 0)) +
   tx_fill_map() +
   tx_color_map() +
@@ -186,9 +189,9 @@ B$diet <- factor(B$diet, levels=unique(B$diet)) #back to ordered factor
 # plot reaction norms for sire families
 
 ```{r}
-pdf("../../Data/Figures/h2life_reaction_norms.pdf",width=6,height=4)
+pdf("../../Figures/h2fec_reaction_norms.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
-c <- ggplot(B, aes(x = diet, y = eggs, color = sireid)) +
+ggplot(B, aes(x = diet, y = eggs, color = sireid)) +
   geom_point(size = 3) +
   geom_line(aes(group = sireid), alpha = 0.5, size = 1.5) +
   xlab("Diet") +
@@ -232,12 +235,13 @@ A2 <- aggregate(AA["eggs_per_female"], by=AA["sire_trt"], sum)
 pdf("../../Figures/h2_avg_fecundity_per_female_per_day.pdf",width=12,height=4)
 
 lml <- ggplot(AA, aes(x = age, y = eggs_per_female, color = Diet)) +
-  geom_point(position = position_jitter(width = 0.3), alpha = 0.8) +
+  geom_point(position = position_jitter(width = 0.3), alpha = 0.7) +
   tx_color_map() +
   xlab("Age (days)") +
   ylab("Mean eggs/female/day") +
   scale_y_continuous(limits = c(-1,100), expand = c(0, 0)) +
   geom_smooth(method = "lm", se = TRUE, color="black")+
+  theme(legend.position=c(0.95, 0.85)) +
   facet_grid(. ~ Diet)
 lml
 dev.off()
