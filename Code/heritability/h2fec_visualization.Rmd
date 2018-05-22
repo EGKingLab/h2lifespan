@@ -64,7 +64,7 @@ h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
 ```{r, dens}
 #pdf("../../Data/Figures/density_all-data_ggpl.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
-ggplot(h2fec_phenotype, aes(egg_total, fill = Diet)) + 
+a <- ggplot(h2fec_phenotype, aes(egg_total, fill = Diet)) + 
   geom_density(alpha = 0.5) +
   scale_x_continuous(expand = c(0, 0), limits = c(0, 550)) +
   theme(axis.title = element_text(face = "bold", size = 16)) +
@@ -72,6 +72,7 @@ ggplot(h2fec_phenotype, aes(egg_total, fill = Diet)) +
   ylab("Density") +
   theme(legend.position=c(0.1, 0.9)) +
   tx_fill_map() 
+a
 #dev.off()
 ```
 
@@ -122,7 +123,7 @@ h2fec_phenotype <- unite(h2fec_phenotype, "sire_Diet", sireid,
 par(mar=c(4.5,4.5,0.5,0.5))
 
 #ascending order
-ggplot(h2fec_phenotype, aes(x = reorder(sire_Diet, egg_total),
+b <- ggplot(h2fec_phenotype, aes(x = reorder(sire_Diet, egg_total),
                             y = egg_total, fill = Diet,
                             color = Diet)) +
   theme(axis.text.x = element_blank(), legend.position = 'top') +
@@ -137,6 +138,7 @@ ggplot(h2fec_phenotype, aes(x = reorder(sire_Diet, egg_total),
   tx_fill_map() +
   tx_color_map() +
   expand_limits(y = c(1, 5e2)) 
+b
 #dev.off()
 ```
 
@@ -188,13 +190,14 @@ B$diet <- factor(B$diet, levels=unique(B$diet)) #back to ordered factor
 ```{r}
 #pdf("../../Data/Figures/h2life_reaction_norms.pdf",width=6,height=4)
 par(mar=c(4.5,4.5,0.5,0.5))
-ggplot(B, aes(x = diet, y = eggs, color = sireid)) +
+c <- ggplot(B, aes(x = diet, y = eggs, color = sireid)) +
   geom_point(size = 3) +
   geom_line(aes(group = sireid), alpha = 0.5, size = 1.5) +
   xlab("Diet") +
   ylab("Total eggs") +
   theme(legend.position = "none") +
   coord_cartesian(xlim = c(1.5, 2.5))
+c
 #dev.off()
 ```
 
@@ -242,3 +245,12 @@ lml <- ggplot(AA, aes(x = age, y = eggs_per_female, color = Diet)) +
 lml
 #dev.off()
 ```
+
+# Layout with gridExtra 
+
+```{r}
+library(gridExtra)
+grid.arrange(a,b,c,lml, ncol=2)
+```
+
+
