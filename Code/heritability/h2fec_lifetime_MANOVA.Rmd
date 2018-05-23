@@ -26,6 +26,8 @@ set.seed(224819)
 library(MCMCglmm)
 library(tidyverse)
 library(parallel)
+
+source("color_map.R")
 ```
 
 ```{r}
@@ -190,9 +192,11 @@ HS_LY <- re[ , "traitEggs_HS:traitEggs_LY.animal"] /
 plot(HS_LY)
 median(HS_LY)
 HPDinterval(HS_LY)
+
+save(re, file = "../../Data/Processed/re.Rda")
 ```
 
-### Plot for poster
+### Plot for paper
 
 ```{r}
 library(tidyverse)
@@ -202,17 +206,25 @@ B <- data_frame(`HS vs. STD` = as.numeric(HS_STD),
                 `LY vs. STD` = as.numeric(LY_STD),
                 `HS vs. LY` = as.numeric(HS_LY))
 
+B <- as_tibble( B ) %>%  
+  select(`HS vs. STD`, `LY vs. STD`, `HS vs. LY`) %>% 
+  rename(`HS vs. C` = `HS vs. STD`) %>% 
+  rename(`DR vs. C` = `LY vs. STD`) %>% 
+  rename(`HS vs. DR` = `HS vs. LY`)
+
 colMeans(B)
 
 B %>% gather(Comparison, value) %>%
   ggplot(aes(value, color = Comparison)) +
-  geom_line(stat = "density", size = 2) +
+  geom_line(stat = "density", size = 1) +
   labs(x = "Genetic Correlation", y = "Density") +
   theme(legend.position = c(0.15, 0.85),
-        text = element_text(size = 24),
-        legend.text = element_text(size = 18))
-ggsave(last_plot(), file = "Genetic_Correlation_Plot.pdf",
-       width = 8, height = 6)
+        text = element_text(size = 12),
+        legend.text = element_text(size = 12))+
+  scale_x_continuous(expand = c(0, 0), limits = c(-1.2, 1.2)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 12))
+ggsave(last_plot(), file = "../../Figures/Fecundity_Genetic_Correlation_Plot.pdf",
+       width = 4, height = 4)
 ```
 
 ## Model following Ingleby et al. 2013

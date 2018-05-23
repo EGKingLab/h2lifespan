@@ -18,11 +18,20 @@ set.seed(234876)
 
 library(MCMCglmm)
 library(tidyverse)
+library(cowplot)
 library(parallel)
 library(knitr)
+```
 
+# Data and functions for color mapping
+
+```{r}
+source("color_map.R")
 source("h2life_load_data.R")
+```
 
+
+```{r}
 genet_corr <- tibble(model = character(),
                      HS_STD = numeric(),
                      LY_STD = numeric(),
@@ -172,29 +181,32 @@ median(HS_LY)
 HPDinterval(HS_LY)
 ```
 
-### Plot for poster
+### Plot for paper
 
 ```{r}
-library(tidyverse)
-library(cowplot)
-
 M <- data_frame(`HS vs. STD` = as.numeric(HS_STD),
                 `LY vs. STD` = as.numeric(LY_STD),
                 `HS vs. LY` = as.numeric(HS_LY))
 
+M <- as_tibble( M ) %>%  
+  select(`HS vs. STD`, `LY vs. STD`, `HS vs. LY`) %>% 
+  rename(`HS vs. C` = `HS vs. STD`) %>% 
+  rename(`DR vs. C` = `LY vs. STD`) %>% 
+  rename(`HS vs. DR` = `HS vs. LY`)
+
 colMeans(M)
 
 M %>% gather(Comparison, value) %>%
-  ggplot(aes(value, color = Comparison)) +
+ggplot(aes(value, color = Comparison)) +
   geom_line(stat = "density", size = 1.0) +
   labs(x = "Genetic correlation", y = "Density") +
   theme(legend.position = c(0.15, 0.85),
         text = element_text(size = 10),
         legend.text = element_text(size = 10)) +
-  scale_x_continuous(expand = c(0, 0), limits = c(-0.3, 0.9)) +
-  scale_y_continuous(expand = c(0, 0)) 
+  scale_x_continuous(expand = c(0, 0.1), limits = c(-0.4, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 4))
 ggsave(last_plot(), file = "../../Figures/Lifespan_Genetic_Correlation_Plot.pdf",
-       width = 6, height = 4)
+       width = 4, height = 4)
 ```
 
 ## Model following Ingleby et al. 2013

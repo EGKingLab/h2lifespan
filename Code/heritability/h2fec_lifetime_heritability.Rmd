@@ -44,6 +44,8 @@ h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     dec = ".", header = TRUE,
                     stringsAsFactors = FALSE)
 
+source("color_map.R")
+
 # Standardize egg_total
 h2fec$egg_total <- as.numeric(scale(h2fec$egg_total))
 
@@ -309,25 +311,23 @@ load("../../Data/Processed/herit_lifetime.Rda")
 ll <- 18
 ss <-0.6
 
-#pdf("../../Data/Figures/heritability_lifetime_plots.pdf",width=6,height=4)
-par(mar = c(4.5, 4.5, 0.5, 0.5))
  ggplot(heritab, aes(var1, fill = Diet)) + 
   geom_density(alpha = 0.2) +
-  geom_segment(x = 0.2479849,
+  geom_segment(x = 0.0006355559,
                y = ll + ss,
-               xend = 0.4984068,
+               xend = 0.5736901,
                yend = ll+ss,
                position = "identity",
                colour = "mediumpurple1")+
-  geom_segment(x = 0.2479,
+  geom_segment(x = 0.00025302,
                y = ll+ss+ss,
-               xend = 0.4986,
+               xend = 0.331502,
                yend = ll+ss+ss,
                position = "identity",
                colour = "darkseagreen2")+
-  geom_segment(x = 0.0001595,
+  geom_segment(x = 0.0003154024,
                y = ll,
-               xend = 0.158,
+               xend = 0.9160698,
                yend = ll,
                position = "identity",
                colour = "lightpink")+
@@ -335,13 +335,16 @@ par(mar = c(4.5, 4.5, 0.5, 0.5))
   #scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
   expand_limits(y = c(0, 20)) +
   expand_limits(x = c(-0.2, 1.2)) +
-  theme(axis.title = element_text(size = 16)) +
+  theme(axis.title = element_text(size = 12)) +
   xlab("Heritability") +
   ylab("Density") +
   theme(legend.position=c(0.85, 0.85)) +
   scale_fill_discrete(name ="Diet", labels=c("C", "DR", "HS")) 
-#dev.off()
+ 
+ ggsave(last_plot(), file = "../../Figures/Fecundity_heritability_lifetime_plots.pdf",
+       width = 4, height = 4)
 ```
+
 
 ```{r}
 #Diet_treat <- c("h2.c","h2.dr","h2.hs")
