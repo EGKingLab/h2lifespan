@@ -247,6 +247,21 @@ lml
 dev.off()
 ```
 
+```{r}
+AA %>% 
+  ggplot(aes(x = age, y = eggs_per_female, color = Diet, group = fID)) +
+  geom_line(alpha = 0.25) +
+  geom_smooth(aes(group = Diet), se = FALSE, color = "black") +
+  tx_color_map() +
+  facet_grid(. ~ Diet)
+```
+
+```{r}
+library(lme4)
+fm <- lmer(eggs_per_female ~ Diet + age + Diet:sireid + (1 | sireid), AA)
+summary(fm)
+```
+
 # Layout with gridExtra 
 
 ```{r}
