@@ -201,7 +201,7 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 # a = nu / 2
 # b = nu * V / 2
 
-prior <- list(R = list(V = 1, nu = 0.002),
+prior <- list(R = list(V = fvg1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
 model <- MCMCglmm(NewAge ~ 1,

@@ -190,6 +190,7 @@ D[D$cameraid=="IMG_3626.JPG","eggs_per_female"] <- NA
 D[D$cameraid=="IMG_5736.JPG","eggs_per_female"] <- NA
 D[D$cameraid=="IMG_5735.JPG","eggs_per_female"] <- NA
 D[D$cameraid=="IMG_5738.JPG","eggs_per_female"] <- NA
+D[D$cameraid=="IMG_3654.JPG","eggs_per_female"] <- NA
 
 #tt <- subset(D, id=="S45D134_a_HS")
 #D[D$cameraid=="IMG_5571.JPG","eggs_per_female"] <- NA #see comment in h2fec_explore.Rmd
