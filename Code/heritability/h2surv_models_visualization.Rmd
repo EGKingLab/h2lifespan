@@ -49,28 +49,25 @@ h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
 # Density
 
 ```{r, dens}
-pdf("../../Figures/density_all-life_data.pdf",width=6,height=4)
-par(mar=c(4.5,4.5,0.5,0.5))
-
 ggplot(h2life, aes(NewAge, fill = treat)) + 
   geom_density(alpha = 0.5) +
   coord_cartesian(xlim = c(-5, 101), ylim = c(0, 0.04)) + #adjust frame of x-axis
   scale_x_continuous(expand = c(0, 0), limits = c(-3, 100)) + #limit plot area on x-axix
   scale_y_continuous(expand = c(0, 0)) +
   tx_color_map() +
-  theme(axis.title = element_text(size = 16)) +
+  theme(axis.title = element_text(size = 12)) +
   xlab("Age (days)") +
   ylab("Density") +
   theme(legend.position = c(0.1, 0.9)) +
   tx_fill_map()
-dev.off()
+
+ggsave(last_plot(), file = "../../Figures/density_all-life_data.pdf",
+       width = 4, height = 4)
 ```
 
-# Kaplan-Meier plot by diet 
+# Kaplan-Meier by diet plot with Survminer
 
-columns: RIL, NewAge, status
-
-```{r treat}
+```{r}
 # by treatment groups
 h2.treat <- survfit(Surv(NewAge, status == 2) ~ treat,
                     conf.type = "log", 
@@ -81,52 +78,34 @@ h2.treat <- survfit(Surv(NewAge, status == 2) ~ treat,
 # h2.treat
 summary(h2.treat)$table
 
-#pdf("../../Figures/K-M_treatments_summarized.pdf",width=6,height=4)
-par(mar=c(4.5,4.5,0.5,0.5))
-mm <- plot(h2.treat, conf.int = F, mark.time=FALSE, #masks censored events
-     xlab = "Age (days)",
-     ylab = "Proportion alive",
-     col = pal, lwd=3,
-     cex.axis=1, cex.lab=1)
-#mtext("KM survival curve for RILs")
-abline(0.1,0, lty = 3, lwd = 1)
-abline(0.5,0, lty = 3, lwd = 1)
-legend(80,1, c("C", "DR", "HS"), lwd = 3,
-       text.font = 1, bty = "n", y.intersp = 1.0, 
-       col = pal)
-mm
-#dev.off()
-```
-
-```{r}
 # median for each treatment
 summary(h2.treat)$table[, "median"]
 
 # survival
-pdf("../../Figures/K-M_treat_summarized_survminer.pdf", width = 8, height = 6)
-par(mar=c(6.0,6.0,0.5,0.5))
 ggsurvplot(h2.treat, data = h2life, 
            conf.int = TRUE,
-           #palette = pal,
+           palette = pal,
            pval = TRUE,
            fun = "pct", 
            surv.median.line = "hv",
            #title = "h2",
            font.y = c(14),
-           surv.plot.height = 1.2,
-           risk.table = TRUE,
+           #surv.plot.height = 1.2,
+           risk.table = FALSE,
            #risk.table = "abs_pct", fontsize = 3,
-           risk.table.title = "Number at risk of death",
-           risk.table.title.fontsize = 0.3,
-           size = 0.1,
-           tables.height = 0.4,
-           linetype = "strata", 
+           #risk.table.title = "Number at risk of death",
+           #risk.table.title.fontsize = 0.3,
+           #size = 0.1,
+           #tables.height = 0.4,
+           #linetype = "strata", 
            #palette = c("#E7B800","#2E9FDF"), 
            legend = "bottom",
            legend.labs = c("C", "DR", "HS"),
            legend.title = "Diet") +
-  xlab("Time (days)")
-dev.off()
+  xlab("Time (days)") 
+
+ggsave(last_plot(), file = "../../Figures/K-M_treat_summarized_survminer.pdf",
+       width = 4, height = 4)
 ```
  
            legend.title = "Diet", 
@@ -165,7 +144,64 @@ symnum(test_pairwise1$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 
    abbr.colnames = FALSE, na = "")
 ```
 
-#reaction norms for sire families
+# Kaplan-Meier plot for sire families grouped by treatment
+
+```{r}
+h2.sireid <- survfit(Surv(NewAge, status == 2) ~ sireid, data = h2life,
+                     #conf.type = "log", 
+                     #conf.int = 0.95,
+                     type = "kaplan-meier",
+                     error = "greenwood")
+
+#library(RColorBrewer)
+#colourCount = length(unique(h2life$sireid))
+#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
+
+ggsurvplot_facet(h2.sireid, h2life, 
+                 facet.by = "treat",
+                 size = 0.6,
+                 risk.table = FALSE, 
+                 pval = TRUE, 
+                 conf.int = FALSE,
+                 #legend ="none",
+                 surv.median.line = "hv")+
+                 #colorRampPalette(brewer.pal(12, "Paired")))
+                 #palette = "jco")
+   xlab("Time (days)") +
+  scale_y_continuous(expand = c(0, 0))
+
+ggsave(last_plot(), file = "../../Figures/K-M_treat_sire_survminer.pdf",
+       width = 8, height = 4)
+```
+
+# Kaplan-Meier plot for sire families singly
+
+```{r}
+h2.sire <- survfit(Surv(NewAge, status == 2) ~ treat, data = h2life)
+
+#library(RColorBrewer)
+#colourCount = length(unique(h2life$sireid))
+#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
+
+ggsurvplot_facet(h2.sire, h2life, 
+                 facet.by = "sireid", 
+                 risk.table = FALSE, 
+                 palette = pal,
+                 #pval = TRUE, 
+                 conf.int = TRUE,
+                 surv.median.line = "hv") +
+                 
+                 #colorRampPalette(brewer.pal(12, "Paired")))
+                 #palette = "jco")
+   xlab("Time (days)") +
+  scale_y_continuous(expand = c(0, 0))
+
+ggsave(file = "../../Figures/K-M_treat_single-sires_survminer.pdf",
+       width = 8, height = 6)
+```
+
+
+# Reaction norms for sire families
 
 ```{r}
 # remove censored events
@@ -205,19 +241,18 @@ mlife1<-mlife1[!(mlife1$sireid=="S39"),]
 #reorder x-axis (ggplot default is alphabetical)
 mlife1$diet <- as.character(mlife1$diet) #turn diet col into a char vector
 mlife1$diet <- factor(mlife1$diet, levels=unique(mlife1$diet)) #back to ordered factor
-#save(mlife1, file = "/Users/ngomae/Documents/H2_Analysis/h2lifespan/Evo17_Portland/h2reacts.Rda")
 
 # plot reaction norms for sire families
-pdf("../../Figures/h2life_reaction_norms.pdf",width=6,height=4)
-par(mar=c(4.5,4.5,0.5,0.5))
 ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age, color = sireid)) +
   geom_point(size = 3) +
-  geom_line(aes(group = sireid), alpha = 0.5, size = 1.5) +
+  geom_line(aes(group = sireid), alpha = 0.5, size = 1) +
   xlab("Diet") +
-  ylab("Median Lifespan (days)") +
+  ylab("Median lifespan (days)") +
   theme(legend.position = "none") +
   coord_cartesian(xlim = c(1.5, 2.5))
-dev.off()
+
+ggsave(file = "../../Figures/h2life_reaction_norms.pdf",
+       width = 4, height = 4)
 ```
 
 # lifespan-lifetime fecundity correlation
