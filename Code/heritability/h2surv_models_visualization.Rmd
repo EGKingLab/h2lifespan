@@ -28,6 +28,7 @@ Load functions for color mapping
 
 ```{r}
 source("color_map.R")
+source("ggplot_theme.R")
 ```
 
 ## Load data
@@ -59,7 +60,8 @@ ggplot(h2life, aes(NewAge, fill = treat)) +
   xlab("Age (days)") +
   ylab("Density") +
   theme(legend.position = c(0.1, 0.9)) +
-  tx_fill_map()
+  tx_fill_map() +
+  my_theme
 
 ggsave(last_plot(), file = "../../Figures/density_all-life_data.pdf",
        width = 4, height = 4)
@@ -82,42 +84,34 @@ summary(h2.treat)$table
 summary(h2.treat)$table[, "median"]
 
 # survival
-ggsurvplot(h2.treat, data = h2life, 
+s_plot <- ggsurvplot(h2.treat, data = h2life, 
            conf.int = TRUE,
            palette = pal,
-           pval = TRUE,
            fun = "pct", 
            surv.median.line = "hv",
-           #title = "h2",
            font.y = c(14),
-           #surv.plot.height = 1.2,
            risk.table = FALSE,
-           #risk.table = "abs_pct", fontsize = 3,
-           #risk.table.title = "Number at risk of death",
-           #risk.table.title.fontsize = 0.3,
-           #size = 0.1,
-           #tables.height = 0.4,
-           #linetype = "strata", 
-           #palette = c("#E7B800","#2E9FDF"), 
-           legend = "bottom",
+           legend = c(0.9, 0.8),
            legend.labs = c("C", "DR", "HS"),
            legend.title = "Diet") +
-  xlab("Time (days)") 
-
+  xlab("Time (days)")
+ggpar(s_plot, axis.text = element_text(size = font_size),
+      font.x = c(font_size),
+      font.y = c(font_size),
+      font.tickslab = c(font_size))
+KM_plot <- last_plot()
 ggsave(last_plot(), file = "../../Figures/K-M_treat_summarized_survminer.pdf",
        width = 4, height = 4)
+save(KM_plot, file = "../../Figures/KM_plot.Rda")
 ```
- 
-           legend.title = "Diet", 
-           legend.labs = c("HS","DR", "C")) +
-  xlab("Time (days")
 
-# test differences
+# Test differences
+
 ```{r testdiff}
-
-test_all <- survdiff(Surv(NewAge, status==2) ~ treat, data=h2life, rho=0) #log-rank (Mantel-Haenszel) test
-test_all1 <- survdiff(Surv(NewAge, status==2) ~ treat, data=h2life, rho=1) # Wilcoxon (Peto & Peto test)
-
+test_all <- survdiff(Surv(NewAge, status == 2) ~ treat,
+                     data = h2life, rho = 0) #log-rank (Mantel-Haenszel) test
+test_all1 <- survdiff(Surv(NewAge, status == 2) ~ treat,
+                      data = h2life, rho = 1) # Wilcoxon (Peto & Peto test)
 test_all
 test_all1
 ```
@@ -147,29 +141,25 @@ symnum(test_pairwise1$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 
 # Kaplan-Meier plot for sire families grouped by treatment
 
 ```{r}
-h2.sireid <- survfit(Surv(NewAge, status == 2) ~ sireid, data = h2life,
-                     #conf.type = "log", 
-                     #conf.int = 0.95,
+h2.sireid <- survfit(Surv(NewAge, status == 2) ~ sireid,
+                     data = h2life,
                      type = "kaplan-meier",
                      error = "greenwood")
 
-#library(RColorBrewer)
-#colourCount = length(unique(h2life$sireid))
-#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
-
-ggsurvplot_facet(h2.sireid, h2life, 
-                 facet.by = "treat",
-                 size = 0.6,
-                 risk.table = FALSE, 
-                 pval = TRUE, 
-                 conf.int = FALSE,
-                 #legend ="none",
-                 surv.median.line = "hv")+
-                 #colorRampPalette(brewer.pal(12, "Paired")))
-                 #palette = "jco")
-   xlab("Time (days)") +
-  scale_y_continuous(expand = c(0, 0))
-
+surv_2 <- ggsurvplot_facet(h2.sireid, h2life, 
+                           facet.by = "treat",
+                           size = 0.6,
+                           risk.table = FALSE, 
+                           pval = FALSE, 
+                           conf.int = FALSE,
+                           panel.labs = list(treat = c("C", "DR", "HS")),
+                           surv.median.line = "none") +
+  xlab("Time (days)")
+ggpar(surv_2, legend = "none",
+      axis.text = element_text(size = font_size),
+      font.x = c(font_size),
+      font.y = c(font_size),
+      font.tickslab = c(font_size))
 ggsave(last_plot(), file = "../../Figures/K-M_treat_sire_survminer.pdf",
        width = 8, height = 4)
 ```
@@ -179,27 +169,17 @@ ggsave(last_plot(), file = "../../Figures/K-M_treat_sire_survminer.pdf",
 ```{r}
 h2.sire <- survfit(Surv(NewAge, status == 2) ~ treat, data = h2life)
 
-#library(RColorBrewer)
-#colourCount = length(unique(h2life$sireid))
-#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
-
 ggsurvplot_facet(h2.sire, h2life, 
                  facet.by = "sireid", 
                  risk.table = FALSE, 
                  palette = pal,
-                 #pval = TRUE, 
                  conf.int = TRUE,
                  surv.median.line = "hv") +
-                 
-                 #colorRampPalette(brewer.pal(12, "Paired")))
-                 #palette = "jco")
-   xlab("Time (days)") +
-  scale_y_continuous(expand = c(0, 0))
+   xlab("Time (days)")
 
 ggsave(file = "../../Figures/K-M_treat_single-sires_survminer.pdf",
        width = 8, height = 6)
 ```
-
 
 # Reaction norms for sire families
 
@@ -249,10 +229,12 @@ ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age, color = sireid)) +
   xlab("Diet") +
   ylab("Median lifespan (days)") +
   theme(legend.position = "none") +
-  coord_cartesian(xlim = c(1.5, 2.5))
-
+  coord_cartesian(xlim = c(1.5, 2.5)) +
+  my_theme
+Lifespan_GxE <- last_plot()
 ggsave(file = "../../Figures/h2life_reaction_norms.pdf",
        width = 4, height = 4)
+save(Lifespan_GxE, file = "../../Figures/Lifespan_GxE.Rda")
 ```
 
 # lifespan-lifetime fecundity correlation
@@ -267,19 +249,9 @@ h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
     Diet == "HS" ~ "HS",
     Diet == "LY" ~ "DR",
     Diet == "STD" ~ "C"))
-```     
-
-```{r}
-font_size <- 10
-my_theme <- theme(
-  axis.text = element_text(size = font_size),
-  axis.title = element_text(size = font_size),
-  legend.text = element_text(size = font_size),
-  legend.title=element_text(size = font_size),
-  plot.title = element_text(size = font_size + 1))
 
 newdata <- h2life[, c('id', 'NewAge', 'treat', 'repl', 'status')]
-```
+``` 
 
 ```{r}
 # rename treat as Diet
@@ -290,7 +262,6 @@ newdata <- newdata %>%
      mutate(Diet=replace(Diet, Diet=="LY", "DR")) %>%
      mutate(Diet=replace(Diet, Diet=="STD", "C"))
 ```
-
 
 ```{r}
 km.treat <- survfit(Surv(NewAge, status == 2) ~ id, conf.type = "log", 
@@ -305,24 +276,14 @@ ids <- unlist(lapply(ids, function(x) x[2]))
 ids <- strsplit(ids, split="_", fixed = TRUE)
 
 ll.dat <- data.frame('id' = unlist(lapply(ids, function(x) x[1])),
-                   'repl' = unlist(lapply(ids, function(x) x[2])),
-                   'Diet' = unlist(lapply(ids, function(x) x[3])),
-                   'Median' = med.dat,stringsAsFactors=FALSE)
+                     'repl' = unlist(lapply(ids, function(x) x[2])),
+                     'Diet' = unlist(lapply(ids, function(x) x[3])),
+                     'Median' = med.dat,stringsAsFactors=FALSE)
 
 # to discard the row names column, write to file
-
 write.table(ll.dat, "../../Data/Processed/h2_median_lifespan.txt",
             row.names=FALSE, sep="\t")
 
 ll.dat <- read.table("../../Data/Processed/h2_median_lifespan.txt",
                    sep="\t", header = TRUE, stringsAsFactors = FALSE) 
-
-#ll.dat.mean <- ll.dat %>%
-  #group_by(id, Diet) %>% 
-  #select(-repl) %>% 
-  #summarize("mean") %>% 
-  #rename(Mean_of_Median = Median)  
-
-#ll.dat <- select(ll.dat.mean, id,Mean_of_Median)
-
 ```

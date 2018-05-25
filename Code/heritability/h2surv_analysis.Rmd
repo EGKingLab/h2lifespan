@@ -25,6 +25,7 @@ set.seed(37264)
 
 iter <- 2e6
 burnin <- 15000
+rerun_MCMC <- FALSE
 
 h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
                      sep = "\t", header = TRUE,
@@ -58,22 +59,25 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(NewAge ~ 1,
-                  random = ~ animal,
-                  family = "gaussian",
-                  prior = prior,
-                  pedigree = pedigree,
-                  data = HS,
-                  nitt = iter,
-                  burnin = burnin,
-                  thin = 50,
-                  verbose = FALSE)
-
-save(model, file = "../../Data/Processed/HS.Rda")
+if (rerun_MCMC) {
+  model <- MCMCglmm(NewAge ~ 1,
+                    random = ~ animal,
+                    family = "gaussian",
+                    prior = prior,
+                    pedigree = pedigree,
+                    data = HS,
+                    nitt = iter,
+                    burnin = burnin,
+                    thin = 50,
+                    verbose = FALSE)
+  
+  save(model, file = "../../Data/Processed/HS.Rda")
+}
 ```
 
 ```{r}
 load("../../Data/Processed/HS.Rda")
+
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -130,18 +134,20 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(NewAge ~ 1,
-                  random = ~ animal,
-                  family = "gaussian",
-                  prior = prior,
-                  pedigree = pedigree,
-                  data = LY,
-                  nitt = iter,
-                  burnin = burnin,
-                  thin = 50,
-                  verbose = FALSE)
-
-save(model, file = "../../Data/Processed/LY.Rda")
+if (rerun_MCMC) {
+  model <- MCMCglmm(NewAge ~ 1,
+                    random = ~ animal,
+                    family = "gaussian",
+                    prior = prior,
+                    pedigree = pedigree,
+                    data = LY,
+                    nitt = iter,
+                    burnin = burnin,
+                    thin = 50,
+                    verbose = FALSE)
+  
+  save(model, file = "../../Data/Processed/LY.Rda")
+}
 
 t2<-Sys.time()
 cat(t2-t1)
@@ -149,6 +155,7 @@ cat(t2-t1)
 
 ```{r}
 load("../../Data/Processed/LY.Rda")
+
 # Fixed
 plot(model$Sol)
 autocorr.diag(model$Sol)
@@ -184,7 +191,7 @@ rm(model)
 ##### Standard, STD
 
 ```{r}
-s1<-Sys.time()
+s1 <- Sys.time()
 
 STD <- subset(h2_filtered, treat == "STD")
 
@@ -204,18 +211,20 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 prior <- list(R = list(V = fvg1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
-model <- MCMCglmm(NewAge ~ 1,
-                  random = ~ animal,
-                  family = "gaussian",
-                  prior = prior,
-                  pedigree = pedigree,
-                  data = STD,
-                  nitt = iter,
-                  burnin = burnin,
-                  thin = 50,
-                  verbose = FALSE)
-
-save(model, file = "../../Data/Processed/STD.Rda")
+if (rerun_MCMC) {
+  model <- MCMCglmm(NewAge ~ 1,
+                    random = ~ animal,
+                    family = "gaussian",
+                    prior = prior,
+                    pedigree = pedigree,
+                    data = STD,
+                    nitt = iter,
+                    burnin = burnin,
+                    thin = 50,
+                    verbose = FALSE)
+  
+  save(model, file = "../../Data/Processed/STD.Rda")
+}
 
 s2<-Sys.time()
 cat(s2-s1)
@@ -273,32 +282,23 @@ save(heritab, file = "../../Data/Processed/herit.Rda")
 ```{r, dens}
 load("../../Data/Processed/herit.Rda")
 
-ll<- 7.4
-ss<-0.2
+ll <- 7.4
+ss <-0.2
 
-#pdf("../../Data/Figures/heritability_plots.pdf",width=6,height=4)
-par(mar=c(4.5,4.5,0.5,0.5))
-
-#require(scales)
-#n <- length(levels(heritab$Diet)) # number of colors
-#cols <- hue_pal(h = c(0, 360) + 15, 
-               # c = 100, l = 65, 
-               # h.start = 0, direction = 1)(n)[c(1, 2, 3)] # determine color order
-
-
- ggplot(heritab, aes(var1, fill = Diet)) + 
+ggplot(heritab, aes(var1, fill = Diet)) + 
   geom_density(alpha = 0.2) +
-  geom_segment(x = 0.2479849, y = ll+ss, xend = 0.4984068, yend = ll+ss, position = "identity", colour = "mediumpurple1")+
-  geom_segment(x = 0.2071338, y = ll+ss+ss, xend = 0.4288147, yend = ll+ss+ss, position = "identity", colour = "darkseagreen2")+
-  geom_segment(x = 0.3350174, y = ll, xend = 0.6070656, yend = ll, position = "identity", colour = "lightpink")+
-  #coord_cartesian(xlim=c(0, 1), ylim=c(0, 1)) + #adjust frame of x-axis
-  #scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
+  geom_segment(x = 0.2479849, y = ll+ss, xend = 0.4984068,
+               yend = ll+ss, position = "identity", colour = "mediumpurple1")+
+  geom_segment(x = 0.2071338, y = ll+ss+ss, xend = 0.4288147,
+               yend = ll+ss+ss, position = "identity", colour = "darkseagreen2")+
+  geom_segment(x = 0.3350174, y = ll, xend = 0.6070656,
+               yend = ll, position = "identity", colour = "lightpink")+
   expand_limits(y=c(0,8)) + expand_limits(x=c(0,0.8)) +
   theme(axis.title = element_text(size=16)) +
-  xlab("Heritability") + ylab("Density") +
-  theme(legend.position=c(0.85, 0.85)) +
-  scale_fill_discrete(name="Diet", labels=c("C", "DR", "HS")) 
-#dev.off()
+  xlab("Heritability") +
+  ylab("Density") +
+  theme(legend.position = c(0.85, 0.85)) +
+  scale_fill_discrete(name = "Diet", labels = c("C", "DR", "HS")) 
 ```
 
 
