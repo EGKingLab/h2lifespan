@@ -165,7 +165,7 @@ B <- rbind(hs_med, c_med, dr_med) %>%
 ```{r}
 ggplot(B, aes(x = diet, y = eggs, color = sireid)) +
   geom_point(size = 3) +
-  geom_line(aes(group = sireid), alpha = 0.5, size = 1.5) +
+  geom_line(aes(group = sireid), alpha = 0.5, size = 1) +
   labs(x = "Diet", y = "Total eggs") +
   theme(legend.position = "none") +
   coord_cartesian(xlim = c(1.5, 2.5)) +
