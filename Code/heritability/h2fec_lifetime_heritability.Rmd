@@ -29,7 +29,7 @@ library(cowplot)
 #### Heritability ###
 
 ```{r}
-rerun <- FALSE
+rerun_MCMC <- TRUE
 
 set.seed(33416)
 
@@ -73,7 +73,7 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 # a = nu / 2
 # b = nu * V / 2
 
-if (rerun) {
+if (rerun_MCMC) {
   t1 <- Sys.time()
   
   prior <- list(R = list(V = 1, nu = 0.002),
@@ -122,24 +122,10 @@ h <- HPDinterval(herit.hs)
 h1 <- as.data.frame(h)
 ```
 
-# plot hs with ggplot
-
-```{r}
-density(herit)
-
-hs.samp<-data.frame(('h2'=herit)) # HPDinterval(as.mcmc(herit)))
-
-ggplot(hs.samp, aes(x=var1), y=k) +
-  geom_histogram()+
-  geom_vline(xintercept = median(herit))
-
-rm(model) 
-```
-
 ##### Low yeast, LY
 
 ```{r}
-if (rerun) {
+if (rerun_MCMC) {
   t1<-Sys.time()
   
   LY <- subset(h2fec, treat == "LY")
@@ -200,24 +186,10 @@ d <- HPDinterval(herit.dr)
 d1 <- as.data.frame(d)
 ```
 
-# plot LY with ggplot
-
-```{r}
-density(herit.dr)
-
-dr.samp<-data.frame(('h2'=herit.dr)) # HPDinterval(as.mcmc(dr.herit)))
-
-ggplot(dr.samp, aes(x=var1), y=k) +
-  geom_histogram()+
-  geom_vline(xintercept = median(herit.dr))
-
-rm(model)
-```
-
 ##### Standard, STD
 
 ```{r}
-if (rerun) {
+if (rerun_MCMC) {
   s1<-Sys.time()
   
   STD <- subset(h2fec, treat == "STD")
@@ -278,18 +250,6 @@ c <- HPDinterval(herit.c)
 c1 <- as.data.frame(c)
 ```
 
-# Plot STD with ggplot
-
-```{r}
-density(herit.c)
-
-c.samp<-data.frame(('h2'=herit.c)) # HPDinterval(as.mcmc(dr.herit)))
-
-ggplot(c.samp, aes(x=var1), y=k) +
-  geom_histogram()+
-  geom_vline(xintercept = median(herit.c))
-```
-
 # The three files together
 
 ```{r}
@@ -345,7 +305,6 @@ ss <-0.6
        width = 4, height = 4)
 ```
 
-
 ```{r}
 #Diet_treat <- c("h2.c","h2.dr","h2.hs")
 #Heritability <- c(herit.c, herit.dr, herit.hs)
@@ -359,10 +318,3 @@ ggplot(median_cdh, aes(x=median_FEC, y=median_HERIT, color=Diet_treat)) +
   geom_jitter() 
   #geom_point(median_cdh, aes(x=Diet_treat, y=median_HERIT))
 ```
-
-# correlate lifespan and fecundity
-
-```{r}
-
-```
-

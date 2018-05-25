@@ -27,6 +27,7 @@ library(knitr)
 
 ```{r}
 source("color_map.R")
+source("ggplot_theme.R")
 source("h2life_load_data.R")
 ```
 
@@ -43,14 +44,14 @@ burnin <- 2e4
 thinning <- 500
 chains <- 12
 
-rerun <- TRUE
+rerun_MCMC <- FALSE
 ```
 
 ## MANOVA analysis
 
 ```{r MANOVA_Models, cache=TRUE}
 # 19 hours run time on nivalis (6e5 would be reasonable!)
-if (rerun) {
+if (rerun_MCMC) {
   HS <- h2life %>% 
     filter(treat == "HS") %>% rename(Age_HS = NewAge) %>% 
     as.data.frame()
@@ -197,16 +198,19 @@ M <- as_tibble( M ) %>%
 colMeans(M)
 
 M %>% gather(Comparison, value) %>%
-ggplot(aes(value, color = Comparison)) +
+  ggplot(aes(value, color = Comparison)) +
   geom_line(stat = "density", size = 1.0) +
-  labs(x = "Genetic correlation", y = "Density") +
-  theme(legend.position = c(0.15, 0.85),
+  labs(x = "Genetic Correlation", y = "Density") +
+  theme(legend.position = c(0.10, 0.85),
         text = element_text(size = 10),
         legend.text = element_text(size = 10)) +
-  scale_x_continuous(expand = c(0, 0.1), limits = c(-0.4, 1)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 4))
-ggsave(last_plot(), file = "../../Figures/Lifespan_Genetic_Correlation_Plot.pdf",
+  scale_x_continuous(limits = c(-1, 1)) +
+  my_theme
+
+ggsave(file = "../../Figures/Lifespan_Genetic_Correlation_Plot.pdf",
        width = 4, height = 4)
+Lifespan_correlation <- last_plot()
+save(Lifespan_correlation, file = "../../Figures/Lifespan_correlation.Rda")
 ```
 
 ## Model following Ingleby et al. 2013
@@ -237,7 +241,7 @@ V_nu_to_a_b(1, 0.002)
 
 genet_corr <- read_csv("Genetic_Correlations.csv")
 
-if (rerun) {
+if (rerun_MCMC) {
   
   prior1 <- list(R = list(V = 1, nu = 0.002),
                  G = list(G1 = list(V = diag(3) / 3, nu = 0.002)))
@@ -313,8 +317,8 @@ if (rerun) {
 
 ### Analyze model
 
-```{r Sire_Analysis}
-load("sire_model_prior1.Rda")
+```{r Sire_Analysis, eval = FALSE}
+load("../../Data/Processed/sire_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
 fe <- do.call(mcmc.list, fe)
@@ -336,13 +340,16 @@ re <- as.mcmc(as.matrix(re))
 colnames(re)
 
 # ??? Heritability ????
-HS <- re[, "treatHS:treatHS.sire"] / (re[, "treatHS:treatHS.sire"] + re[, "units"])
+HS <- re[, "treatHS:treatHS.sire"] / 
+  (re[, "treatHS:treatHS.sire"] + re[, "units"])
 median(HS)
 
-LY <- re[, "treatLY:treatLY.sire"] / (re[, "treatLY:treatLY.sire"] + re[, "units"])
+LY <- re[, "treatLY:treatLY.sire"] / 
+  (re[, "treatLY:treatLY.sire"] + re[, "units"])
 median(LY)
 
-STD <- re[, "treatSTD:treatSTD.sire"] / (re[, "treatSTD:treatSTD.sire"] + re[, "units"])
+STD <- re[, "treatSTD:treatSTD.sire"] / 
+  (re[, "treatSTD:treatSTD.sire"] + re[, "units"])
 median(STD)
 
 # STD vs. HS

@@ -215,7 +215,7 @@ c_med$diet <- "C"
 
 #join data frames
 mlife1 <- rbind(hs_med, c_med, dr_med)
-mlife1<-mlife1[!(mlife1$sireid=="S39"),]
+mlife1 <- mlife1[!(mlife1$sireid=="S39"), ]
 #attach a column of diet to each data frame before joining; use that as fill
 
 #reorder x-axis (ggplot default is alphabetical)
@@ -223,7 +223,7 @@ mlife1$diet <- as.character(mlife1$diet) #turn diet col into a char vector
 mlife1$diet <- factor(mlife1$diet, levels=unique(mlife1$diet)) #back to ordered factor
 
 # plot reaction norms for sire families
-ggplot(mlife1, aes(x = mlife1$diet, y = mlife1$age, color = sireid)) +
+ggplot(mlife1, aes(x = diet, y = age, color = sireid)) +
   geom_point(size = 3) +
   geom_line(aes(group = sireid), alpha = 0.5, size = 1) +
   xlab("Diet") +

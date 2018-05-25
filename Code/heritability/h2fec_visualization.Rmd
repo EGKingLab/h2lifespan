@@ -94,7 +94,7 @@ h2fec_sum
 ggplot(data=h2fec_phenotype, aes(x = Diet, y = egg_total, color = Diet)) +
   geom_jitter(position = position_jitter(width = 0.4), alpha = 0.7) +
   tx_color_map() +
-  xlab("Diet") + ylab("Total eggs") + 
+  labs(x = "Diet", y = "Total eggs") + 
   expand_limits(y = c(1, 5e2)) 
 ``` 
 
@@ -156,7 +156,8 @@ colnames(c_med) <- c("sireid", "eggs")
 c_med$diet <- "C"
 
 # Join data frames
-B <- rbind(hs_med, c_med, dr_med)
+B <- rbind(hs_med, c_med, dr_med) %>% 
+  mutate(diet = factor(diet, levels = c("HS", "C", "DR")))
 ```
 
 # plot reaction norms for sire families
@@ -165,11 +166,11 @@ B <- rbind(hs_med, c_med, dr_med)
 ggplot(B, aes(x = diet, y = eggs, color = sireid)) +
   geom_point(size = 3) +
   geom_line(aes(group = sireid), alpha = 0.5, size = 1.5) +
-  xlab("Diet") +
-  ylab("Total eggs") +
+  labs(x = "Diet", y = "Total eggs") +
   theme(legend.position = "none") +
   coord_cartesian(xlim = c(1.5, 2.5)) +
   my_theme
+
 Fecundity_GxE <- last_plot()
 ggsave("../../Figures/h2fec_reaction_norms.pdf", width = 6, height = 4)
 save(Fecundity_GxE, file = "../../Figures/Fecundity_GxE.Rda")
