@@ -141,41 +141,63 @@ symnum(test_pairwise1$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 
 # Kaplan-Meier plot for sire families grouped by treatment
 
 ```{r}
-h2.sireid <- survfit(Surv(NewAge, status == 2) ~ sireid,
-                     data = h2life,
+h2.sireid <- survfit(Surv(NewAge, status == 2) ~ sireid, data = h2life,
+                     #conf.type = "log", 
+                     #conf.int = 0.95,
                      type = "kaplan-meier",
                      error = "greenwood")
 
-surv_2 <- ggsurvplot_facet(h2.sireid, h2life, 
-                           facet.by = "treat",
-                           size = 0.6,
-                           risk.table = FALSE, 
-                           pval = FALSE, 
-                           conf.int = FALSE,
-                           panel.labs = list(treat = c("C", "DR", "HS")),
-                           surv.median.line = "none") +
-  xlab("Time (days)")
-ggpar(surv_2, legend = "none",
-      axis.text = element_text(size = font_size),
-      font.x = c(font_size),
-      font.y = c(font_size),
-      font.tickslab = c(font_size))
+#library(RColorBrewer)
+#colourCount = length(unique(h2life$sireid))
+#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
+
+#labels <- c(`treat: C` = "C", `treat: DR` = "DR", `treat: HS` = HS)
+
+kk <- ggsurvplot_facet(h2.sireid, h2life, 
+                 facet.by = "treat",
+                 fun = "pct",
+                 size = 0.6,
+                 risk.table = FALSE, 
+                 pval = TRUE, 
+                 conf.int = FALSE,
+                 short.panel.labs = TRUE,
+                 #legend ="none",
+                 surv.median.line = "hv")+
+                 #colorRampPalette(brewer.pal(12, "Paired")))
+                 #palette = "jco")
+   xlab("Time (days)") +
+  scale_y_continuous(expand = c(0, 0))
+
+kk + theme(legend.position="none")
+
 ggsave(last_plot(), file = "../../Figures/K-M_treat_sire_survminer.pdf",
        width = 8, height = 4)
 ```
 
-# Kaplan-Meier plot for sire families singly
+# Kaplan-Meier plot for single sire families
 
 ```{r}
 h2.sire <- survfit(Surv(NewAge, status == 2) ~ treat, data = h2life)
 
+#library(RColorBrewer)
+#colourCount = length(unique(h2life$sireid))
+#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
+
 ggsurvplot_facet(h2.sire, h2life, 
-                 facet.by = "sireid", 
+                 facet.by = "sireid",
+                 fun = "pct",
+                 size = 0.6,
                  risk.table = FALSE, 
                  palette = pal,
+                 #pval = TRUE, 
                  conf.int = TRUE,
+                 short.panel.labs = TRUE,
                  surv.median.line = "hv") +
-   xlab("Time (days)")
+                 
+                 #colorRampPalette(brewer.pal(12, "Paired")))
+                 #palette = "jco")
+   xlab("Time (days)") +
+  scale_y_continuous(expand = c(0, 0))
 
 ggsave(file = "../../Figures/K-M_treat_single-sires_survminer.pdf",
        width = 8, height = 6)
