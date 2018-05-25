@@ -128,13 +128,13 @@ M$flipDate <- as.character(M$flipDate)
 ```{r}
 # Join M and dd on flipDate and id.
 # Keep only columns that we will use later.
-D <- right_join(M, dd, by = c("flipDate", "id")) %>% 
-  dplyr::select(-box, -ccoord, -rcoord, -setDate.y,
+D <- right_join(M, dd, by = c("flipDate", "id")) %>%
+  dplyr::select(-contains(".y")) %>% 
+  dplyr::select(-box.x, -ccoord.x, -rcoord.x,
                 -X__1, -handcount, -handcounted,
                 -visually_recheck, -area,
                 -predicted_count_linear,
-                -training_set,
-                -contains(".y"))
+                -training_set)
 
 # Strip out ".x" from column names
 names(D) <- str_replace_all(names(D), ".x", "")
@@ -192,12 +192,8 @@ D[D$cameraid=="IMG_5735.JPG","eggs_per_female"] <- NA
 D[D$cameraid=="IMG_5738.JPG","eggs_per_female"] <- NA
 D[D$cameraid=="IMG_3654.JPG","eggs_per_female"] <- NA
 
-#tt <- subset(D, id=="S45D134_a_HS")
-#D[D$cameraid=="IMG_5571.JPG","eggs_per_female"] <- NA #see comment in h2fec_explore.Rmd
 select(tt, 1:4,23:24)
 ggplot(D, aes(eggs_per_female)) + geom_histogram()
-
-
 ```
 
 ```{r}
@@ -207,7 +203,8 @@ D %>% select(cameraid, treat, flipDate, eggs_per_female) %>%
   slice(1:50) %>% 
   as.data.frame()
 
-write.table(D, file="../../Data/Processed/eggs_per_female.txt", sep='\t',row.names = FALSE)
+write.table(D, file="../../Data/Processed/eggs_per_female.txt",
+            sep = '\t', row.names = FALSE)
 ```
 
 ## Aggregate sum of eggs per vial across all weeks
@@ -218,7 +215,8 @@ D %>% group_by(id) %>% tally() %>% arrange(desc(n))
 ```
 
 ```{r}
-(ch.f <- D %>% group_by(id) %>% summarise('dfem' = n_distinct(NstartF)) %>%
+(ch.f <- D %>% group_by(id) %>%
+   summarise('dfem' = n_distinct(NstartF)) %>%
    filter(dfem > 1) %>% 
    as.data.frame())
 ```
@@ -244,5 +242,5 @@ D_sum <- D_sum %>%
   select(-siredam)
 
 write.table(D_sum, file="../../Data/Processed/eggs_per_vial.txt",
-            sep='\t', row.names = FALSE)
+            sep = '\t', row.names = FALSE)
 ```
