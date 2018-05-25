@@ -16,6 +16,8 @@ output:
 ```{r}
 library(tidyverse) 
 library(cowplot)
+library(forcats)
+
 ```
 
 # Function to calculate the mean and the standard deviation for each group
