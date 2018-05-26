@@ -24,12 +24,15 @@ library(knitr)
 library(MCMCglmm)
 library(tidyverse)
 library(cowplot)
+
+source("color_map.R")
+source("ggplot_theme.R")
 ```
 
 #### Heritability ###
 
 ```{r}
-rerun_MCMC <- TRUE
+rerun_MCMC <- FALSE
 
 set.seed(33416)
 
@@ -120,6 +123,7 @@ plot(herit.hs)
 median(herit.hs)
 h <- HPDinterval(herit.hs)
 h1 <- as.data.frame(h)
+herit.hs <- as.data.frame(herit.hs)
 ```
 
 ##### Low yeast, LY
@@ -159,8 +163,8 @@ if (rerun_MCMC) {
   
   save(model, file = "../../Data/Processed/LY_lifetime_FEC.Rda")
   
-  t2<-Sys.time()
-  cat(t2-t1)
+  t2 <- Sys.time()
+  cat(t2 - t1)
 }
 ```
 
@@ -184,6 +188,7 @@ plot(herit.dr)
 median(herit.dr)
 d <- HPDinterval(herit.dr)
 d1 <- as.data.frame(d)
+herit.dr <- as.data.frame(herit.dr)
 ```
 
 ##### Standard, STD
@@ -223,8 +228,8 @@ if (rerun_MCMC) {
   
   save(model, file = "../../Data/Processed/STD_lifetime_FEC.Rda")
   
-  s2<-Sys.time()
-  cat(s2-s1)
+  s2 <- Sys.time()
+  cat(s2 - s1)
 }
 ```
 
@@ -243,24 +248,22 @@ effectiveSize(model$VCV)
 
 summary(model)
 
-herit.c <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
-plot(herit.c)
-median(herit.c)
-c <- HPDinterval(herit.c)
+herit.std <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+plot(herit.std)
+median(herit.std)
+c <- HPDinterval(herit.std)
 c1 <- as.data.frame(c)
+herit.std <- as.data.frame(herit.std)
 ```
 
 # The three files together
 
 ```{r}
-hs.samp$Diet <- "HS"
-dr.samp$Diet <- "DR"
-c.samp$Diet <- "C"
+herit.hs$Diet <- "HS"
+herit.dr$Diet <- "DR"
+herit.std$Diet <- "C"
 
-hs.samp$HS <- NULL
-dr.samp$DR <- NULL
-c.samp$C <- NULL
-heritab <- rbind(hs.samp, dr.samp, c.samp)
+heritab <- rbind(herit.hs, herit.dr, herit.std)
 save(heritab, file = "../../Data/Processed/herit_lifetime.Rda")
 ```
 
@@ -268,53 +271,17 @@ save(heritab, file = "../../Data/Processed/herit_lifetime.Rda")
 
 ```{r}
 load("../../Data/Processed/herit_lifetime.Rda")
-ll <- 18
-ss <-0.6
 
- ggplot(heritab, aes(var1, fill = Diet)) + 
+Fecundity_h2 <- ggplot(heritab, aes(var1, fill = Diet)) + 
   geom_density(alpha = 0.2) +
-  geom_segment(x = 0.0006355559,
-               y = ll + ss,
-               xend = 0.5736901,
-               yend = ll+ss,
-               position = "identity",
-               colour = "mediumpurple1")+
-  geom_segment(x = 0.00025302,
-               y = ll+ss+ss,
-               xend = 0.331502,
-               yend = ll+ss+ss,
-               position = "identity",
-               colour = "darkseagreen2")+
-  geom_segment(x = 0.0003154024,
-               y = ll,
-               xend = 0.9160698,
-               yend = ll,
-               position = "identity",
-               colour = "lightpink")+
-  #coord_cartesian(xlim=c(0, 1), ylim=c(0, 1)) + #adjust frame of x-axis
-  #scale_x_continuous(expand=c(0, 0), limits=c(-3, 100)) + #limit plot area on x-axix
-  expand_limits(y = c(0, 20)) +
-  expand_limits(x = c(-0.2, 1.2)) +
-  theme(axis.title = element_text(size = 12)) +
+  expand_limits(x = c(0, 1.0)) +
   xlab("Heritability") +
   ylab("Density") +
   theme(legend.position=c(0.85, 0.85)) +
-  scale_fill_discrete(name ="Diet", labels=c("C", "DR", "HS")) 
- 
- ggsave(last_plot(), file = "../../Figures/Fecundity_heritability_lifetime_plots.pdf",
+  my_theme +
+  tx_fill_map()
+Fecundity_h2
+ggsave(Fecundity_h2, file = "../../Figures/Fecundity_heritability_lifetime_plots.pdf",
        width = 4, height = 4)
-```
-
-```{r}
-#Diet_treat <- c("h2.c","h2.dr","h2.hs")
-#Heritability <- c(herit.c, herit.dr, herit.hs)
-#cdh <- data.frame(Diet_treat,Heritability)
-  
-median_FEC <- c("median.C","median.DR","median.HS")
-median_HERIT <- c(median(herit.c), median(herit.dr), median(herit.hs))
-median_cdh <- data.frame(median_FEC, median_HERIT)
-
-ggplot(median_cdh, aes(x=median_FEC, y=median_HERIT, color=Diet_treat)) +
-  geom_jitter() 
-  #geom_point(median_cdh, aes(x=Diet_treat, y=median_HERIT))
+save(Fecundity_h2, file = "../../Figures/Fecundity_h2.Rda")
 ```
