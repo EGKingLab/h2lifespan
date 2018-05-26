@@ -231,6 +231,13 @@ Fec_line_plot <- last_plot()
 save(Fec_line_plot, file = "../../Figures/Fec_line_plot.Rda")
 ```
 
+```{r}
+AA%>%
+group_by(Diet)%>% 
+summarise(Mean=mean(eggs_per_female), Max=max(eggs_per_female), Min=min(eggs_per_female), Median=median(eggs_per_female), Std=sd(eggs_per_female))
+
+```
+
 ```{r eval=FALSE}
 AA$eggs_per_female_C <- AA$eggs_per_female - mean(AA$eggs_per_female, na.rm = TRUE)
 
