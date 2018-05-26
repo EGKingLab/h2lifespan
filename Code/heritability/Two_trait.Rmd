@@ -7,19 +7,19 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 library(tidyverse)
 library(cowplot)
 library(forcats)
 library(survival)
 
-
+source("color_map.R")
 ```
 
 ## Load Data
 
 ```{r}
-
-h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
+h2fec_phenotype <- read.table("../../Data/Processed/eggs_per_vial.txt",
                               sep = "\t", header = TRUE,
                               stringsAsFactors = FALSE) %>% 
   rename(Diet = treat) %>% 
@@ -30,7 +30,6 @@ h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
     Diet = factor(Diet),
     Diet = fct_relevel(Diet, "C"))
 
-
 h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE) %>% 
@@ -40,17 +39,17 @@ h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
     treat == "STD" ~ "C"),
     treat = factor(treat),
     treat = fct_relevel(treat, "C"))
-
-
 ```
 
 ## Summarize 
 
 ```{r}
-
-km_sire <- survfit(Surv(NewAge, status==2) ~ id, conf.type="log", 
-                    conf.int=0.95, type="kaplan-meier", error="greenwood",
-                    data=h2life)
+km_sire <- survfit(Surv(NewAge, status == 2) ~ id,
+                   conf.type = "log", 
+                   conf.int = 0.95,
+                   type = "kaplan-meier",
+                   error = "greenwood",
+                   data = h2life)
 med.dat<-summary(km_sire)$table[,'median']
 
 ids<-strsplit(names(med.dat), split="=", fixed=TRUE)
@@ -58,14 +57,21 @@ ids<-unlist(lapply(ids, function(x) x[2]))
 ids_t <- ids
 ids<-strsplit(ids, split="_",fixed=TRUE)
 
-med.life<-data.frame('id'=ids_t,
-                     'Family'=unlist(lapply(ids, function(x) x[1])),
-                   'Replicate'=unlist(lapply(ids, function(x) x[2])),
-                   'Treatment'=unlist(lapply(ids, function(x) x[3])),
-                   'Median'=med.dat,stringsAsFactors=FALSE)
+med.life <- data.frame(
+  'id' = ids_t,
+  'Family' = unlist(lapply(ids, function(x) x[1])),
+  'Replicate' = unlist(lapply(ids, function(x) x[2])),
+  'Treatment' = unlist(lapply(ids, function(x) x[3])),
+  'Median_Lifespan' = med.dat,
+  stringsAsFactors = FALSE)
 
+all.dat <- left_join(med.life, h2fec_phenotype)
+```
 
-all.dat <- merge(med.life, )
-
-
+```{r}
+all.dat %>% 
+  ggplot(aes(x = Median_Lifespan, y = egg_total, color = Diet)) +
+  geom_point() +
+  geom_smooth(se = FALSE, method = "lm") +
+  tx_color_map()
 ```
