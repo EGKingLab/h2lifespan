@@ -236,7 +236,7 @@ AA%>%
 group_by(Diet)%>% 
 summarise_each(funs(max, min, mean, median, sd), eggs_per_female)
 
-  #summarise_each(funs(max, min, mean, median, sd), value)
+  #summarise_each(funs(max, min, mean, median, sd), eggs_per_female)
 ```
 
 ```{r eval=FALSE}
