@@ -14,6 +14,8 @@ library(forcats)
 library(survival)
 
 source("color_map.R")
+source("ggplot_theme.R")
+
 ```
 
 ## Load Data
@@ -39,7 +41,33 @@ h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
     treat == "STD" ~ "C"),
     treat = factor(treat),
     treat = fct_relevel(treat, "C"))
+
+# Per female analysis
+AA <- read.table('../../Data/Processed/eggs_per_female.txt',
+                 sep = "\t", header = TRUE,
+                 stringsAsFactors = FALSE) %>% 
+  select(flipDate, id, fID, treat, age, sireid, damid,
+         n_females, eggs_per_female) %>%
+  mutate(treat = case_when(
+    treat == "HS" ~ "HS",
+    treat == "LY" ~ "DR",
+    treat == "STD" ~ "C"),
+    treat = factor(treat),
+    treat = fct_relevel(treat, "C")) %>%
+  rename(Diet = treat)
+
+
+# Prepare data
+
+AA$flipDate <- as.Date(AA$flipDate)
+
+AA <- AA[!is.na(AA$eggs_per_female), ]
+
+# Add sireXtreatment grouping variable
+AA <- unite(AA, "sire_trt", sireid, Diet, sep = "_", remove=FALSE)
+A2 <- aggregate(AA["eggs_per_female"], by = AA["sire_trt"], sum)
 ```
+
 
 ## Summarize 
 
@@ -65,7 +93,32 @@ med.life <- data.frame(
   'Median_Lifespan' = med.dat,
   stringsAsFactors = FALSE)
 
+# Get early life fec
+Day <- 7
+all.ids <- unique(AA$id)
+
+early.fec <- data.frame("id" = character(length=length(all.ids)), "earlyegg"=numeric(length=length(all.ids)), stringsAsFactors = FALSE)
+
+for(ii in 1:length(all.ids))
+{
+  sub.dat <- subset(AA, id==all.ids[ii])
+  early.fec[ii,'id']<-all.ids[ii]
+  early.fec[ii,'earlyegg']<-sub.dat[which.min(abs(sub.dat$age-Day)),'eggs_per_female']
+  
+}
+
+
+
 all.dat <- left_join(med.life, h2fec_phenotype)
+
+early.dat <- left_join(all.dat, early.fec)
+
+#get means by diet
+sum.dat <- early.dat %>% 
+  group_by(Diet) %>% 
+  summarise(life = mean(Median_Lifespan), fec = mean(earlyegg), lifese = sd(Median_Lifespan)/sqrt(length(Median_Lifespan)), fecse =sd(earlyegg)/sqrt(length(earlyegg)))
+
+
 ```
 
 ```{r}
@@ -74,4 +127,14 @@ all.dat %>%
   geom_point() +
   geom_smooth(se = FALSE, method = "lm") +
   tx_color_map()
+
+early.dat %>% 
+  ggplot(aes(x = Median_Lifespan, y = earlyegg, color = Diet)) +
+  geom_point() +
+  geom_point(data=sum.dat, aes(life, fec, fill=Diet), size=5, pch=21, color='black') +
+  geom_errorbar(data=sum.dat, aes(x=life, ymin=fec-fecse, ymax=fec+fecse)) +
+  #geom_smooth(se = FALSE, method = "lm") +
+  tx_color_map() +
+  tx_fill_map()
+
 ```
