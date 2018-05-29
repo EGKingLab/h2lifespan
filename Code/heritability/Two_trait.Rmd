@@ -97,13 +97,16 @@ med.life <- data.frame(
 Day <- 5
 all.ids <- unique(AA$id)
 
-early.fec <- data.frame("id" = character(length=length(all.ids)), "earlyegg"=numeric(length=length(all.ids)), stringsAsFactors = FALSE)
+early.fec <- data.frame("id" = character(length=length(all.ids)),
+                        "earlyegg"=numeric(length=length(all.ids)),
+                        "age"=numeric(length=length(all.ids)),                                           stringsAsFactors = FALSE)
 
 for(ii in 1:length(all.ids))
 {
   sub.dat <- subset(AA, id==all.ids[ii])
   early.fec[ii,'id']<-all.ids[ii]
   early.fec[ii,'earlyegg']<-sub.dat[which.min(abs(sub.dat$age-Day)),'eggs_per_female']
+  early.fec[ii,'age']<-sub.dat[which.min(abs(sub.dat$age-Day)),'age']
   
 }
 
@@ -134,9 +137,10 @@ all.dat %>%
 ggplot() +
   geom_point(data = early.dat, aes(x = Median_Lifespan, y = earlyegg, color = Diet)) +
   geom_point(data=sum.dat, aes(life, fec, fill=Diet), size=5, pch=21, color='black') +
-  geom_errorbar(data=sum.dat, aes(x=life, ymin=fec-fecse, ymax=fec+fecse), width=3) +
-  geom_errorbarh(data=sum.dat, aes(x=life, y=fec, xmin=life-lifese, xmax=life+lifese), height=5) +
+  geom_errorbar(data=sum.dat, aes(x=life, ymin=fec-fecse, ymax=fec+fecse), width=1) +
+  geom_errorbarh(data=sum.dat, aes(x=life, y=fec, xmin=life-lifese, xmax=life+lifese), height=1) +
   #geom_smooth(se = FALSE, method = "lm") +
+  ylab("mean fecundity per female in early life ()")
   tx_color_map() +
   tx_fill_map()
 
