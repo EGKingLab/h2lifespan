@@ -32,6 +32,26 @@ h2fec_phenotype <- read.table("../../Data/Processed/eggs_per_vial.txt",
     Diet = factor(Diet),
     Diet = fct_relevel(Diet, "C"))
 
+h2fec_phenotype$sd_id <- paste(h2fec_phenotype$sireid, h2fec_phenotype$damid, sep="_")
+
+tt <- as.data.frame(table(h2fec_phenotype$sd_id, h2fec_phenotype$Diet))
+
+cc <- unique(h2fec_phenotype[,c('sireid','damid')],MARGIN=1)
+cc <- as.data.frame(table(cc$sireid))
+cc <- merge(cc, h2fec_phenotype[,c('sireid','damid')], by.x='Var1',by.y='sireid')
+cc$sd_id <- paste(cc$Var1,cc$damid, sep="_")
+
+all.count<-merge(tt, cc, by.x='Var1', by.y='sd_id')
+colnames(all.count)<-c('sd_id', 'Diet', 'Nreplicates', 'Sire','NDamsPerSire','Dam') 
+all.count <- all.count[,c(4,6,2,3,5)]
+all.count <- unique(all.count, MARGIN=1)
+write.table(all.count, "../../Data/Processed/Sample_counts.txt",sep="\t", row.names=FALSE, quote=FALSE)
+
+
+tt <- table(h2fec_phenotype$sireid, h2fec_phenotype$Diet)
+length(which(rowSums(tt)>17))
+
+
 h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE) %>% 

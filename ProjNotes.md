@@ -416,3 +416,7 @@ Cleaning up egg counter files. Beginning work on Analysis pipeline description f
 ### 2018-05-04 (KMM)
 
 - Unify color palette in h2surv_models_visualization and h2fec_visualization
+
+### 2018-05-30 (EGK)
+
+- Made supplemental table 2 with counts of replicates for all sire and dam families in all diets. In dropbox for now. Code to create is in two-trait but could be moved. 
