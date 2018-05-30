@@ -114,6 +114,8 @@ test_all1 <- survdiff(Surv(NewAge, status == 2) ~ treat,
                       data = h2life, rho = 1) # Wilcoxon (Peto & Peto test)
 test_all
 test_all1
+
+quantile(h2.treat,  probs = c(0.1, 0.5, 0.9))
 ```
 
 # pairwise tests
