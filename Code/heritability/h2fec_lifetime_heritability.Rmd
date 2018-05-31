@@ -32,7 +32,7 @@ source("ggplot_theme.R")
 #### Heritability ###
 
 ```{r}
-rerun_MCMC <- FALSE
+rerun_MCMC <- TRUE
 
 set.seed(33416)
 
@@ -42,6 +42,7 @@ thin <- 200
 ```
 
 ## Data for early life fecundity
+
 ```{r}
 AA <- read.table('../../Data/Processed/eggs_per_female.txt',
                  sep = "\t", header = TRUE,
@@ -66,41 +67,51 @@ AA <- AA[!is.na(AA$eggs_per_female), ]
 Day <- 5
 all.ids <- unique(AA$id)
 
-early.fec <- data.frame("id" = character(length=length(all.ids)),
-                        "earlyegg"=numeric(length=length(all.ids)),
-                        "age"=numeric(length=length(all.ids)),                                           stringsAsFactors = FALSE)
+early.fec <- data.frame(
+  "id" = character(length = length(all.ids)),
+  "earlyegg" = numeric(length = length(all.ids)),
+  "age" = numeric(length = length(all.ids)),
+  stringsAsFactors = FALSE)
 
-for(ii in 1:length(all.ids))
-{
-  sub.dat <- subset(AA, id==all.ids[ii])
-  early.fec[ii,'id']<-all.ids[ii]
-  early.fec[ii,'egg_total']<-sub.dat[which.min(abs(sub.dat$age-Day)),'eggs_per_female']
-  early.fec[ii,'age']<-sub.dat[which.min(abs(sub.dat$age-Day)),'age']
-  
+for(ii in 1:length(all.ids)) {
+  sub.dat <- subset(AA, id == all.ids[ii])
+  early.fec[ii, 'id'] <- all.ids[ii]
+  early.fec[ii, 'egg_total'] <- sub.dat[which.min(abs(sub.dat$age - Day)),
+                                       'eggs_per_female']
+  early.fec[ii, 'age'] <- sub.dat[which.min(abs(sub.dat$age - Day)),
+                                 'age']
 }
 
-early.fec <-early.fec %>%
+early.fec <- early.fec %>%
   mutate(siredam = str_split(id, "_", simplify = TRUE)[, 1],
          repl = str_split(id, "_", simplify = TRUE)[, 2],
          treat = str_split(id, "_", simplify = TRUE)[, 3],
          sireid = str_split(siredam, "D", simplify = TRUE)[, 1],
          damid = paste0("D", str_split(siredam, "D", simplify = TRUE)[, 2])) %>% 
-  select(-siredam)
-
-#RENAME to h2fec and comment below to use
-
+  dplyr::select(-siredam)
 ```
 
+## Select data: total fecundity or early fecundity 
 
-## Data for total fecundity
 ```{r}
-h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
+total_fecundity <- FALSE
+
+if (total_fecundity) {
+  h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     sep = '\t',
                     dec = ".", header = TRUE,
                     stringsAsFactors = FALSE)
+  label <- "total_fec"
+} else {
+  h2fec <- early.fec
+  label <- "early_fec"
+}
+```
 
-source("color_map.R")
 
+## Final data processing
+
+```{r}
 # Standardize egg_total
 h2fec$egg_total <- as.numeric(scale(h2fec$egg_total))
 
@@ -121,12 +132,12 @@ sires <- data.frame(animal = unique(pedigree$sire),
 dams <- data.frame(animal = unique(pedigree$dam),
                    sire = NA, dam = NA, stringsAsFactors = FALSE)
 pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
-```
 
-```{r}
 # Inverse Gamma(0.001; 0.001)
 # a = nu / 2
 # b = nu * V / 2
+
+outfile <- paste0("../../Data/Processed/HS_", label, ".Rda")
 
 if (rerun_MCMC) {
   t1 <- Sys.time()
@@ -134,7 +145,6 @@ if (rerun_MCMC) {
   prior <- list(R = list(V = 1, nu = 0.002),
                 G = list(G1 = list(V = 1, nu = 0.002)))
   
-  #model <- mclapply(1:chains, function(i) {
   model <- MCMCglmm(egg_total ~ 1,
                     random = ~ animal,
                     family = "gaussian",
@@ -145,18 +155,16 @@ if (rerun_MCMC) {
                     burnin = burnin,
                     thin = thin,
                     verbose = TRUE)
-  #}, mc.cores = chains)
-  
-  save(model, file = "../../Data/Processed/HS_lifetime_FEC.Rda")
+
+  save(model, file = outfile)
   
   t2 <- Sys.time()
   cat(t2-t1)
 }
-
 ```
 
 ```{r HS_analysis}
-load("../../Data/Processed/HS_lifetime_FEC.Rda")
+load(outfile)
 
 # Fixed
 plot(model$Sol)
@@ -170,7 +178,8 @@ effectiveSize(model$VCV)
 
 summary(model)
 
-herit.hs <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+herit.hs <- model$VCV[, "animal"] /
+  (model$VCV[, "animal"] + model$VCV[, "units"])
 plot(herit.hs)
 median(herit.hs)
 h <- HPDinterval(herit.hs)
@@ -181,6 +190,8 @@ herit.hs <- as.data.frame(herit.hs)
 ##### Low yeast, LY
 
 ```{r}
+outfile <- paste0("../../Data/Processed/LY_", label, ".Rda")
+
 if (rerun_MCMC) {
   t1<-Sys.time()
   
@@ -213,15 +224,15 @@ if (rerun_MCMC) {
                     thin = thin,
                     verbose = TRUE)
   
-  save(model, file = "../../Data/Processed/LY_lifetime_FEC.Rda")
+  save(model, file = outfile)
   
   t2 <- Sys.time()
   cat(t2 - t1)
 }
 ```
 
-```{r LY_analysis}
-load("../../Data/Processed/LY_lifetime_FEC.Rda")
+```{r DR_analysis}
+load(outfile)
 
 # Fixed
 plot(model$Sol)
@@ -235,7 +246,8 @@ effectiveSize(model$VCV)
 
 summary(model)
 
-herit.dr <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+herit.dr <- model$VCV[, "animal"] /
+  (model$VCV[, "animal"] + model$VCV[, "units"])
 plot(herit.dr)
 median(herit.dr)
 d <- HPDinterval(herit.dr)
@@ -246,6 +258,8 @@ herit.dr <- as.data.frame(herit.dr)
 ##### Standard, STD
 
 ```{r}
+outfile <- paste0("../../Data/Processed/STD_", label, ".Rda")
+
 if (rerun_MCMC) {
   s1<-Sys.time()
   
@@ -278,7 +292,7 @@ if (rerun_MCMC) {
                     thin = thin,
                     verbose = TRUE)
   
-  save(model, file = "../../Data/Processed/STD_lifetime_FEC.Rda")
+  save(model, file = outfile)
   
   s2 <- Sys.time()
   cat(s2 - s1)
@@ -286,7 +300,7 @@ if (rerun_MCMC) {
 ```
 
 ```{r STD_analysis}
-load("../../Data/Processed/STD_lifetime_FEC.Rda")
+load(outfile)
 
 # Fixed
 plot(model$Sol)
@@ -300,7 +314,8 @@ effectiveSize(model$VCV)
 
 summary(model)
 
-herit.std <- model$VCV[, "animal"] / (model$VCV[, "animal"] + model$VCV[, "units"])
+herit.std <- model$VCV[, "animal"] /
+  (model$VCV[, "animal"] + model$VCV[, "units"])
 plot(herit.std)
 median(herit.std)
 c <- HPDinterval(herit.std)
@@ -316,13 +331,14 @@ herit.dr$Diet <- "DR"
 herit.std$Diet <- "C"
 
 heritab <- rbind(herit.hs, herit.dr, herit.std)
+outfile <- paste0("../../Data/Processed/herit_", label, ".Rda")
 save(heritab, file = "../../Data/Processed/herit_lifetime.Rda")
 ```
 
 # Plot treatments together
 
 ```{r}
-load("../../Data/Processed/herit_lifetime.Rda")
+load(outfile)
 
 Fecundity_h2 <- ggplot(heritab, aes(var1, fill = Diet)) + 
   geom_density(alpha = 0.2) +
@@ -333,7 +349,8 @@ Fecundity_h2 <- ggplot(heritab, aes(var1, fill = Diet)) +
   my_theme +
   tx_fill_map()
 Fecundity_h2
-ggsave(Fecundity_h2, file = "../../Figures/Fecundity_heritability_lifetime_plots.pdf",
+ggsave(Fecundity_h2,
+       file = paste0("../../Figures/Fecundity_heritability_", label, "_plots.pdf"),
        width = 4, height = 4)
-save(Fecundity_h2, file = "../../Figures/Fecundity_h2.Rda")
+save(Fecundity_h2, file = paste0("../../Figures/Fecundity_", label, "_h2.Rda"))
 ```
