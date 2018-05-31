@@ -41,6 +41,58 @@ burnin <- 5e4
 thin <- 200
 ```
 
+## Data for early life fecundity
+```{r}
+AA <- read.table('../../Data/Processed/eggs_per_female.txt',
+                 sep = "\t", header = TRUE,
+                 stringsAsFactors = FALSE) %>% 
+  select(flipDate, id, fID, treat, age, sireid, damid,
+         n_females, eggs_per_female) %>%
+  mutate(treat = case_when(
+    treat == "HS" ~ "HS",
+    treat == "LY" ~ "DR",
+    treat == "STD" ~ "C"),
+    treat = factor(treat),
+    treat = fct_relevel(treat, "C")) %>%
+  rename(Diet = treat)
+
+# Prepare data
+
+AA$flipDate <- as.Date(AA$flipDate)
+
+AA <- AA[!is.na(AA$eggs_per_female), ]
+
+# Get early life fec - nearest day 5
+Day <- 5
+all.ids <- unique(AA$id)
+
+early.fec <- data.frame("id" = character(length=length(all.ids)),
+                        "earlyegg"=numeric(length=length(all.ids)),
+                        "age"=numeric(length=length(all.ids)),                                           stringsAsFactors = FALSE)
+
+for(ii in 1:length(all.ids))
+{
+  sub.dat <- subset(AA, id==all.ids[ii])
+  early.fec[ii,'id']<-all.ids[ii]
+  early.fec[ii,'egg_total']<-sub.dat[which.min(abs(sub.dat$age-Day)),'eggs_per_female']
+  early.fec[ii,'age']<-sub.dat[which.min(abs(sub.dat$age-Day)),'age']
+  
+}
+
+early.fec <-early.fec %>%
+  mutate(siredam = str_split(id, "_", simplify = TRUE)[, 1],
+         repl = str_split(id, "_", simplify = TRUE)[, 2],
+         treat = str_split(id, "_", simplify = TRUE)[, 3],
+         sireid = str_split(siredam, "D", simplify = TRUE)[, 1],
+         damid = paste0("D", str_split(siredam, "D", simplify = TRUE)[, 2])) %>% 
+  select(-siredam)
+
+#RENAME to h2fec and comment below to use
+
+```
+
+
+## Data for total fecundity
 ```{r}
 h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     sep = '\t',
