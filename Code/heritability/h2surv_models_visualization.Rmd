@@ -22,11 +22,8 @@ library(splines) #needed by survival package
 library(tidyverse) 
 library(forcats)
 library(cowplot)
-```
+library(coxme)
 
-Load functions for color mapping
-
-```{r}
 source("color_map.R")
 source("ggplot_theme.R")
 ```
@@ -44,7 +41,10 @@ h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
     treat == "LY" ~ "DR",
     treat == "STD" ~ "C"),
     treat = factor(treat),
-    treat = fct_relevel(treat, "C"))
+    treat = fct_relevel(treat, "C"),
+    sireid = factor(sireid),
+    damid = factor(damid)
+    )
 ```
 
 # Density
@@ -105,6 +105,24 @@ ggsave(last_plot(), file = "../../Figures/K-M_treat_summarized_survminer.pdf",
 save(KM_plot, file = "../../Figures/KM_plot.Rda")
 ```
 
+# Mixed-effects Cox Model
+
+```{r}
+h2.treat.coxph <- coxph(Surv(NewAge, status == 2) ~ treat,
+                      data = h2life)
+h2.treat.coxme.sire <- coxme(
+  Surv(NewAge, status == 2) ~ treat + (1 | sireid),
+  data = h2life)
+h2.treat.coxme.sire.dam <- coxme(
+  Surv(NewAge, status == 2) ~ treat + (1 | sireid) + (1 | sireid/damid),
+  data = h2life)
+anova(h2.treat.coxph, h2.treat.coxme.sire, h2.treat.coxme.sire.dam)
+
+summary(h2.treat.coxme.sire.dam)
+anova(h2.treat.coxme.sire.dam)
+```
+
+
 # Test differences
 
 ```{r testdiff}
@@ -119,6 +137,7 @@ quantile(h2.treat,  probs = c(0.1, 0.5, 0.9))
 ```
 
 # pairwise tests
+
 ```{r}
 test_pairwise <- pairwise_survdiff(
   Surv(NewAge, status == 2) ~ treat, 
@@ -131,11 +150,13 @@ test_pairwise
 test_pairwise1
 
 # significance symbols
-symnum(test_pairwise$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
+symnum(test_pairwise$p.value,
+       cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
    symbols = c("****", "***", "**", "*", "+", " "),
    abbr.colnames = FALSE, na = "")
 
-symnum(test_pairwise1$p.value, cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
+symnum(test_pairwise1$p.value,
+       cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
    symbols = c("****", "***", "**", "*", "+", " "),
    abbr.colnames = FALSE, na = "")
 ```
@@ -283,12 +304,13 @@ newdata <- rename(newdata, Diet = treat)
 
 # change LY to DR, STD to C
 newdata <- newdata %>%
-     mutate(Diet=replace(Diet, Diet=="LY", "DR")) %>%
-     mutate(Diet=replace(Diet, Diet=="STD", "C"))
+     mutate(Diet = replace(Diet, Diet=="LY", "DR")) %>%
+     mutate(Diet = replace(Diet, Diet=="STD", "C"))
 ```
 
 ```{r}
-km.treat <- survfit(Surv(NewAge, status == 2) ~ id, conf.type = "log", 
+km.treat <- survfit(Surv(NewAge, status == 2) ~ id,
+                    conf.type = "log", 
                     conf.int = 0.95,
                     type = "kaplan-meier",
                     error = "greenwood",
