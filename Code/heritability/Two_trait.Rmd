@@ -164,6 +164,7 @@ ttrait <-ggplot() +
   xlab("Median lifespan (days)") +
   tx_color_map() +
   tx_fill_map() +
+  theme(legend.position="none")+
   my_theme
 
 save(ttrait, file="../../Figures/ttrait_plot.rda")

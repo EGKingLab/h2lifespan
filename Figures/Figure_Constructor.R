@@ -1,16 +1,22 @@
+
+
 library(tidyverse)
 library(cowplot)
 library(survival)
 library(survminer)
+
+source("../Code/heritability/color_map.R")
+source("../Code/heritability/ggplot_theme.R")
+
 
 # Figure 3
 load("KM_plot.Rda")
 load("Fec_line_plot.Rda")
 load(file="ttrait_plot.rda")
 
-top_row <- plot_grid(KM_plot, ttrait, labels = c('a.', 'c.'), align = 'h',
+bottom_row <- plot_grid(KM_plot, ttrait, labels = c('b.', 'c.'), align = 'h',
                      label_size = 10)
-P<-plot_grid(top_row, Fec_line_plot, labels = c('', 'b.'), 
+P<-plot_grid(Fec_line_plot,bottom_row, labels = c('a.', ''), 
                    ncol = 1,hjust=0, label_size = 10)
 
 
