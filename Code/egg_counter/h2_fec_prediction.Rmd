@@ -243,3 +243,30 @@ if (nrow(flagged_images) >= 1) {
 ```{r}
 save(M, file= "../../Data/Processed/predicted_egg_counts.rda")
 ```
+
+# Visualize performance of model
+
+```{r}
+
+HC$grp <- seq(1, nrow(HC))
+
+HG <- gather(HC[,c(2,5,6,7,8)], key="key", value="egg_count",c(handcount, lm_pred))
+
+p1 <- HG %>% 
+  ggplot(aes(y=egg_count, x=sqrt(area), color=key, group=grp)) +
+  geom_point(alpha=1/3) + geom_line(alpha=1/3)
+p1
+
+p2 <- HC %>% 
+  ggplot(aes(x=sqrt(area), y=handcount)) +
+  geom_point(alpha=1/2)
+p2
+
+p3 <- HC %>% 
+  ggplot(aes(y=lm_pred, x=handcount)) +
+  geom_point(alpha=1/2)
+p3
+
+plot_grid(p2,p3, ncol=2)
+```
+
