@@ -149,20 +149,15 @@ CVs <- read_csv(outfile) %>%
 CVs$lower_f <- as.factor(CVs$lower)
 CVs$prop_train_f <- as.factor(CVs$prop_train)
 
-p1 <- CVs %>%
-  ggplot(aes(prop_data, r)) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  geom_point() +
-  facet_grid(lower_f ~ prop_train_f)
-p2 <- CVs %>%
-  ggplot(aes(prop_data, rMSD)) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  geom_point() +
-  facet_grid(lower_f ~ prop_train_f)
-# plot_grid(p1, p2)
+CVs %>%
+  filter(prop_train_f == 0.9) %>% 
+  ggplot(aes(prop_data, r, color = lower_f)) +
+  geom_line()
 
-p1
-p2
+CVs %>%
+  filter(prop_train_f == 0.9) %>% 
+  ggplot(aes(prop_data, rMSD, color = lower_f)) +
+  geom_line()
 
 CVs %>% 
   arrange(desc(r))
