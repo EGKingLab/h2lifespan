@@ -94,7 +94,7 @@ s_plot <- ggsurvplot(h2.treat, data = h2life,
            legend = c(0.9, 0.8),
            legend.labs = c("C", "DR", "HS"),
            legend.title = "Diet") +
-  xlab("Time (days)")
+  xlab("Age (days)")
 ggpar(s_plot, axis.text = element_text(size = font_size),
       font.x = c(font_size),
       font.y = c(font_size),
@@ -179,7 +179,7 @@ kk <- ggsurvplot_facet(h2.sireid, h2life,
                        conf.int = FALSE,
                        short.panel.labs = TRUE,
                        surv.median.line = "hv") +
-  xlab("Time (days)") +
+  xlab("Age (days)") +
   scale_y_continuous(expand = c(0, 0))
 
 kk + theme(legend.position = "none")
@@ -202,7 +202,7 @@ ggsurvplot_facet(h2.sire, h2life,
                  conf.int = TRUE,
                  short.panel.labs = TRUE,
                  surv.median.line = "hv") +
-   xlab("Time (days)") +
+   xlab("Age (days)") +
   scale_y_continuous(expand = c(0, 0))
 
 ggsave(file = "../../Figures/K-M_treat_single-sires_survminer.pdf",
