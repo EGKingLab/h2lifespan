@@ -32,8 +32,8 @@ load("Fecundity_GxE.Rda")
 load("Lifespan_h2.Rda")
 load("Lifespan_correlation.Rda")
 
-P <- plot_grid(Lifespan_GxE, Fecundity_GxE, 
-               Lifespan_h2, Lifespan_correlation,
+P <- plot_grid(Lifespan_h2, Lifespan_correlation,
+               Lifespan_GxE, Fecundity_GxE, 
                nrow = 2, ncol = 2,
                labels = c("a.", "b.", "c.", "d."),
                label_size = 10)
