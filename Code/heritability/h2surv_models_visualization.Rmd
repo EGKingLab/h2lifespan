@@ -116,12 +116,12 @@ h2.treat.coxme.sire <- coxme(
 h2.treat.coxme.sire.dam <- coxme(
   Surv(NewAge, status == 2) ~ treat + (1 | sireid) + (1 | sireid/damid),
   data = h2life)
-anova(h2.treat.coxph, h2.treat.coxme.sire, h2.treat.coxme.sire.dam)
+anova(h2.treat.coxph, h2.treat.coxme.sire.dam)
+anova(h2.treat.coxme.sire, h2.treat.coxme.sire.dam)
 
 summary(h2.treat.coxme.sire.dam)
 anova(h2.treat.coxme.sire.dam)
 ```
-
 
 # Test differences
 
@@ -136,7 +136,7 @@ test_all1
 quantile(h2.treat,  probs = c(0.1, 0.5, 0.9))
 ```
 
-# pairwise tests
+# Pairwise tests
 
 ```{r}
 test_pairwise <- pairwise_survdiff(
@@ -170,28 +170,19 @@ h2.sireid <- survfit(Surv(NewAge, status == 2) ~ sireid, data = h2life,
                      type = "kaplan-meier",
                      error = "greenwood")
 
-#library(RColorBrewer)
-#colourCount = length(unique(h2life$sireid))
-#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
-
-#labels <- c(`treat: C` = "C", `treat: DR` = "DR", `treat: HS` = HS)
-
 kk <- ggsurvplot_facet(h2.sireid, h2life, 
-                 facet.by = "treat",
-                 fun = "pct",
-                 size = 0.6,
-                 risk.table = FALSE, 
-                 pval = TRUE, 
-                 conf.int = FALSE,
-                 short.panel.labs = TRUE,
-                 #legend ="none",
-                 surv.median.line = "hv")+
-                 #colorRampPalette(brewer.pal(12, "Paired")))
-                 #palette = "jco")
-   xlab("Time (days)") +
+                       facet.by = "treat",
+                       fun = "pct",
+                       size = 0.6,
+                       risk.table = FALSE, 
+                       pval = TRUE, 
+                       conf.int = FALSE,
+                       short.panel.labs = TRUE,
+                       surv.median.line = "hv") +
+  xlab("Time (days)") +
   scale_y_continuous(expand = c(0, 0))
 
-kk + theme(legend.position="none")
+kk + theme(legend.position = "none")
 
 ggsave(last_plot(), file = "../../Figures/K-M_treat_sire_survminer.pdf",
        width = 8, height = 4)
@@ -202,23 +193,15 @@ ggsave(last_plot(), file = "../../Figures/K-M_treat_sire_survminer.pdf",
 ```{r}
 h2.sire <- survfit(Surv(NewAge, status == 2) ~ treat, data = h2life)
 
-#library(RColorBrewer)
-#colourCount = length(unique(h2life$sireid))
-#getPalette = colorRampPalette(brewer.pal(12, "Set3"))
-
 ggsurvplot_facet(h2.sire, h2life, 
                  facet.by = "sireid",
                  fun = "pct",
                  size = 0.6,
                  risk.table = FALSE, 
                  palette = pal,
-                 #pval = TRUE, 
                  conf.int = TRUE,
                  short.panel.labs = TRUE,
                  surv.median.line = "hv") +
-                 
-                 #colorRampPalette(brewer.pal(12, "Paired")))
-                 #palette = "jco")
    xlab("Time (days)") +
   scale_y_continuous(expand = c(0, 0))
 
@@ -234,7 +217,7 @@ h2rn_filtered <- h2life[h2life$status != 3, ]
 
 # prep each treatment into its own column
 
-#pull HS and compute median
+# pull HS and compute median
 HS <- subset(h2rn_filtered, treat == "HS")
 hs_trim <- cbind.data.frame(HS$sireid, HS$NewAge)
 hs_med <- aggregate(. ~ HS$sireid, data = hs_trim, FUN = median)
@@ -242,7 +225,7 @@ hs_med[, 2] <- NULL
 colnames(hs_med) <- c("sireid", "age")
 hs_med$diet <- "HS"
 
-#pull DR and compute median
+# pull DR and compute median
 DR <- subset(h2rn_filtered, treat == "DR")
 dr_trim <- cbind.data.frame(DR$sireid, DR$NewAge)
 dr_med <- aggregate(. ~ DR$sireid, data = dr_trim, FUN = median)
@@ -250,7 +233,7 @@ dr_med[, 2] <- NULL
 colnames(dr_med) <- c("sireid", "age")
 dr_med$diet <- "DR"
 
-#pull C and compute median
+# pull C and compute median
 C <- subset(h2rn_filtered, treat == "C")
 c_trim <- cbind.data.frame(C$sireid, C$NewAge)
 c_med <- aggregate(. ~ C$sireid, data = c_trim, FUN = median)
@@ -258,10 +241,9 @@ c_med[, 2] <- NULL
 colnames(c_med) <- c("sireid", "age")
 c_med$diet <- "C"
 
-#join data frames
+# Join data frames
 mlife1 <- rbind(hs_med, c_med, dr_med)
 mlife1 <- mlife1[!(mlife1$sireid=="S39"), ]
-#attach a column of diet to each data frame before joining; use that as fill
 
 #reorder x-axis (ggplot default is alphabetical)
 mlife1$diet <- as.character(mlife1$diet) #turn diet col into a char vector
@@ -277,12 +259,13 @@ ggplot(mlife1, aes(x = diet, y = age, color = sireid)) +
   coord_cartesian(xlim = c(1.5, 2.5)) +
   my_theme
 Lifespan_GxE <- last_plot()
+
 ggsave(file = "../../Figures/h2life_reaction_norms.pdf",
        width = 4, height = 4)
 save(Lifespan_GxE, file = "../../Figures/Lifespan_GxE.Rda")
 ```
 
-# lifespan-lifetime fecundity correlation
+# Lifespan-lifetime fecundity correlation
 
 ```{r}
 # read in fecundity data
@@ -304,8 +287,8 @@ newdata <- rename(newdata, Diet = treat)
 
 # change LY to DR, STD to C
 newdata <- newdata %>%
-     mutate(Diet = replace(Diet, Diet=="LY", "DR")) %>%
-     mutate(Diet = replace(Diet, Diet=="STD", "C"))
+     mutate(Diet = replace(Diet, Diet == "LY", "DR")) %>%
+     mutate(Diet = replace(Diet, Diet == "STD", "C"))
 ```
 
 ```{r}
