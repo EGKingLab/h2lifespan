@@ -363,24 +363,49 @@ early.fec <- early.fec %>%
   mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
 
 fm1 <- stan_glm(egg_total_c ~ 1, data = early.fec,
-                iter = iter)
+                iter = iter,
+                prior_aux = cauchy(0, 1),
+                prior_intercept = normal(0, 10))
 fm2 <- stan_glm(egg_total_c ~ treat, data = early.fec,
-                iter = iter)
+                iter = iter,
+                prior_aux = cauchy(0, 1),
+                prior_intercept = normal(0, 10),
+                prior = normal(0, 5))
 fm3 <- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
                  data = early.fec,
-                 iter = iter)
+                 iter = iter,
+                 prior_intercept = normal(0, 10),
+                 prior_aux = cauchy(0, 1),
+                 prior_covariance = decov(1, 1, 1, 1))
 fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = early.fec,
-                 iter = iter)
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
 fm5 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
                  data = early.fec,
-                 iter = iter)
-fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + (treat - 1 | sireid),
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
+fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) +
+                   (treat - 1 | sireid),
                  data = early.fec,
                  control = list(adapt_delta = 0.99),
-                 iter = iter)
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
 fm7 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
                  data = early.fec,
-                 iter = iter)
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
 
 loo_fm1 <- loo(fm1, k_threshold = 0.7)
 loo_fm2 <- loo(fm2, k_threshold = 0.7)
@@ -410,24 +435,49 @@ h2fec <- h2fec %>%
   mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
 
 fm1 <- stan_glm(egg_total_c ~ 1, data = h2fec,
-                iter = iter)
+                iter = iter,
+                prior_aux = cauchy(0, 1),
+                prior_intercept = normal(0, 10))
 fm2 <- stan_glm(egg_total_c ~ treat, data = h2fec,
-                iter = iter)
+                iter = iter,
+                prior_aux = cauchy(0, 1),
+                prior_intercept = normal(0, 10),
+                prior = normal(0, 5))
 fm3 <- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
                  data = h2fec,
-                 iter = iter)
+                 iter = iter,
+                 prior_intercept = normal(0, 10),
+                 prior_aux = cauchy(0, 1),
+                 prior_covariance = decov(1, 1, 1, 1))
 fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = h2fec,
-                 iter = iter)
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
 fm5 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
                  data = h2fec,
-                 iter = iter)
-fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + (treat - 1 | sireid),
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
+fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + 
+                   (treat - 1 | sireid),
                  data = h2fec,
                  control = list(adapt_delta = 0.99),
-                 iter = iter)
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
 fm7 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
                  data = h2fec,
-                 iter = iter)
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 5),
+                 prior_covariance = decov(1, 1, 1, 1))
 
 loo_fm1 <- loo(fm1, k_threshold = 0.7)
 loo_fm2 <- loo(fm2, k_threshold = 0.7)
