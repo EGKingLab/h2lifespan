@@ -235,27 +235,4 @@ save(Fec_line_plot, file = "../../Figures/Fec_line_plot.Rda")
 AA%>%
 group_by(Diet)%>% 
 summarise_each(funs(max, min, mean, median, sd), eggs_per_female)
-
-  #summarise_each(funs(max, min, mean, median, sd), eggs_per_female)
-```
-
-```{r eval=FALSE}
-AA$eggs_per_female_C <- AA$eggs_per_female - mean(AA$eggs_per_female, na.rm = TRUE)
-
-# http://conjugateprior.org/2013/01/formulae-in-r-anova/
-library(rstanarm)
-library(lme4)
-fm_lmer <- lmer(eggs_per_female_C ~ treat + age + treat:sireid + (1 | sireid),
-                data = AA)
-summary(fm_lmer)
-
-fm_null <- stan_lmer(eggs_per_female_C ~ 1 + (1 + age | sireid),
-                data = AA,
-                cores = 4)
-plot(fm_null, pars = c("(Intercept)"), plotfun = "trace")
-
-fm_full <- stan_lmer(eggs_per_female_C ~ 0 + treat + treat:sireid + (1 + age | sireid),
-                data = AA,
-                cores = 4)
-plot(fm_full, pars = c("treatLY", "treatHS", "treatSTD"), plotfun = "trace")
 ```

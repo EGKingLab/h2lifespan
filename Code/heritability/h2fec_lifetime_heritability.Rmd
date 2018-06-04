@@ -23,6 +23,7 @@ library(knitr)
 ```{r}
 library(MCMCglmm)
 library(tidyverse)
+library(rstanarm)
 library(cowplot)
 
 source("color_map.R")
@@ -353,3 +354,93 @@ ggsave(Fecundity_h2,
        width = 4, height = 4)
 save(Fecundity_h2, file = paste0("../../Figures/Fecundity_", label, "_h2.Rda"))
 ```
+
+# Early fecundity comparison mixed model
+
+```{r, results="hide"}
+iter <- 1e4
+early.fec <- early.fec %>% 
+  mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
+
+fm1 <- stan_glm(egg_total_c ~ 1, data = early.fec,
+                iter = iter)
+fm2 <- stan_glm(egg_total_c ~ treat, data = early.fec,
+                iter = iter)
+fm3 <- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
+                 data = early.fec,
+                 iter = iter)
+fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = early.fec,
+                 iter = iter)
+fm5 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
+                 data = early.fec,
+                 iter = iter)
+fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + (treat - 1 | sireid),
+                 data = early.fec,
+                 control = list(adapt_delta = 0.99),
+                 iter = iter)
+fm7 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
+                 data = early.fec,
+                 iter = iter)
+
+loo_fm1 <- loo(fm1, k_threshold = 0.7)
+loo_fm2 <- loo(fm2, k_threshold = 0.7)
+loo_fm3 <- loo(fm3, k_threshold = 0.7)
+loo_fm4 <- loo(fm4, k_threshold = 0.7)
+loo_fm5 <- loo(fm5, k_threshold = 0.7)
+loo_fm6 <- loo(fm6, k_threshold = 0.7)
+loo_fm7 <- loo(fm7, k_threshold = 0.7)
+```
+
+```{r}
+compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
+loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
+loo_model_weights(list(loo_fm5, loo_fm7))
+```
+
+# Lifetime fecundity comparison mixed model
+
+```{r, results="hide"}
+h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
+                    sep = '\t',
+                    dec = ".", header = TRUE,
+                    stringsAsFactors = FALSE)
+
+iter <- 1e4
+h2fec <- h2fec %>% 
+  mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
+
+fm1 <- stan_glm(egg_total_c ~ 1, data = h2fec,
+                iter = iter)
+fm2 <- stan_glm(egg_total_c ~ treat, data = h2fec,
+                iter = iter)
+fm3 <- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
+                 data = h2fec,
+                 iter = iter)
+fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = h2fec,
+                 iter = iter)
+fm5 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
+                 data = h2fec,
+                 iter = iter)
+fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + (treat - 1 | sireid),
+                 data = h2fec,
+                 control = list(adapt_delta = 0.99),
+                 iter = iter)
+fm7 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
+                 data = h2fec,
+                 iter = iter)
+
+loo_fm1 <- loo(fm1, k_threshold = 0.7)
+loo_fm2 <- loo(fm2, k_threshold = 0.7)
+loo_fm3 <- loo(fm3, k_threshold = 0.7)
+loo_fm4 <- loo(fm4, k_threshold = 0.7)
+loo_fm5 <- loo(fm5, k_threshold = 0.7)
+loo_fm6 <- loo(fm6, k_threshold = 0.7)
+loo_fm7 <- loo(fm7, k_threshold = 0.7)
+```
+
+```{r}
+compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
+loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
+loo_model_weights(list(loo_fm5, loo_fm7))
+```
+

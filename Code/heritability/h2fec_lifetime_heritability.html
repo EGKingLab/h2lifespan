@@ -1508,15 +1508,23 @@ div.tocify {
 <pre><code>## Loading required package: coda</code></pre>
 <pre><code>## Loading required package: ape</code></pre>
 <pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ───────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 2.2.1     ✔ purrr   0.2.4
+<pre><code>## ── Attaching packages ─────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
+<pre><code>## ✔ ggplot2 2.2.1     ✔ purrr   0.2.5
 ## ✔ tibble  1.4.2     ✔ dplyr   0.7.5
 ## ✔ tidyr   0.8.1     ✔ stringr 1.3.1
 ## ✔ readr   1.1.1     ✔ forcats 0.3.0</code></pre>
-<pre><code>## ── Conflicts ──────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+<pre><code>## ── Conflicts ────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
 ## ✖ tidyr::expand() masks Matrix::expand()
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>library(rstanarm)</code></pre>
+<pre><code>## Loading required package: Rcpp</code></pre>
+<pre><code>## rstanarm (Version 2.17.4, packaged: 2018-04-13 01:51:52 UTC)</code></pre>
+<pre><code>## - Do not expect the default priors to remain the same in future rstanarm versions.</code></pre>
+<pre><code>## Thus, R scripts should specify priors explicitly, even if they are just the defaults.</code></pre>
+<pre><code>## - For execution on a local, multicore CPU with excess RAM we recommend calling</code></pre>
+<pre><code>## options(mc.cores = parallel::detectCores())</code></pre>
+<pre><code>## - Plotting theme set to bayesplot::theme_default().</code></pre>
 <pre class="r"><code>library(cowplot)</code></pre>
 <pre><code>## 
 ## Attaching package: 'cowplot'</code></pre>
@@ -1942,6 +1950,173 @@ Fecundity_h2</code></pre>
        file = paste0(&quot;../../Figures/Fecundity_heritability_&quot;, label, &quot;_plots.pdf&quot;),
        width = 4, height = 4)
 save(Fecundity_h2, file = paste0(&quot;../../Figures/Fecundity_&quot;, label, &quot;_h2.Rda&quot;))</code></pre>
+</div>
+<div id="early-fecundity-comparison-mixed-model" class="section level1">
+<h1>Early fecundity comparison mixed model</h1>
+<pre class="r"><code>iter &lt;- 1e4
+early.fec &lt;- early.fec %&gt;% 
+  mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
+
+fm1 &lt;- stan_glm(egg_total_c ~ 1, data = early.fec,
+                iter = iter)
+fm2 &lt;- stan_glm(egg_total_c ~ treat, data = early.fec,
+                iter = iter)
+fm3 &lt;- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
+                 data = early.fec,
+                 iter = iter)
+fm4 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = early.fec,
+                 iter = iter)
+fm5 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
+                 data = early.fec,
+                 iter = iter)
+fm6 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + (treat - 1 | sireid),
+                 data = early.fec,
+                 control = list(adapt_delta = 0.99),
+                 iter = iter)</code></pre>
+<pre><code>## Warning: There were 3 divergent transitions after warmup. Increasing adapt_delta above 0.95 may help. See
+## http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup</code></pre>
+<pre><code>## Warning: Examine the pairs() plot to diagnose sampling problems</code></pre>
+<pre class="r"><code>fm7 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
+                 data = early.fec,
+                 iter = iter)
+
+loo_fm1 &lt;- loo(fm1, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm2 &lt;- loo(fm2, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm3 &lt;- loo(fm3, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm4 &lt;- loo(fm4, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm5 &lt;- loo(fm5, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm6 &lt;- loo(fm6, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm7 &lt;- loo(fm7, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))</code></pre>
+<pre><code>## 
+## Model comparison: 
+## (ordered by highest ELPD)
+## 
+##     elpd_diff elpd_loo se_elpd_loo p_loo   se_p_loo looic   se_looic
+## fm7     0.0   -1467.3     12.7        22.8     1.6   2934.5    25.5 
+## fm5    -0.6   -1467.9     12.9        24.4     1.7   2935.7    25.7 
+## fm6    -1.4   -1468.7     13.0        29.1     2.0   2937.4    25.9 
+## fm2    -1.8   -1469.0     12.6         3.8     0.3   2938.1    25.3 
+## fm4    -2.4   -1469.6     12.8         8.3     0.7   2939.3    25.7 
+## fm1   -49.1   -1516.3     13.7         2.0     0.2   3032.7    27.4 
+## fm3   -50.5   -1517.8     13.8        11.3     0.9   3035.6    27.6</code></pre>
+<pre class="r"><code>loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))</code></pre>
+<pre><code>## Method: stacking
+## ------
+##        weight
+## model1 0.039 
+## model2 0.091 
+## model3 0.000 
+## model4 0.001 
+## model5 0.013 
+## model6 0.004 
+## model7 0.853</code></pre>
+<pre class="r"><code>loo_model_weights(list(loo_fm5, loo_fm7))</code></pre>
+<pre><code>## Method: stacking
+## ------
+##        weight
+## model1 0.000 
+## model2 1.000</code></pre>
+</div>
+<div id="lifetime-fecundity-comparison-mixed-model" class="section level1">
+<h1>Lifetime fecundity comparison mixed model</h1>
+<pre class="r"><code>h2fec &lt;- read.table(&quot;../../Data/Processed/eggs_per_vial.txt&quot;,
+                    sep = '\t',
+                    dec = &quot;.&quot;, header = TRUE,
+                    stringsAsFactors = FALSE)
+
+iter &lt;- 1e4
+h2fec &lt;- h2fec %&gt;% 
+  mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
+
+fm1 &lt;- stan_glm(egg_total_c ~ 1, data = h2fec,
+                iter = iter)
+fm2 &lt;- stan_glm(egg_total_c ~ treat, data = h2fec,
+                iter = iter)
+fm3 &lt;- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
+                 data = h2fec,
+                 iter = iter)
+fm4 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = h2fec,
+                 iter = iter)
+fm5 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
+                 data = h2fec,
+                 iter = iter)
+fm6 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + (treat - 1 | sireid),
+                 data = h2fec,
+                 control = list(adapt_delta = 0.99),
+                 iter = iter)</code></pre>
+<pre><code>## Warning: There were 15 divergent transitions after warmup. Increasing adapt_delta above 0.95 may help. See
+## http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup</code></pre>
+<pre><code>## Warning: Examine the pairs() plot to diagnose sampling problems</code></pre>
+<pre class="r"><code>fm7 &lt;- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
+                 data = h2fec,
+                 iter = iter)
+
+loo_fm1 &lt;- loo(fm1, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm2 &lt;- loo(fm2, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm3 &lt;- loo(fm3, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm4 &lt;- loo(fm4, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm5 &lt;- loo(fm5, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm6 &lt;- loo(fm6, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>loo_fm7 &lt;- loo(fm7, k_threshold = 0.7)</code></pre>
+<pre><code>## All pareto_k estimates below user-specified threshold of 0.7. 
+## Returning loo object.</code></pre>
+<pre class="r"><code>compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))</code></pre>
+<pre><code>## 
+## Model comparison: 
+## (ordered by highest ELPD)
+## 
+##     elpd_diff elpd_loo se_elpd_loo p_loo   se_p_loo looic   se_looic
+## fm6     0.0   -1992.3     15.0        49.5     3.9   3984.5    30.1 
+## fm5    -5.2   -1997.4     15.4        30.8     2.5   3994.9    30.8 
+## fm4    -5.2   -1997.5     15.1        19.4     1.6   3995.0    30.1 
+## fm7    -6.5   -1998.8     15.7        33.6     2.8   3997.5    31.3 
+## fm2   -13.6   -2005.8     15.1         4.1     0.4   4011.7    30.2 
+## fm1  -151.5   -2143.8     11.8         1.7     0.2   4287.6    23.6 
+## fm3  -153.0   -2145.3     11.7         8.8     0.6   4290.6    23.5</code></pre>
+<pre class="r"><code>loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))</code></pre>
+<pre><code>## Method: stacking
+## ------
+##        weight
+## model1 0.012 
+## model2 0.000 
+## model3 0.000 
+## model4 0.000 
+## model5 0.000 
+## model6 0.761 
+## model7 0.226</code></pre>
+<pre class="r"><code>loo_model_weights(list(loo_fm5, loo_fm7))</code></pre>
+<pre><code>## Method: stacking
+## ------
+##        weight
+## model1 0.778 
+## model2 0.222</code></pre>
 </div>
 
 

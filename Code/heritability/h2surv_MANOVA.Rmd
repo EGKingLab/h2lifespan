@@ -237,10 +237,6 @@ V_nu_to_a_b <- function(V, nu) {
 ```
 
 ```{r Sire_Models, cache=TRUE}
-V_nu_to_a_b(1, 0.002)
-
-genet_corr <- read_csv("Genetic_Correlations.csv")
-
 if (rerun_MCMC) {
   
   prior1 <- list(R = list(V = 1, nu = 0.002),
@@ -312,12 +308,11 @@ if (rerun_MCMC) {
   
   kable(genet_corr, digits = 3)
 }
-
 ```
 
 ### Analyze model
 
-```{r Sire_Analysis, eval = FALSE}
+```{r Sire_Analysis, eval = TRUE}
 load("../../Data/Processed/sire_model_prior1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
@@ -351,6 +346,14 @@ median(LY)
 STD <- re[, "treatSTD:treatSTD.sire"] / 
   (re[, "treatSTD:treatSTD.sire"] + re[, "units"])
 median(STD)
+
+HS_LY_STD <- cbind(HS, LY, STD) %>% as.data.frame()
+
+HS_LY_STD %>% 
+  gather(key = "Diet", value = "Heritability") %>% 
+  ggplot(aes(Heritability, color = Diet)) +
+  geom_line(stat = "density") +
+  xlim(c(0, 1))
 
 # STD vs. HS
 HS_STD <- re[ , "treatHS:treatSTD.sire"] /
