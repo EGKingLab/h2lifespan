@@ -119,7 +119,7 @@ Input:
 `Data/Processed/Female_events_lifespan.txt`
 `Data/Processed/eggs_per_female.tx`
 
-D. COLOR AND IMAGE PACKAGING
+D. COLOR THEME AND IMAGE PACKAGING
 `Figures/color_map.R`: sets theme for plot color
 `Gigures/Figure_Constructor.R`: put figures in panels for publication
 
