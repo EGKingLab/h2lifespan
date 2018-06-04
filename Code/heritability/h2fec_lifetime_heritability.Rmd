@@ -358,7 +358,7 @@ save(Fecundity_h2, file = paste0("../../Figures/Fecundity_", label, "_h2.Rda"))
 # Early fecundity comparison mixed model
 
 ```{r, results="hide"}
-iter <- 1e4
+iter <- 2e4
 early.fec <- early.fec %>% 
   mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
 
@@ -415,6 +415,17 @@ loo_fm5 <- loo(fm5, k_threshold = 0.7)
 loo_fm6 <- loo(fm6, k_threshold = 0.7)
 loo_fm7 <- loo(fm7, k_threshold = 0.7)
 ```
+
+```{r}
+summary(fm1)
+summary(fm2)
+summary(fm3)
+summary(fm4)
+summary(fm5)
+summary(fm6)
+summary(fm7)
+```
+
 
 ```{r}
 compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
@@ -486,6 +497,16 @@ loo_fm4 <- loo(fm4, k_threshold = 0.7)
 loo_fm5 <- loo(fm5, k_threshold = 0.7)
 loo_fm6 <- loo(fm6, k_threshold = 0.7)
 loo_fm7 <- loo(fm7, k_threshold = 0.7)
+```
+
+```{r}
+summary(fm1)
+summary(fm2)
+summary(fm3)
+summary(fm4)
+summary(fm5)
+summary(fm6)
+summary(fm7)
 ```
 
 ```{r}

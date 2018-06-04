@@ -108,19 +108,38 @@ save(KM_plot, file = "../../Figures/KM_plot.Rda")
 # Mixed-effects Cox Model
 
 ```{r}
-h2.treat.coxph <- coxph(Surv(NewAge, status == 2) ~ treat,
+cox1 <- coxph(Surv(NewAge, status == 2) ~ 1,
                       data = h2life)
-h2.treat.coxme.sire <- coxme(
+cox2 <- coxph(Surv(NewAge, status == 2) ~ treat,
+                      data = h2life)
+cox3 <- coxme(
   Surv(NewAge, status == 2) ~ treat + (1 | sireid),
   data = h2life)
-h2.treat.coxme.sire.dam <- coxme(
+cox4 <- coxme(
+  Surv(NewAge, status == 2) ~ treat + (1 | sireid/damid),
+  data = h2life)
+cox5 <- coxme(
   Surv(NewAge, status == 2) ~ treat + (1 | sireid) + (1 | sireid/damid),
   data = h2life)
-anova(h2.treat.coxph, h2.treat.coxme.sire.dam)
-anova(h2.treat.coxme.sire, h2.treat.coxme.sire.dam)
+# cox6 <- coxme(
+#   Surv(NewAge, status == 2) ~ treat + (1 | sireid) + (1 | sireid/damid) +
+#     (1 | treat/sireid),
+#   data = h2life)
 
-summary(h2.treat.coxme.sire.dam)
-anova(h2.treat.coxme.sire.dam)
+anova(cox1, cox2)
+anova(cox2, cox3)
+anova(cox2, cox4)
+anova(cox3, cox4)
+anova(cox3, cox5)
+# anova(cox5, cox6)
+```
+
+```{r}
+summary(cox1)
+summary(cox2)
+summary(cox3)
+summary(cox4)
+summary(cox5)
 ```
 
 # Test differences
