@@ -123,28 +123,3 @@ D. COLOR THEME AND IMAGE PACKAGING
 `Figures/color_map.R`: sets theme for plot color
 `Gigures/Figure_Constructor.R`: put figures in panels for publication
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
