@@ -157,6 +157,31 @@ AIC(cox5)
 AIC(cox6)
 ```
 
+```{r}
+library(brms)
+
+h2life_2 <- h2life %>% 
+  filter(status == 2) %>% 
+  mutate(censored = 0)
+
+bm1 <- brm(NewAge | cens(censored) ~ 1,
+           data = h2life_2,
+           family = weibull(),
+           inits = "0")
+bm2 <- brm(NewAge | cens(censored) ~ treat,
+           data = h2life_2,
+           family = weibull(),
+           inits = "0")
+
+loo_bm1 <- loo(bm1)
+loo_bm2 <- loo(bm2)
+
+compare_models(loos = list(loo_bm1, loo_bm2))
+loo_model_weights(list(loo_bm1, loo_bm2))
+
+```
+
+
 # Test differences
 
 ```{r testdiff}
