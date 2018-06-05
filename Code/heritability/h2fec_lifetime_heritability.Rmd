@@ -356,7 +356,7 @@ save(Fecundity_h2, file = paste0("../../Figures/Fecundity_", label, "_h2.Rda"))
 
 # Early fecundity comparison mixed model
 
-```{r, results="hide"}
+```{r, results="hide", cache=TRUE}
 iter <- 2e4
 early.fec <- early.fec %>% 
   mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
@@ -425,7 +425,7 @@ loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
 
 # Lifetime fecundity comparison mixed model
 
-```{r, results="hide"}
+```{r, results="hide", cache=TRUE}
 h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     sep = '\t',
                     dec = ".", header = TRUE,
@@ -492,6 +492,6 @@ summary(fm6)
 ```
 
 ```{r}
-compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
-loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
+compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
+loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
 ```
