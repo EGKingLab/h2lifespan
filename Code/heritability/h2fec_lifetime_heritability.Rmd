@@ -108,7 +108,6 @@ if (total_fecundity) {
 }
 ```
 
-
 ## Final data processing
 
 ```{r}
@@ -370,41 +369,35 @@ fm2 <- stan_glm(egg_total_c ~ treat, data = early.fec,
                 iter = iter,
                 prior_aux = cauchy(0, 1),
                 prior_intercept = normal(0, 10),
-                prior = normal(0, 5))
-fm3 <- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
+                prior = normal(0, 10))
+fm3 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = early.fec,
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 10),
+                 prior_covariance = decov(1, 1, 1, 1))
+fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
                  data = early.fec,
                  iter = iter,
-                 prior_intercept = normal(0, 10),
-                 prior_aux = cauchy(0, 1),
-                 prior_covariance = decov(1, 1, 1, 1))
-fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = early.fec,
-                 iter = iter,
                  prior_aux = cauchy(0, 1),
                  prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
+                 prior = normal(0, 10),
                  prior_covariance = decov(1, 1, 1, 1))
 fm5 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
                  data = early.fec,
                  iter = iter,
                  prior_aux = cauchy(0, 1),
                  prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
+                 prior = normal(0, 10),
                  prior_covariance = decov(1, 1, 1, 1))
 fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) +
-                   (treat - 1 | sireid),
+                   (1 | treat:sireid),
                  data = early.fec,
                  control = list(adapt_delta = 0.99),
                  iter = iter,
                  prior_aux = cauchy(0, 1),
                  prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
-                 prior_covariance = decov(1, 1, 1, 1))
-fm7 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
-                 data = early.fec,
-                 iter = iter,
-                 prior_aux = cauchy(0, 1),
-                 prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
+                 prior = normal(0, 10),
                  prior_covariance = decov(1, 1, 1, 1))
 
 loo_fm1 <- loo(fm1, k_threshold = 0.7)
@@ -413,7 +406,6 @@ loo_fm3 <- loo(fm3, k_threshold = 0.7)
 loo_fm4 <- loo(fm4, k_threshold = 0.7)
 loo_fm5 <- loo(fm5, k_threshold = 0.7)
 loo_fm6 <- loo(fm6, k_threshold = 0.7)
-loo_fm7 <- loo(fm7, k_threshold = 0.7)
 ```
 
 ```{r}
@@ -423,14 +415,12 @@ summary(fm3)
 summary(fm4)
 summary(fm5)
 summary(fm6)
-summary(fm7)
 ```
 
 
 ```{r}
-compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
-loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
-loo_model_weights(list(loo_fm5, loo_fm7))
+compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
+loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
 ```
 
 # Lifetime fecundity comparison mixed model
@@ -453,41 +443,35 @@ fm2 <- stan_glm(egg_total_c ~ treat, data = h2fec,
                 iter = iter,
                 prior_aux = cauchy(0, 1),
                 prior_intercept = normal(0, 10),
-                prior = normal(0, 5))
-fm3 <- stan_lmer(egg_total_c ~ 1 + (1 | sireid) + (1 | sireid:damid),
+                prior = normal(0, 10))
+fm3 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = h2fec,
+                 iter = iter,
+                 prior_aux = cauchy(0, 1),
+                 prior_intercept = normal(0, 10),
+                 prior = normal(0, 10),
+                 prior_covariance = decov(1, 1, 1, 1))
+fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
                  data = h2fec,
                  iter = iter,
-                 prior_intercept = normal(0, 10),
-                 prior_aux = cauchy(0, 1),
-                 prior_covariance = decov(1, 1, 1, 1))
-fm4 <- stan_lmer(egg_total_c ~ treat + (1 | sireid), data = h2fec,
-                 iter = iter,
                  prior_aux = cauchy(0, 1),
                  prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
+                 prior = normal(0, 10),
                  prior_covariance = decov(1, 1, 1, 1))
 fm5 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid),
                  data = h2fec,
                  iter = iter,
                  prior_aux = cauchy(0, 1),
                  prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
+                 prior = normal(0, 10),
                  prior_covariance = decov(1, 1, 1, 1))
-fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) + 
-                   (treat - 1 | sireid),
+fm6 <- stan_lmer(egg_total_c ~ treat + (1 | sireid) + (1 | sireid:damid) +
+                   (1 | treat:sireid),
                  data = h2fec,
                  control = list(adapt_delta = 0.99),
                  iter = iter,
                  prior_aux = cauchy(0, 1),
                  prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
-                 prior_covariance = decov(1, 1, 1, 1))
-fm7 <- stan_lmer(egg_total_c ~ treat + (1 | sireid:damid),
-                 data = h2fec,
-                 iter = iter,
-                 prior_aux = cauchy(0, 1),
-                 prior_intercept = normal(0, 10),
-                 prior = normal(0, 5),
+                 prior = normal(0, 10),
                  prior_covariance = decov(1, 1, 1, 1))
 
 loo_fm1 <- loo(fm1, k_threshold = 0.7)
@@ -496,7 +480,6 @@ loo_fm3 <- loo(fm3, k_threshold = 0.7)
 loo_fm4 <- loo(fm4, k_threshold = 0.7)
 loo_fm5 <- loo(fm5, k_threshold = 0.7)
 loo_fm6 <- loo(fm6, k_threshold = 0.7)
-loo_fm7 <- loo(fm7, k_threshold = 0.7)
 ```
 
 ```{r}
@@ -506,12 +489,9 @@ summary(fm3)
 summary(fm4)
 summary(fm5)
 summary(fm6)
-summary(fm7)
 ```
 
 ```{r}
 compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
 loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6, loo_fm7))
-loo_model_weights(list(loo_fm5, loo_fm7))
 ```
-
