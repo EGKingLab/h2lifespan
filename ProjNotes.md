@@ -1,152 +1,128 @@
-# h2 Lifespan Project Record & Notes
 
-## Enoch Ng'oma (EN), Kevin Middleton (KM), and Elizabeth King (EK)
-
-## To Do
-
-Scripts
-
-- Check all
-- Number scripts
-- Write workflow how to for all analysis
-
-Surv model vis
-
-- ggplot colorizer
-- Reaction norm margins, color lines by sire, mean & error bars
-
-Vec model vis
-
-- Density plot of fecundity -> total fec per female (use eggs_per_female data)
-- Reaction norm margins, color lines by sire, mean & error bars
-
-TS model for fecundity (MM sire?)
-
-- Check treatment over time
-- ML or Bayes
-
-Make herit & genetic correlation visualization file
-
-- Code for plots from Rmds
-- Bars for HPDI from posteriors not hard coded
-- Same plot format for genetic correlation, add bars
-- LY to DR throughout
-
-Figure for egg counter methods
-
-Fecundity vs. Lifespan analysis
-
-Intro
-
-Methods
-
-- KM write egg counting
-- KM Bayes models
-
-Results
-
-Discussion
+---
+title: "h2 Lifespan Project Record & Notes"
+author: "Enoch Ng'oma (EN), Kevin Middleton (KM), and Elizabeth King (EK)"
+date: "6/5/2018"
+---
 
 
 ## Project Record
+The following steps should be followed to reproduce the analysis.
 
-### Egg estimation
+### Estimation of egg counts
 
-This is the order in which files should be executed.
+1. Extract image dimensions:
+`Code/egg_counter/01_get_image_dimensions.R`
 
-`get_image_dimensions.R`
+    - Loads each image file and outputs the maximum dimension. Each image is (roughly) square, so the maximum dimension is a good estimate.
+    - Reads: Image files from `Data/Processed/h2_fec_images` See (fixme) for image files. 
+    - Writes: `Data/Processed/image_dimensions.csv`
 
-- Loads each image file and outputs the maximum dimension. Each image is (roughly) square, so the maximum dimension is a good estimate.
-- Reads: Image files from `h2_fec_images`
-- Writes: `image_dimensions.csv`
+2. Get white area for each image at range of thresholds:
+`Code/egg_counter/02_area_summation.py`
 
-`area_summation.py`
+    - Processes the full set of images, calculating area for thresholds between 30 and 150).
+    - Reads:
+        - Images in `Data/Processed/h2_fec_images`. See (fixme) for image files.
+        - `Data/Processed/feclife_with-image-ids.xlsx`: Excel file with information on image names and those that were manually handcounted.
+    - Writes:
+        - `Data/Processed/area_summation.Rda`
 
-- Processes the full set of images, calcaulting area for thresholds between 30 and 150).
-- Reads:
-    - Images in `h2_fec_images`
-    - `feclife_with-image-ids.xlsx`: Excel file with information on image names and those that were manually handcounted (but not part of the training set).
-- Writes:
-    - `area_summation.Rda`
+3. Optimize threshold: `Code/egg_counter/03_threshold_optimization_linear.R`
 
-`threshold_optimization_linear.R`
+    - Performs either coarse or fine (`coarse` flag) optimization on training images to find the threshold value that minimizes MSE between prediction and handcount using a linear model with square root of 'egg' area: `handcount ~ I(area^0.5) + img_size - 1`. Uses a variable percentage of the data (for rarefaction) and a variable train/test split. Analysis of the resulting coarse optimization are used to guide the fine optimization. Results of the fine optimization are used to determine the optimal threshold value to use for the full image set.
 
-- Performs either coarse or fine (`coarse` flag) optimization on training images to find the threshold value that minimizes MSE between prediction and handcount using a linear model with square root of 'egg' area: `handcount ~ I(area^0.5) + img_size - 1`. Uses a variable percentage of the data (for rarefaction) and a variable train/test split.
-- Reads:
-    - `area_summation.csv`: Areas calculated for all thresholds from 30 to 150
-    - `feclife_with-image-ids.xlsx`: Excel file with information on image names and those that were manually handcounted (but not part of the training set).
-- Writes:
-    - `threshold_optimization_linear_coarse.csv`
-    - `threshold_optimization_linear_fine.csv`
-- Analysis of the resulting coarse optimization are used to guide the fine optimization. Results of the fine optimization are used to determine the optimal threshold value to use for the full image set.
+    - Reads:
+        - `Data/Processed/area_summation.csv`: Areas calculated for all thresholds from 30 to 150
+        - `Data/Processed/feclife_with-image-ids.xlsx`: Excel file with information on image names and those that were manually handcounted.
+    - Writes:
+        - `Data/Processed/threshold_optimization_linear_coarse.csv`
+        - `Data/Processed/threshold_optimization_linear_fine.csv`
 
-`h2_fec_prediction.Rmd`
+4. Predict egg counts from images: `Code/egg_counter/04_h2_fec_prediction.Rmd`
 
-- Predicts egg counts from image areas for the full set using the threshold value (`linear_threshold <- 46`) determined above. Training image data are loaded and used to create a linear model for predicting egg counts for the full set.
-- Reads:
-    - `hd_hand_counted.xlsx`: Excel file with hand counts for training images
-    - `bad_images.xlsx`: Images that were handcouned but should not be part of the training set
-    - `area_summation_HC.csv`: Areas for the training set
-    - `image_dimensions_hd_hand_counted_masked.csv`: Maximum image dimensions for the training set
-    - `handcount_new_bad_images.xlsx`: Additional handcounted images
+    - Predicts egg counts from image areas for the full set using the threshold value (`linear_threshold <- 53`) determined above. Training image data are loaded and used to create a linear model for predicting egg counts for the full set.
+    - Reads:
+        - `Data/Processed/feclife_with-image-ids.xlsx`: Excel file with information for all images
+        - `Data/Processed/area_summation.Rda`: Areas for the training set
+        - `Data/Processed/image_dimensions.csv`: Maximum image dimensions for the training set
+    - Writes: 
+        - `Data/Processed/predicted_egg_counts.rda`
+    
+### Main Data Analysis
 
-### Heritability
+General Functions
+    - `Code/heritability/color_map.R`: sets theme for plot color
+    - `Code/heritability/ggplot_theme.R`: sets theme for plotting
+    - `Figures/Figure_Constructor.R`: put figures in panels for publication
 
-## Project Notes
+1. Prepare lifespan data: `Code/heritability/01_InitialProcess.R`
+    - Performs general quality checks and performs initial processing 
+    - Reads: `Data/Processed/Data/Processed/lifespan_only.txt`
+    - Sources: `Code/heritability/PreProcess_lifespan_functions.R` 
+    - Writes:
+        - `Data/Processed/lifespan_correctedData.txt` (both sexes)
+        - `Data/Processed/Female_events_lifespan.txt` (females only)
+        - `Data/Processed/Male_events_lifespan.txt` (males only)
 
-### Survival data preparation (EN)
+2. Estimate and visualize survival: `Code/heritability/02_h2surv_models_visualization.Rmd`
+    - Produces a Kaplan-Meier plot of survival (Figure fixme) and performs survival model comparisons. Also produces sire by diet plot (Figure fixme)
+    - Reads: `Data/Processed/Female_events_lifespan.txt`
 
-`InitialProcess.R`
-	- will source `PreProcess_lifespan_functions.R` (a set of functions) to process the raw .txt data file
-	- Input data: `lifespan_only.txt` (raw data file saved as tab-delimited from `lifespan_only.xlsx`) 	
-	- Output files: 
-		- `lifespan_correctedData.txt` (all data)
-		- `Female_events_lifespan.txt` - censoring accounted for females only
-		- `Male_events_lifespan.txt` - censoring accounted for males only
+3. Merge predicted counts, hand counts and lifespan data: `Code/heritability/03_h2fecund.Rmd`
+    - Reads: 
+        - `Data/Processed/predicted_egg_counts.rda`
+        - `Data/Processed/lifespan_correctedData.txt`
+    - Writes:
+        - `Data/Processed/eggs_per_female.csv`: Egg count in each vial/number of females
+        - `Data/Processed/eggs_per_vial.txt`: Total eggs in each vial
 
-`h2surv_models_visualization.Rmd`
-- Input data: `Female_events_lifespan.txt`
-	- density plots, Kaplan-Meier plots, test of difference, reaction norms
+4. Visualize fecundity data and perform model comparison: `Code/heritability/h2fec_visualization.Rmd`
+    - Produces figures (fixme) and performs Bayesian model comparison of fecundity data
+    - Reads:
+        - `Data/Processed/eggs_per_female.csv`
+        - `Data/Processed/eggs_per_vial.txt`
 
-### Heritability
+5. Estimate heritability in each diet for lifespan (animal model in MCMCglmm): `Code/heritability/05_h2surv_analysis.R`
+    - Reads: `Data/Processed/Female_events_lifespan.txt`
+    - Writes: 
+        - `Data/Processed/HS.Rda`, `LY.Rda`, `STD.Rda` fixme filenames
+        - `Data/Processed/herit.Rda` (combines all 3) fixme filenames
 
-`h2surv_analysis.R`
-	- animal models in Bayes form with animal as random effect (mcmcglmm)
-	- input data: `Female_events_lifespan.txt`
-	- Lifespan is analyzed as posterior distributions separately for each diet
-	- output: 
-		- `HS.Rda`, `LY.Rda`, `STD.Rda`
-		- `heritab.Rda` (combines all 3)
-		
-`h2surv_MANOVA.R`
-	- animal models compares pairwise combinations of lifespan on three diets, computes and plots correlation posteriors
-	- fetches `h2life_load_data.R` to prepare a pedigree from raw data
-	- models stored in: `tri_model_prior1.Rda`, `tri_model_prior2.Rda`, `tri_model_prior3.Rda`
-	
-`h2fecund.Rmd`
-- merges image output from `h2_fec_prediction.Rmd` with lifespan data:
-- inputs: `predicted_egg_counts.rda`, `lifespan_correctedData.txt`, `feclife_with-image-ids.csv`
-- outputs: `eggs_per_female.txt`, `eggs_per_vial.txt`
+6. Estimate heritability for early and total fecundity in each vial (animal model in MCMCglmm)
+`Code/heritability/06_h2fec_lifetime_heritability.Rmd`
+    - Reads: 
+        - `Data/Processed/eggs_per_female.txt`
+        - `Data/Processed/eggs_per_vial.txt`
+    - Writes fixme files below
+        - Output: `HS.Rda`, `LY.Rda`, `STD.Rda` (LY and STD later named DR and C, respectively)
+        - `Data/Processed/herit.Rda`: Combines HS, DR, and C
 
-`h2fec_visualization.Rmd`
-- produces plots for fecundity phenotype data: scatter plots, reaction norms
+7. Estimate cross-diet genetic correlations: `Code/heritability/07_h2surv_MANOVA.R`
+    - Sources: `Code/heritability/h2life_load_data.R` to set up pedigree
+    - Reads: `Data/Processed/Female_events_lifespan.txt`
+    - Writes: `Data/Processed/tri_model_prior1.Rda`, `tri_model_prior2.Rda`, `tri_model_prior3.Rda`
 
-`h2fec_lifetime_heritability`
-	- Bayesian animal models for fecundity data in mcmcglmm
-	- input data: `eggs_per_vial.txt`
-	- Fecundity is analyzed and plotted separately for each diet
-	- output: 
-		- `HS_lifetime_FEC.Rda`, `LY_lifetime_FEC.Rda`, `STD_lifetime_FEC.Rda`
-		- `herit_lifetime.Rda` (combines all 3)
+8. Estimate genetic cross-diet correlations for early and total fecundity (animal model in MCMCglmm)
+`Code/heritability/08_h2fec_lifetime_MANOVA.Rmd`
+    - Reads: 
+        - `Data/Processed/eggs_per_female.txt`
+        - `Data/Processed/eggs_per_vial.txt`
+    - Writes  fixme files below
+        - `Data/Processed/FEC_lifetime_model_prior1.Rda`
+        - `Genetic_Correlations_Fecundity.csv`
+        - `Data/Processed/re.Rda`: pairwise diet comparisons
 
-`h2fec_lifetime_MANOVA.Rmd`
+9. Visualize fecundity and lifespan relationship: `Code/heritability/09_Two_trait.Rmd`
+    - Creates figure (fixme #) and supplementary table (fixme)
+    - Reads: 
+        - `Data/Processed/Female_events_lifespan.txt`
+        - `Data/Processed/eggs_per_female.txt`
+        - `Data/Processed/eggs_per_vial.txt`
+    - Writes:
+        - `Data/Processed/Sample_counts.txt`
 
-Run in background:
-
-```
-#!/bin/bash
-Rscript h2fec_heritability.R > temp.txt 2> error.txt &
-```
+## Project Notes 
 
 ### General Notes
 
@@ -167,7 +143,12 @@ On Localhost:
 1. `ssh -N -f -L localhost:8887:localhost:8889 remote_user@nivalis.biology.missouri.edu`
 2. Chrome load `localhost:8887`
 
+#### Run in background:
 
+```
+#!/bin/bash
+Rscript h2fec_heritability.R > temp.txt 2> error.txt &
+```
 ### 2018-01-11
 
 Setting up this record. All work done on analyses should get an entry with some notes of what was done and who did it. This file will also keep track of the order of analyses, file names, etc. in the Project Record section. (EK)
