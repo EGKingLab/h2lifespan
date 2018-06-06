@@ -1,5 +1,5 @@
 ---
-title: "halfsib_survival - kaplan-meier"
+title: "Halfsib survival analysis"
 author: "Enoch Ng'oma"
 date: "3/7/2017"
 output:
@@ -44,13 +44,14 @@ h2life <- read.table('../../Data/Processed/Female_events_lifespan.txt',
     treat = fct_relevel(treat, "C"),
     sireid = factor(sireid),
     damid = factor(damid)
-    )
+    ) %>% 
+  rename(diet = treat)
 ```
 
 # Density
 
 ```{r, dens}
-ggplot(h2life, aes(NewAge, fill = treat)) + 
+ggplot(h2life, aes(NewAge, fill = diet)) + 
   geom_density(alpha = 0.5) +
   coord_cartesian(xlim = c(-5, 101), ylim = c(0, 0.04)) + #adjust frame of x-axis
   scale_x_continuous(expand = c(0, 0), limits = c(-3, 100)) + #limit plot area on x-axix
@@ -67,66 +68,66 @@ ggsave(last_plot(), file = "../../Figures/density_all-life_data.pdf",
        width = 4, height = 4)
 ```
 
-# Kaplan-Meier by diet plot with Survminer
+# Kaplan-Meier by diet plot with survminer
 
 ```{r}
 # by treatment groups
-h2.treat <- survfit(Surv(NewAge, status == 2) ~ treat,
-                    conf.type = "log", 
-                    conf.int = 0.95,
-                    type = "kaplan-meier",
-                    error = "greenwood",
-                    data = h2life)
-# h2.treat
-summary(h2.treat)$table
+h2.diet <- survfit(Surv(NewAge, status == 2) ~ diet,
+                   conf.type = "log", 
+                   conf.int = 0.95,
+                   type = "kaplan-meier",
+                   error = "greenwood",
+                   data = h2life)
+# h2.diet
+summary(h2.diet)$table
 
 # median for each treatment
-summary(h2.treat)$table[, "median"]
+summary(h2.diet)$table[, "median"]
 
 # survival
-s_plot <- ggsurvplot(h2.treat, data = h2life, 
-           conf.int = TRUE,
-           palette = pal,
-           fun = "pct", 
-           surv.median.line = "hv",
-           font.y = c(14),
-           risk.table = FALSE,
-           legend = c(0.9, 0.8),
-           legend.labs = c("C", "DR", "HS"),
-           legend.title = "Diet") +
+s_plot <- ggsurvplot(h2.diet, data = h2life, 
+                     conf.int = TRUE,
+                     palette = pal,
+                     fun = "pct", 
+                     surv.median.line = "hv",
+                     font.y = c(14),
+                     risk.table = FALSE,
+                     legend = c(0.9, 0.8),
+                     legend.labs = c("C", "DR", "HS"),
+                     legend.title = "Diet") +
   xlab("Age (days)")
 ggpar(s_plot, axis.text = element_text(size = font_size),
       font.x = c(font_size),
       font.y = c(font_size),
       font.tickslab = c(font_size))
 KM_plot <- last_plot()
-ggsave(last_plot(), file = "../../Figures/K-M_treat_summarized_survminer.pdf",
+ggsave(last_plot(), file = "../../Figures/K-M_diet_summarized_survminer.pdf",
        width = 4, height = 4)
 save(KM_plot, file = "../../Figures/KM_plot.Rda")
 ```
 
 # Mixed-effects Cox Model
 
-```{r cache=TRUE}
+```{r cox1_cox_5, cache=TRUE}
 cox1 <- coxph(Surv(NewAge, status == 2) ~ 1,
                       data = h2life)
-cox2 <- coxph(Surv(NewAge, status == 2) ~ treat,
+cox2 <- coxph(Surv(NewAge, status == 2) ~ diet,
                       data = h2life)
 cox3 <- coxme(
-  Surv(NewAge, status == 2) ~ treat + (1 | sireid),
+  Surv(NewAge, status == 2) ~ diet + (1 | sireid),
   data = h2life)
 cox4 <- coxme(
-  Surv(NewAge, status == 2) ~ treat + (1 | sireid/damid),
+  Surv(NewAge, status == 2) ~ diet + (1 | sireid/damid),
   data = h2life)
 cox5 <- coxme(
-  Surv(NewAge, status == 2) ~ treat + (1 | sireid) + (1 | sireid/damid),
+  Surv(NewAge, status == 2) ~ diet + (1 | sireid) + (1 | sireid/damid),
   data = h2life)
 ```
 
 ```{r cox6, cache=TRUE}
 cox6 <- coxme(
-  Surv(NewAge, status == 2) ~ treat + (1 | sireid) + (1 | sireid/damid) +
-    (1 | treat/sireid),
+  Surv(NewAge, status == 2) ~ diet + (1 | sireid) + (1 | sireid/damid) +
+    (1 | diet/sireid),
   data = h2life)
 ```
 
@@ -157,50 +158,98 @@ AIC(cox5)
 AIC(cox6)
 ```
 
-```{r, eval=FALSE}
+```{r brm_models, cache=TRUE}
 library(brms)
 
 h2life_2 <- h2life %>% 
   filter(status == 2) %>% 
   mutate(censored = 0)
 
-bm1 <- brm(NewAge | cens(censored) ~ 1,
-           data = h2life_2,
-           family = weibull(),
-           inits = "0",
-           cores = 4)
-bm2 <- brm(NewAge | cens(censored) ~ treat,
-           data = h2life_2,
-           family = weibull(),
-           inits = "0",
-           cores = 4)
+if (FALSE) {
+  # gamma(0.01, 0.01) shape by default
+  # student_t(3, 4, 10) for intercept
+  # student_t(3, 0, 10) for sd
+  bm1 <- brm(NewAge | cens(censored) ~ 1,
+             data = h2life_2,
+             family = weibull(),
+             inits = "0",
+             cores = 4)
+  bm2 <- brm(NewAge | cens(censored) ~ diet,
+             data = h2life_2,
+             family = weibull(),
+             inits = "0",
+             cores = 4)
+  bm3 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid),
+             data = h2life_2,
+             family = weibull(),
+             inits = "0",
+             cores = 4)
+  bm4 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid:damid),
+             data = h2life_2,
+             family = weibull(),
+             inits = "0",
+             cores = 4)
+  bm5 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid) + (1 | sireid:damid),
+             data = h2life_2,
+             family = weibull(),
+             inits = "0",
+             cores = 4)
+  bm6 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid) + (1 | sireid:damid) +
+               (1 | diet:sireid),
+             data = h2life_2,
+             family = weibull(),
+             inits = "0",
+             cores = 4)
+  loo_comp <- loo(bm1, bm2, bm3, bm4, bm5, bm6)
+  model_wts <- model_weights(bm1, bm2, bm3, bm4, bm5, bm6)
 
-loo(bm1, bm2)
-model_weights(bm1, bm2)
+  save(list = c("bm1", "bm2", "bm3", "bm4", "bm5", "bm6", "loo_comp", "model_wts"),
+       file = "../../Data/Processed/Surv_models_bayes.Rda")
+}
 ```
 
+```{r}
+load("../../Data/Processed/Surv_models_bayes.Rda")
+
+loo_comp
+data.frame(weight = round(model_wts, 3))
+```
+
+```{r}
+post <- posterior_samples(bm6)
+STD <- post$b_Intercept
+DR <- post$b_dietDR
+HS <- post$b_dietHS
+
+tibble(STD, DR = DR + STD, HS = HS + STD) %>% 
+  gather(key = "Diet", value = "Posterior Estimate") %>% 
+  ggplot(aes(`Posterior Estimate`, color = Diet)) +
+  geom_line(stat = "density")
+
+summary(bm6)
+```
 
 # Test differences
 
 ```{r testdiff}
-test_all <- survdiff(Surv(NewAge, status == 2) ~ treat,
-                     data = h2life, rho = 0) #log-rank (Mantel-Haenszel) test
-test_all1 <- survdiff(Surv(NewAge, status == 2) ~ treat,
+test_all <- survdiff(Surv(NewAge, status == 2) ~ diet,
+                     data = h2life, rho = 0) # log-rank (Mantel-Haenszel) test
+test_all1 <- survdiff(Surv(NewAge, status == 2) ~ diet,
                       data = h2life, rho = 1) # Wilcoxon (Peto & Peto test)
 test_all
 test_all1
 
-quantile(h2.treat,  probs = c(0.1, 0.5, 0.9))
+quantile(h2.diet,  probs = c(0.1, 0.5, 0.9))
 ```
 
 # Pairwise tests
 
 ```{r}
 test_pairwise <- pairwise_survdiff(
-  Surv(NewAge, status == 2) ~ treat, 
+  Surv(NewAge, status == 2) ~ diet, 
   data=h2life, p.adjust.method = "bonferroni", rho = 0)
 test_pairwise1 <- pairwise_survdiff(
-  Surv(NewAge, status == 2) ~ treat, 
+  Surv(NewAge, status == 2) ~ diet, 
   data=h2life, p.adjust.method = "bonferroni", rho = 1)
 
 test_pairwise
@@ -209,13 +258,13 @@ test_pairwise1
 # significance symbols
 symnum(test_pairwise$p.value,
        cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
-   symbols = c("****", "***", "**", "*", "+", " "),
-   abbr.colnames = FALSE, na = "")
+       symbols = c("****", "***", "**", "*", "+", " "),
+       abbr.colnames = FALSE, na = "")
 
 symnum(test_pairwise1$p.value,
        cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
-   symbols = c("****", "***", "**", "*", "+", " "),
-   abbr.colnames = FALSE, na = "")
+       symbols = c("****", "***", "**", "*", "+", " "),
+       abbr.colnames = FALSE, na = "")
 ```
 
 # Kaplan-Meier plot for sire families grouped by treatment
@@ -228,7 +277,7 @@ h2.sireid <- survfit(Surv(NewAge, status == 2) ~ sireid, data = h2life,
                      error = "greenwood")
 
 kk <- ggsurvplot_facet(h2.sireid, h2life, 
-                       facet.by = "treat",
+                       facet.by = "diet",
                        fun = "pct",
                        size = 0.6,
                        risk.table = FALSE, 
@@ -241,14 +290,14 @@ kk <- ggsurvplot_facet(h2.sireid, h2life,
 
 kk + theme(legend.position = "none")
 
-ggsave(last_plot(), file = "../../Figures/K-M_treat_sire_survminer.pdf",
+ggsave(last_plot(), file = "../../Figures/K-M_diet_sire_survminer.pdf",
        width = 8, height = 4)
 ```
 
 # Kaplan-Meier plot for single sire families
 
 ```{r}
-h2.sire <- survfit(Surv(NewAge, status == 2) ~ treat, data = h2life)
+h2.sire <- survfit(Surv(NewAge, status == 2) ~ diet, data = h2life)
 
 ggsurvplot_facet(h2.sire, h2life, 
                  facet.by = "sireid",
@@ -259,10 +308,10 @@ ggsurvplot_facet(h2.sire, h2life,
                  conf.int = TRUE,
                  short.panel.labs = TRUE,
                  surv.median.line = "hv") +
-   xlab("Age (days)") +
+  xlab("Age (days)") +
   scale_y_continuous(expand = c(0, 0))
 
-ggsave(file = "../../Figures/K-M_treat_single-sires_survminer.pdf",
+ggsave(file = "../../Figures/K-M_diet_single-sires_survminer.pdf",
        width = 8, height = 6)
 ```
 
@@ -275,7 +324,7 @@ h2rn_filtered <- h2life[h2life$status != 3, ]
 # prep each treatment into its own column
 
 # pull HS and compute median
-HS <- subset(h2rn_filtered, treat == "HS")
+HS <- subset(h2rn_filtered, diet == "HS")
 hs_trim <- cbind.data.frame(HS$sireid, HS$NewAge)
 hs_med <- aggregate(. ~ HS$sireid, data = hs_trim, FUN = median)
 hs_med[, 2] <- NULL
@@ -283,7 +332,7 @@ colnames(hs_med) <- c("sireid", "age")
 hs_med$diet <- "HS"
 
 # pull DR and compute median
-DR <- subset(h2rn_filtered, treat == "DR")
+DR <- subset(h2rn_filtered, diet == "DR")
 dr_trim <- cbind.data.frame(DR$sireid, DR$NewAge)
 dr_med <- aggregate(. ~ DR$sireid, data = dr_trim, FUN = median)
 dr_med[, 2] <- NULL
@@ -291,7 +340,7 @@ colnames(dr_med) <- c("sireid", "age")
 dr_med$diet <- "DR"
 
 # pull C and compute median
-C <- subset(h2rn_filtered, treat == "C")
+C <- subset(h2rn_filtered, diet == "C")
 c_trim <- cbind.data.frame(C$sireid, C$NewAge)
 c_med <- aggregate(. ~ C$sireid, data = c_trim, FUN = median)
 c_med[, 2] <- NULL
@@ -304,7 +353,7 @@ mlife1 <- mlife1[!(mlife1$sireid=="S39"), ]
 
 #reorder x-axis (ggplot default is alphabetical)
 mlife1$diet <- as.character(mlife1$diet) #turn diet col into a char vector
-mlife1$diet <- factor(mlife1$diet, levels=unique(mlife1$diet)) #back to ordered factor
+mlife1$diet <- factor(mlife1$diet, levels = unique(mlife1$diet)) #back to ordered factor
 
 # plot reaction norms for sire families
 ggplot(mlife1, aes(x = diet, y = age, color = sireid)) +
@@ -335,12 +384,12 @@ h2fec_phenotype <- read.table('../../Data/Processed/eggs_per_vial.txt',
     Diet == "LY" ~ "DR",
     Diet == "STD" ~ "C"))
 
-newdata <- h2life[, c('id', 'NewAge', 'treat', 'repl', 'status')]
+newdata <- h2life[, c('id', 'NewAge', 'diet', 'repl', 'status')]
 ``` 
 
 ```{r}
-# rename treat as Diet
-newdata <- rename(newdata, Diet = treat)
+# rename diet as Diet
+newdata <- rename(newdata, Diet = diet)
 
 # change LY to DR, STD to C
 newdata <- newdata %>%
@@ -349,13 +398,13 @@ newdata <- newdata %>%
 ```
 
 ```{r}
-km.treat <- survfit(Surv(NewAge, status == 2) ~ id,
+km.diet <- survfit(Surv(NewAge, status == 2) ~ id,
                     conf.type = "log", 
                     conf.int = 0.95,
                     type = "kaplan-meier",
                     error = "greenwood",
                     data=newdata)
-med.dat <- summary(km.treat)$table[, 'median']
+med.dat <- summary(km.diet)$table[, 'median']
 
 ids <- strsplit(names(med.dat), split = "=", fixed = TRUE)
 ids <- unlist(lapply(ids, function(x) x[2]))
@@ -364,7 +413,7 @@ ids <- strsplit(ids, split="_", fixed = TRUE)
 ll.dat <- data.frame('id' = unlist(lapply(ids, function(x) x[1])),
                      'repl' = unlist(lapply(ids, function(x) x[2])),
                      'Diet' = unlist(lapply(ids, function(x) x[3])),
-                     'Median' = med.dat,stringsAsFactors=FALSE)
+                     'Median' = med.dat, stringsAsFactors = FALSE)
 
 # to discard the row names column, write to file
 write.table(ll.dat, "../../Data/Processed/h2_median_lifespan.txt",
