@@ -23,6 +23,7 @@ library(tidyverse)
 library(forcats)
 library(cowplot)
 library(coxme)
+library(brms)
 
 source("color_map.R")
 source("ggplot_theme.R")
@@ -106,57 +107,7 @@ ggsave(last_plot(), file = "../../Figures/K-M_diet_summarized_survminer.pdf",
 save(KM_plot, file = "../../Figures/KM_plot.Rda")
 ```
 
-# Mixed-effects Cox Model
-
-```{r cox1_cox_5, cache=TRUE}
-cox1 <- coxph(Surv(NewAge, status == 2) ~ 1,
-                      data = h2life)
-cox2 <- coxph(Surv(NewAge, status == 2) ~ diet,
-                      data = h2life)
-cox3 <- coxme(
-  Surv(NewAge, status == 2) ~ diet + (1 | sireid),
-  data = h2life)
-cox4 <- coxme(
-  Surv(NewAge, status == 2) ~ diet + (1 | sireid/damid),
-  data = h2life)
-cox5 <- coxme(
-  Surv(NewAge, status == 2) ~ diet + (1 | sireid) + (1 | sireid/damid),
-  data = h2life)
-```
-
-```{r cox6, cache=TRUE}
-cox6 <- coxme(
-  Surv(NewAge, status == 2) ~ diet + (1 | sireid) + (1 | sireid/damid) +
-    (1 | diet/sireid),
-  data = h2life)
-```
-
-```{r}
-anova(cox1, cox2)
-anova(cox2, cox3)
-anova(cox2, cox4)
-anova(cox3, cox4)
-anova(cox3, cox5)
-```
-
-```{r}
-anova(cox5, cox6)
-```
-
-```{r}
-summary(cox1)
-summary(cox2)
-summary(cox3)
-summary(cox4)
-summary(cox5)
-summary(cox6)
-
-AIC(cox2)
-AIC(cox3)
-AIC(cox4)
-AIC(cox5)
-AIC(cox6)
-```
+# Bayesian survival models
 
 ```{r brm_models, cache=TRUE}
 library(brms)
@@ -226,7 +177,7 @@ tibble(STD, DR = DR + STD, HS = HS + STD) %>%
   ggplot(aes(`Posterior Estimate`, color = Diet)) +
   geom_line(stat = "density")
 
-summary(bm6)
+summary(bm6, prob = 0.99)
 ```
 
 # Test differences
