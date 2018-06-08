@@ -61,7 +61,7 @@ if (rerun_MCMC) {
     filter(treat == "HS") %>% rename(Age_HS = NewAge) %>% 
     as.data.frame()
   DR <- h2life %>% 
-    filter(treat == "LY") %>% rename(Age_DR = NewAge) %>% 
+    filter(treat == "DR") %>% rename(Age_DR = NewAge) %>% 
     as.data.frame()
   STD <- h2life %>%
     filter(treat == "STD") %>% rename(Age_STD = NewAge) %>% 
