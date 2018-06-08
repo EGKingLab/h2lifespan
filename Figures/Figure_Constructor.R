@@ -1,5 +1,3 @@
-
-
 library(tidyverse)
 library(cowplot)
 library(survival)
@@ -20,10 +18,6 @@ bottom_row <- plot_grid(KM_plot, ttrait, labels = c('b.', 'c.'),
 P <- plot_grid(Fec_line_plot,bottom_row, labels = c('a.', ''), 
                ncol = 1,hjust = 0, label_size = 10)
 
-
-#P <- plot_grid(KM_plot, ttrait,Fec_line_plot, nrow = 1, ncol = 2,
-#               labels = c("a.", "b.","c."),
-#               label_size = 10)
 P
 ggsave(filename = "Figure_3.png", plot = P, width = 6.9, height = 6.9)
 
@@ -44,7 +38,6 @@ ggsave(filename = "Figure_4.png", plot = P, width = 6.9, height = 6.9)
 # Figure S2
 load("Fecundity_total_fec_h2.Rda")
 load("Fecundity_correlation.Rda")
-
 
 P <- plot_grid(Fecundity_h2, Fecundity_correlation,
                ncol = 2, labels = c("a.", "b."),
