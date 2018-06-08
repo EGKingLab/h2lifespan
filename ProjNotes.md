@@ -2,11 +2,11 @@
 ---
 title: "h2 Lifespan Project Record & Notes"
 author: "Enoch Ng'oma (EN), Kevin Middleton (KM), and Elizabeth King (EK)"
-date: "6/5/2018"
+date: "6/8/2018"
 ---
 
-
 ## Project Record
+
 The following steps should be followed to reproduce the analysis.
 
 ### Estimation of egg counts
