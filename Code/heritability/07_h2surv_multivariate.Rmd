@@ -32,6 +32,10 @@ library(knitr)
 source("color_map.R")
 source("ggplot_theme.R")
 source("h2life_load_data.R")
+
+h2life$treat <- str_replace(h2life$treat, "LY", "DR")
+h2life$treat <- factor(h2life$treat)
+h2life$treat <- relevel(h2life$treat, "STD")
 ```
 
 ```{r}
