@@ -21,7 +21,7 @@ source("color_map.R")
 source("ggplot_theme.R")
 ```
 
-#### Heritability ###
+# Heritability
 
 ```{r eval=TRUE}
 set.seed(37264)
@@ -39,7 +39,7 @@ h2_filtered$animal <- seq(1, nrow(h2_filtered))
 h2_filtered$treat <- as.factor(h2_filtered$treat)
 ```
 
-##### high sugar, HS
+## High sugar, HS
 
 ```{r}
 HS <- subset(h2_filtered, treat == "HS")
@@ -55,10 +55,6 @@ pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 ```
 
 ```{r}
-# Inverse Gamma(0.001; 0.001)
-# a = nu / 2
-# b = nu * V / 2
-
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
 
@@ -72,14 +68,14 @@ if (rerun_MCMC) {
                     nitt = iter,
                     burnin = burnin,
                     thin = 50,
-                    verbose = FALSE)
+                    verbose = TRUE)
   
-  save(model, file = "../../Data/Processed/HS.Rda")
+  save(model, file = "../../Data/Processed/HS_lifespan.Rda")
 }
 ```
 
 ```{r}
-load("../../Data/Processed/HS.Rda")
+load("../../Data/Processed/HS_lifespan.Rda")
 
 # Fixed
 plot(model$Sol)
@@ -100,28 +96,24 @@ f <- HPDinterval(herit)
 k <- as.data.frame(f)
 ```
 
-# plot hs with ggplot
-
 ```{r}
 density(herit)
 
-hs.samp <- data.frame(('h2' = herit)) # HPDinterval(as.mcmc(herit)))
+hs.samp <- data.frame(('h2' = herit))
 
-ggplot(hs.samp, aes(x=var1), y=k) +
+ggplot(hs.samp, aes(x = var1), y = k) +
   geom_histogram() +
   geom_vline(xintercept = median(herit))
 
 rm(model) 
 ```
 
-##### Low yeast, LY
+## Low yeast, DR
 
 ```{r}
-t1 <- Sys.time()
+DR <- subset(h2_filtered, treat == "LY")
 
-LY <- subset(h2_filtered, treat == "LY")
-
-pedigree <- LY[, c("animal", "sireid", "damid")]
+pedigree <- DR[, c("animal", "sireid", "damid")]
 names(pedigree) <- c("animal", "sire", "dam")
 pedigree$animal <- as.character(pedigree$animal)
 sires <- data.frame(animal = unique(pedigree$sire),
@@ -129,10 +121,6 @@ sires <- data.frame(animal = unique(pedigree$sire),
 dams <- data.frame(animal = unique(pedigree$dam),
                    sire = NA, dam = NA, stringsAsFactors = FALSE)
 pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
-
-# Inverse Gamma(0.001; 0.001)
-# a = nu / 2
-# b = nu * V / 2
 
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
@@ -143,21 +131,18 @@ if (rerun_MCMC) {
                     family = "gaussian",
                     prior = prior,
                     pedigree = pedigree,
-                    data = LY,
+                    data = DR,
                     nitt = iter,
                     burnin = burnin,
                     thin = 50,
-                    verbose = FALSE)
+                    verbose = TRUE)
   
-  save(model, file = "../../Data/Processed/LY.Rda")
+  save(model, file = "../../Data/Processed/DR_lifespan.Rda")
 }
-
-t2 <- Sys.time()
-cat(t2-t1)
 ```
 
 ```{r}
-load("../../Data/Processed/LY.Rda")
+load("../../Data/Processed/DR_lifespan.Rda")
 
 # Fixed
 plot(model$Sol)
@@ -177,25 +162,21 @@ median(herit.dr)
 HPDinterval(herit.dr)
 ```
 
-# plot LY with ggplot
-
 ```{r}
 density(herit.dr)
 
-dr.samp<-data.frame(('h2'=herit.dr)) # HPDinterval(as.mcmc(dr.herit)))
+dr.samp<-data.frame(('h2' = herit.dr))
 
-ggplot(dr.samp, aes(x=var1), y=k) +
-  geom_histogram()+
+ggplot(dr.samp, aes(x = var1), y = k) +
+  geom_histogram() +
   geom_vline(xintercept = median(herit.dr))
 
 rm(model)
 ```
 
-##### Standard, STD
+## Standard, STD
 
 ```{r}
-s1 <- Sys.time()
-
 STD <- subset(h2_filtered, treat == "STD")
 
 pedigree <- STD[, c("animal", "sireid", "damid")]
@@ -206,10 +187,6 @@ sires <- data.frame(animal = unique(pedigree$sire),
 dams <- data.frame(animal = unique(pedigree$dam),
                    sire = NA, dam = NA, stringsAsFactors = FALSE)
 pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
-
-# Inverse Gamma(0.001; 0.001)
-# a = nu / 2
-# b = nu * V / 2
 
 prior <- list(R = list(V = 1, nu = 0.002),
               G = list(G1 = list(V = 1, nu = 0.002)))
@@ -224,17 +201,14 @@ if (rerun_MCMC) {
                     nitt = iter,
                     burnin = burnin,
                     thin = 50,
-                    verbose = FALSE)
+                    verbose = TRUE)
   
-  save(model, file = "../../Data/Processed/STD.Rda")
+  save(model, file = "../../Data/Processed/STD_lifespan.Rda")
 }
-
-s2<-Sys.time()
-cat(s2-s1)
 ```
 
 ```{r}
-load("../../Data/Processed/STD.Rda")
+load("../../Data/Processed/STD_lifespan.Rda")
 
 # Fixed
 plot(model$Sol)
@@ -261,9 +235,9 @@ q <- as.data.frame(f)
 ```{r}
 density(herit.c)
 
-c.samp<-data.frame(('h2'=herit.c)) # HPDinterval(as.mcmc(dr.herit)))
+c.samp<-data.frame(('h2' = herit.c))
 
-ggplot(c.samp, aes(x=var1), y=k) +
+ggplot(c.samp, aes(x = var1), y = k) +
   geom_histogram()+
   geom_vline(xintercept = median(herit.c))
 ```
@@ -279,13 +253,13 @@ hs.samp$HS <- NULL
 dr.samp$DR <- NULL
 c.samp$C <- NULL
 heritab <- rbind(hs.samp, dr.samp, c.samp)
-save(heritab, file = "../../Data/Processed/herit.Rda")
+save(heritab, file = "../../Data/Processed/herit_lifespan.Rda")
 ```
 
 # Plot treatments together
 
 ```{r, dens}
-load("../../Data/Processed/herit.Rda")
+load("../../Data/Processed/herit_lifespan.Rda")
 
 ggplot(heritab, aes(var1, fill = Diet)) + 
   geom_density(alpha = 0.2) +

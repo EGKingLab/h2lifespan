@@ -1,26 +1,22 @@
----
-title: "Dmel half-sib heritability in fecundity"
-author: "Kevin Middleton"
-date: "3/7/2017"
-output:
-  html_document:
-    theme: flatly
-    toc: true
-    toc_float:
-      collapsed: false
-      smooth_scroll: true
----
-
-#1. "Lifespan fecundity" (sum eggs per vial across days)
-#2. Fecundity at weeks 1, 5, 10, e.g.
-#3. Model with (week | vial) -- what does that mean?
-
-```{r}
+#' ---
+#' title: "Dmel half-sib heritability in fecundity"
+#' author: "Kevin Middleton"
+#' date: "3/7/2017"
+#' output:
+#'   html_document:
+#'     theme: flatly
+#'     toc: true
+#'     toc_float:
+#'       collapsed: false
+#'       smooth_scroll: true
+#' ---
+#' 
+## ------------------------------------------------------------------------
 library(knitr)
-# purl("h2fec_lifetime_heritability.Rmd", output = "h2fec_lifetime_heritability.R", documentation = 2)
-```
+# purl("06_h2fec_heritability.Rmd", output = "06_h2fec_total_heritability.R", documentation = 2)
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 library(MCMCglmm)
 library(tidyverse)
 library(rstanarm)
@@ -28,24 +24,24 @@ library(cowplot)
 
 source("color_map.R")
 source("ggplot_theme.R")
-```
 
-#### Heritability ###
-
-```{r}
-rerun_MCMC <- FALSE
+#' 
+#' # Heritability
+#' 
+## ------------------------------------------------------------------------
+rerun_MCMC <- TRUE
 total_fecundity <- TRUE # early fecundity if FALSE
 
 set.seed(33416)
 
-iter <- 2e7
-burnin <- 5e4
-thin <- 200
-```
+iter <- 2e6
+burnin <- 15000
+thin <- 50
 
-## Data for early life fecundity
-
-```{r}
+#' 
+#' ## Data for early life fecundity
+#' 
+## ------------------------------------------------------------------------
 AA <- read.table('../../Data/Processed/eggs_per_female.txt',
                  sep = "\t", header = TRUE,
                  stringsAsFactors = FALSE) %>% 
@@ -91,11 +87,11 @@ early.fec <- early.fec %>%
          sireid = str_split(siredam, "D", simplify = TRUE)[, 1],
          damid = paste0("D", str_split(siredam, "D", simplify = TRUE)[, 2])) %>% 
   dplyr::select(-siredam)
-```
 
-## Select data: total fecundity or early fecundity 
-
-```{r}
+#' 
+#' ## Select data: total fecundity or early fecundity 
+#' 
+## ------------------------------------------------------------------------
 if (total_fecundity) {
   h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     sep = '\t',
@@ -106,21 +102,21 @@ if (total_fecundity) {
   h2fec <- early.fec
   label <- "early_fec"
 }
-```
 
-## Final data processing
-
-```{r}
+#' 
+#' ## Final data processing
+#' 
+## ------------------------------------------------------------------------
 # Standardize egg_total
 h2fec$egg_total <- as.numeric(scale(h2fec$egg_total))
 
 h2fec$animal <- seq(1, nrow(h2fec))
 h2fec$treat <- as.factor(h2fec$treat)
-```
 
-##### high sugar, HS
-
-```{r}
+#' 
+#' # High sugar, HS
+#' 
+## ------------------------------------------------------------------------
 HS <- subset(h2fec, treat == "HS")
 
 pedigree <- HS[, c("animal", "sireid", "damid")]
@@ -132,15 +128,9 @@ dams <- data.frame(animal = unique(pedigree$dam),
                    sire = NA, dam = NA, stringsAsFactors = FALSE)
 pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 
-# Inverse Gamma(0.001; 0.001)
-# a = nu / 2
-# b = nu * V / 2
-
 outfile <- paste0("../../Data/Processed/HS_", label, ".Rda")
 
 if (rerun_MCMC) {
-  t1 <- Sys.time()
-  
   prior <- list(R = list(V = 1, nu = 0.002),
                 G = list(G1 = list(V = 1, nu = 0.002)))
   
@@ -154,15 +144,11 @@ if (rerun_MCMC) {
                     burnin = burnin,
                     thin = thin,
                     verbose = TRUE)
-
   save(model, file = outfile)
-  
-  t2 <- Sys.time()
-  cat(t2-t1)
 }
-```
 
-```{r HS_analysis}
+#' 
+## ----HS_analysis---------------------------------------------------------
 load(outfile)
 
 # Fixed
@@ -184,19 +170,17 @@ median(herit.hs)
 h <- HPDinterval(herit.hs)
 h1 <- as.data.frame(h)
 herit.hs <- as.data.frame(herit.hs)
-```
 
-##### Low yeast, LY
-
-```{r}
-outfile <- paste0("../../Data/Processed/LY_", label, ".Rda")
+#' 
+#' # Low yeast, DR
+#' 
+## ------------------------------------------------------------------------
+outfile <- paste0("../../Data/Processed/DR_", label, ".Rda")
 
 if (rerun_MCMC) {
-  t1<-Sys.time()
+  DR <- subset(h2fec, treat == "LY")
   
-  LY <- subset(h2fec, treat == "LY")
-  
-  pedigree <- LY[, c("animal", "sireid", "damid")]
+  pedigree <- DR[, c("animal", "sireid", "damid")]
   names(pedigree) <- c("animal", "sire", "dam")
   pedigree$animal <- as.character(pedigree$animal)
   sires <- data.frame(animal = unique(pedigree$sire),
@@ -204,11 +188,7 @@ if (rerun_MCMC) {
   dams <- data.frame(animal = unique(pedigree$dam),
                      sire = NA, dam = NA, stringsAsFactors = FALSE)
   pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
-  
-  # Inverse Gamma(0.001; 0.001)
-  # a = nu / 2
-  # b = nu * V / 2
-  
+
   prior <- list(R = list(V = 1, nu = 0.002),
                 G = list(G1 = list(V = 1, nu = 0.002)))
   
@@ -217,20 +197,17 @@ if (rerun_MCMC) {
                     family = "gaussian",
                     prior = prior,
                     pedigree = pedigree,
-                    data = LY,
+                    data = DR,
                     nitt = iter,
                     burnin = burnin,
                     thin = thin,
                     verbose = TRUE)
   
   save(model, file = outfile)
-  
-  t2 <- Sys.time()
-  cat(t2 - t1)
 }
-```
 
-```{r DR_analysis}
+#' 
+## ----DR_analysis---------------------------------------------------------
 load(outfile)
 
 # Fixed
@@ -252,16 +229,14 @@ median(herit.dr)
 d <- HPDinterval(herit.dr)
 d1 <- as.data.frame(d)
 herit.dr <- as.data.frame(herit.dr)
-```
 
-##### Standard, STD
-
-```{r}
+#' 
+#' ##### Standard, STD
+#' 
+## ------------------------------------------------------------------------
 outfile <- paste0("../../Data/Processed/STD_", label, ".Rda")
 
 if (rerun_MCMC) {
-  s1<-Sys.time()
-  
   STD <- subset(h2fec, treat == "STD")
   
   pedigree <- STD[, c("animal", "sireid", "damid")]
@@ -272,12 +247,8 @@ if (rerun_MCMC) {
   dams <- data.frame(animal = unique(pedigree$dam),
                      sire = NA, dam = NA, stringsAsFactors = FALSE)
   pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
-  
-  # Inverse Gamma(0.001; 0.001)
-  # a = nu / 2
-  # b = nu * V / 2
-  
-  prior <- list(R = list(V = 1, nu = 0.002),
+
+    prior <- list(R = list(V = 1, nu = 0.002),
                 G = list(G1 = list(V = 1, nu = 0.002)))
   
   model <- MCMCglmm(egg_total ~ 1,
@@ -292,13 +263,10 @@ if (rerun_MCMC) {
                     verbose = TRUE)
   
   save(model, file = outfile)
-  
-  s2 <- Sys.time()
-  cat(s2 - s1)
 }
-```
 
-```{r STD_analysis}
+#' 
+## ----STD_analysis--------------------------------------------------------
 load(outfile)
 
 # Fixed
@@ -320,11 +288,11 @@ median(herit.std)
 c <- HPDinterval(herit.std)
 c1 <- as.data.frame(c)
 herit.std <- as.data.frame(herit.std)
-```
 
-# The three files together
-
-```{r}
+#' 
+#' # The three files together
+#' 
+## ------------------------------------------------------------------------
 herit.hs$Diet <- "HS"
 herit.dr$Diet <- "DR"
 herit.std$Diet <- "C"
@@ -332,11 +300,11 @@ herit.std$Diet <- "C"
 heritab <- rbind(herit.hs, herit.dr, herit.std)
 outfile <- paste0("../../Data/Processed/herit_", label, ".Rda")
 save(heritab, file = outfile)
-```
 
-# Plot treatments together
-
-```{r}
+#' 
+#' # Plot treatments together
+#' 
+## ------------------------------------------------------------------------
 load(outfile)
 
 Fecundity_h2 <- ggplot(heritab, aes(var1, fill = Diet)) + 
@@ -352,11 +320,11 @@ ggsave(Fecundity_h2,
        file = paste0("../../Figures/Fecundity_heritability_", label, "_plots.pdf"),
        width = 4, height = 4)
 save(Fecundity_h2, file = paste0("../../Figures/Fecundity_", label, "_h2.Rda"))
-```
 
-# Early fecundity comparison mixed model
-
-```{r, results="hide", cache=TRUE}
+#' 
+#' # Early fecundity comparison mixed model
+#' 
+## ---- results="hide", cache=TRUE-----------------------------------------
 iter <- 2e4
 early.fec <- early.fec %>% 
   mutate(egg_total_c = egg_total - mean(egg_total, na.rm = TRUE))
@@ -406,26 +374,25 @@ loo_fm3 <- loo(fm3, k_threshold = 0.7)
 loo_fm4 <- loo(fm4, k_threshold = 0.7)
 loo_fm5 <- loo(fm5, k_threshold = 0.7)
 loo_fm6 <- loo(fm6, k_threshold = 0.7)
-```
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 summary(fm1)
 summary(fm2)
 summary(fm3)
 summary(fm4)
 summary(fm5)
 summary(fm6)
-```
 
-
-```{r}
+#' 
+## ------------------------------------------------------------------------
 compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
 loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
-```
 
-# Lifetime fecundity comparison mixed model
-
-```{r, results="hide", cache=TRUE}
+#' 
+#' # Lifetime fecundity comparison mixed model
+#' 
+## ---- results="hide", cache=TRUE-----------------------------------------
 h2fec <- read.table("../../Data/Processed/eggs_per_vial.txt",
                     sep = '\t',
                     dec = ".", header = TRUE,
@@ -480,18 +447,18 @@ loo_fm3 <- loo(fm3, k_threshold = 0.7)
 loo_fm4 <- loo(fm4, k_threshold = 0.7)
 loo_fm5 <- loo(fm5, k_threshold = 0.7)
 loo_fm6 <- loo(fm6, k_threshold = 0.7)
-```
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 summary(fm1)
 summary(fm2)
 summary(fm3)
 summary(fm4)
 summary(fm5)
 summary(fm6)
-```
 
-```{r}
+#' 
+## ------------------------------------------------------------------------
 compare_models(loos = list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
 loo_model_weights(list(loo_fm1, loo_fm2, loo_fm3, loo_fm4, loo_fm5, loo_fm6))
-```
+
