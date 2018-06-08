@@ -22,6 +22,10 @@ library(parallel)
 library(knitr)
 ```
 
+```{r}
+# purl("07_h2surv_multivariate.Rmd", output = "07_h2surv_multivariate.R", documentation = 2)
+```
+
 # Data and functions for color mapping
 
 ```{r}
@@ -30,12 +34,11 @@ source("ggplot_theme.R")
 source("h2life_load_data.R")
 ```
 
-
 ```{r}
 genet_corr <- tibble(model = character(),
                      HS_STD = numeric(),
-                     LY_STD = numeric(),
-                     HS_LY = numeric(),
+                     DR_STD = numeric(),
+                     HS_DR = numeric(),
                      n_eff = numeric())
 
 iter <- 1e6
@@ -65,16 +68,18 @@ if (rerun_MCMC) {
   prior1 <- list(R = list(V = diag(3) * 1.002, nu = 1.002),
                  G = list(G1 = list(V = diag(3) * 1.002, nu = 0.002)))
   
-  prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
-                 G = list(G1 = list(V = diag(3) / 3, nu = 0.002)))
+  # prior2 <- list(R = list(V = diag(3) / 3, nu = 1.002),
+  #                G = list(G1 = list(V = diag(3) / 3, nu = 0.002)))
+  # 
+  # prior3 <- list(R = list(V = diag(3) * 1.002, nu = 1),
+  #                G = list(G1 = list(V = diag(3) * 0.5, nu = 0.002)))
   
-  prior3 <- list(R = list(V = diag(3) * 1.002, nu = 1),
-                 G = list(G1 = list(V = diag(3) * 0.5, nu = 0.002)))
-  
-  priors <- list(prior1, prior2, prior3)
-  prior_names <- c("Tri: V = diag(3) * 1.002, nu = 0.02",
-                   "Tri: V = diag(3) / 3, nu = 0.02",
-                   "Tri: V = diag(3) * 0.5, nu = 0.02")
+  # priors <- list(prior1, prior2, prior3)
+  # prior_names <- c("Tri: V = diag(3) * 1.002, nu = 0.02",
+  #                  "Tri: V = diag(3) / 3, nu = 0.02",
+  #                  "Tri: V = diag(3) * 0.5, nu = 0.02")
+  priors <- list(prior1)
+  prior_names <- c("Tri: V = diag(3) * 1.002, nu = 0.02")
   
   for (ii in 1:length(priors)) {
     prior <- priors[[ii]]
