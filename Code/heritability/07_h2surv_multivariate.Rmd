@@ -99,7 +99,7 @@ if (rerun_MCMC) {
                burnin = burnin,
                thin = thinning)
     }, mc.cores = chains)
-    outfile <- paste0("surv_multivariate_model_prior", ii, ".Rda")
+    outfile <- paste0("../../Data/Processed/surv_multivariate_model_prior", ii, ".Rda")
     save(fm, file = outfile)
     
     re <- lapply(fm, function(m) m$VCV)
