@@ -377,3 +377,7 @@ Cleaning up egg counter files. Beginning work on Analysis pipeline description f
 ### 2018-05-30 (EGK)
 
 - Made supplemental table 2 with counts of replicates for all sire and dam families in all diets. In dropbox for now. Code to create is in two-trait but could be moved. 
+
+### 2018-07-25 (KMM)
+
+- Add code for parameter expanded priors for genetic correlations.
