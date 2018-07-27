@@ -231,7 +231,7 @@ save(Fecundity_correlation, file = "../../Figures/Fecundity_correlation.Rda")
 
 ## Parameter expanded multivariate analysis
 
-```{r MANOVA_Models, cache=TRUE}
+```{r}
 if (rerun_MCMC) {
   
   iter <- 1e5
@@ -314,7 +314,7 @@ if (rerun_MCMC) {
 
 ### Analyze parameter expanded model
 
-```{r analyze_multivariate_analysis}
+```{r}
 load("../../Data/Processed/fec_total_multivariate_model_prior_expanded1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)

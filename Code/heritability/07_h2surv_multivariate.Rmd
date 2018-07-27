@@ -221,7 +221,7 @@ save(Lifespan_correlation, file = "../../Figures/Lifespan_correlation.Rda")
 
 ## Parameter expanded prior multivariate analysis
 
-```{r Multivariate_Models, cache=TRUE}
+```{r Parameter_Expanded, cache=TRUE}
 if (rerun_MCMC) {
   
   iter <- 1e5
@@ -303,7 +303,7 @@ if (rerun_MCMC) {
 
 ### Analyze parameter expanded model
 
-```{r MANOVA_Analysis}
+```{r}
 load("../../Data/Processed/surv_multivariate_model_prior_expanded1.Rda")
 
 fe <- lapply(fm, function(m) m$Sol)
