@@ -244,7 +244,8 @@ if (nrow(flagged_images) >= 1) {
 # Save output for further filtering & analysis
 
 ```{r}
-save(M, file= "../../Data/Processed/predicted_egg_counts.rda")
+save(M, file = "../../Data/Processed/predicted_egg_counts.rda")
+load("../../Data/Processed/predicted_egg_counts.rda")
 ```
 
 # Visualize performance of model

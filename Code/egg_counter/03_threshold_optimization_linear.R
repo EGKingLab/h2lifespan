@@ -144,20 +144,15 @@ write_csv(CVs, path = outfile)
 ## Post-processing #####################################################
 
 CVs <- read_csv(outfile) %>% 
-  drop_na(r)
-
-CVs$lower_f <- as.factor(CVs$lower)
-CVs$prop_train_f <- as.factor(CVs$prop_train)
-
-CVs %>%
-  filter(prop_train_f == 0.9) %>% 
-  ggplot(aes(prop_data, r, color = lower_f)) +
-  geom_line()
+  drop_na(r) %>% 
+  mutate(lower_f = factor(lower),
+         prop_train_f = factor(prop_train),
+         prop_data_f = factor(prop_data))
 
 CVs %>%
   filter(prop_train_f == 0.9) %>% 
-  ggplot(aes(prop_data, rMSD, color = lower_f)) +
-  geom_line()
+  ggplot(aes(lower_f, rMSD, color = prop_data_f)) +
+  geom_point()
 
 CVs %>% 
   arrange(desc(r))
