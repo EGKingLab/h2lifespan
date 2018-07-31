@@ -256,6 +256,18 @@ heritab <- rbind(hs.samp, dr.samp, c.samp)
 save(heritab, file = "../../Data/Processed/herit_lifespan.Rda")
 ```
 
+# Pairwise differences
+
+```{r}
+C_DR <- c.samp$var1 - dr.samp$var1
+C_HS <- c.samp$var1 - hs.samp$var1
+HS_DR <- hs.samp$var1 - dr.samp$var1
+
+HPDinterval(as.mcmc(C_DR))
+HPDinterval(as.mcmc(C_HS))
+HPDinterval(as.mcmc(HS_DR))
+```
+
 # Plot treatments together
 
 ```{r, dens}

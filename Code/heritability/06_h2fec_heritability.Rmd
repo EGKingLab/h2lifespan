@@ -132,7 +132,10 @@ outfile <- paste0("../../Data/Processed/HS_", label, ".Rda")
 
 if (rerun_MCMC) {
   prior <- list(R = list(V = 1, nu = 0.002),
-                G = list(G1 = list(V = 1, nu = 0.002)))
+                G = list(G1 = list(V = 1,
+                                   nu = 1,
+                                   alpha.mu = 0,
+                                   alpha.V = 10)))
   
   model <- MCMCglmm(egg_total ~ 1,
                     random = ~ animal,
@@ -190,7 +193,10 @@ if (rerun_MCMC) {
   pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 
   prior <- list(R = list(V = 1, nu = 0.002),
-                G = list(G1 = list(V = 1, nu = 0.002)))
+                G = list(G1 = list(V = 1,
+                                   nu = 1,
+                                   alpha.mu = 0,
+                                   alpha.V = 10)))
   
   model <- MCMCglmm(egg_total ~ 1,
                     random = ~ animal,
@@ -248,8 +254,11 @@ if (rerun_MCMC) {
                      sire = NA, dam = NA, stringsAsFactors = FALSE)
   pedigree <- bind_rows(sires, dams, pedigree) %>% as.data.frame()
 
-    prior <- list(R = list(V = 1, nu = 0.002),
-                G = list(G1 = list(V = 1, nu = 0.002)))
+  prior <- list(R = list(V = 1, nu = 0.002),
+                G = list(G1 = list(V = 1,
+                                   nu = 1,
+                                   alpha.mu = 0,
+                                   alpha.V = 10)))
   
   model <- MCMCglmm(egg_total ~ 1,
                     random = ~ animal,
