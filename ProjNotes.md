@@ -381,3 +381,9 @@ Cleaning up egg counter files. Beginning work on Analysis pipeline description f
 ### 2018-07-25 (KMM)
 
 - Add code for parameter expanded priors for genetic correlations.
+
+### 2018-07-31 (KMM)
+
+- Calculate pairwise differences of posterior estimates of heritability and genetic correlation for lifespan.
+- Remake Fig SI2 with parameter expanded models
+
