@@ -387,3 +387,6 @@ Cleaning up egg counter files. Beginning work on Analysis pipeline description f
 - Calculate pairwise differences of posterior estimates of heritability and genetic correlation for lifespan.
 - Remake Fig SI2 with parameter expanded models
 
+### 2018-08-2 (KMM)
+
+- Add vial effects to survival models

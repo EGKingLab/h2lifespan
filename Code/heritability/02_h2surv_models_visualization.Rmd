@@ -110,8 +110,6 @@ save(KM_plot, file = "../../Figures/KM_plot.Rda")
 # Bayesian survival models
 
 ```{r brm_models, cache=TRUE}
-library(brms)
-
 h2life_2 <- h2life %>% 
   filter(status == 2) %>% 
   mutate(censored = 0)
@@ -135,12 +133,13 @@ if (FALSE) {
              family = weibull(),
              inits = "0",
              cores = 4)
-  bm4 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid:damid),
+  bm4 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid:damid) + (1 | damid:repl),
              data = h2life_2,
              family = weibull(),
              inits = "0",
              cores = 4)
-  bm5 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid) + (1 | sireid:damid),
+  bm5 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid) + (1 | sireid:damid) + 
+               (1 | damid:repl),
              data = h2life_2,
              family = weibull(),
              inits = "0",
@@ -151,10 +150,17 @@ if (FALSE) {
              family = weibull(),
              inits = "0",
              cores = 4)
-  loo_comp <- loo(bm1, bm2, bm3, bm4, bm5, bm6)
-  model_wts <- model_weights(bm1, bm2, bm3, bm4, bm5, bm6)
+  bm7 <- brm(NewAge | cens(censored) ~ diet + (1 | sireid) + (1 | sireid:damid) +
+               (1 | diet:sireid) + (1 | damid:repl),
+             data = h2life_2,
+             family = weibull(),
+             inits = "0",
+             cores = 4)
+  loo_comp <- loo(bm1, bm2, bm3, bm4, bm5, bm6, bm7)
+  model_wts <- model_weights(bm1, bm2, bm3, bm4, bm5, bm6, bm7)
 
-  save(list = c("bm1", "bm2", "bm3", "bm4", "bm5", "bm6", "loo_comp", "model_wts"),
+  save(list = c("bm1", "bm2", "bm3", "bm4", "bm5", "bm6", "bm7",
+                "loo_comp", "model_wts"),
        file = "../../Data/Processed/Surv_models_bayes.Rda")
 }
 ```
@@ -166,18 +172,28 @@ loo_comp
 data.frame(weight = round(model_wts, 3))
 ```
 
-```{r}
-post <- posterior_samples(bm6)
-STD <- post$b_Intercept
-DR <- post$b_dietDR
-HS <- post$b_dietHS
+## Posteriors samples
 
-tibble(STD, DR = DR + STD, HS = HS + STD) %>% 
+```{r}
+post <- posterior_samples(bm7)
+STD <- post$b_Intercept
+DR <- post$b_dietDR + STD
+HS <- post$b_dietHS + STD
+
+tibble(STD, DR, HS) %>% 
   gather(key = "Diet", value = "Posterior Estimate") %>% 
   ggplot(aes(`Posterior Estimate`, color = Diet)) +
   geom_line(stat = "density")
 
 summary(bm6, prob = 0.99)
+
+STD_DR <- STD - DR
+STD_HS <- STD - HS
+DR_HS <- DR - HS
+
+coda::HPDinterval(as.mcmc(STD_DR))
+coda::HPDinterval(as.mcmc(STD_HS))
+coda::HPDinterval(as.mcmc(DR_HS))
 ```
 
 # Test differences
