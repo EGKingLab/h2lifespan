@@ -20,7 +20,8 @@ P <- plot_grid(Fec_line_plot, bottom_row, labels = c('a.', ''),
 
 P
 ggsave(filename = "Figure_2.png", plot = P, width = 6.9, height = 6.9)
-ggsave(filename = "Figure_2.tiff", plot = P, width = 6.9, height = 6.9, dpi = 300)
+ggsave(filename = "Figure_2.pdf", plot = P, width = 6.9, height = 6.9)
+ggsave(filename = "Figure_2.tiff", plot = P, width = 6.9, height = 6.9, dpi = 1000)
 
 # Figure 3
 load("Lifespan_GxE.Rda")
@@ -35,7 +36,8 @@ P <- plot_grid(Lifespan_h2, Lifespan_correlation,
                label_size = 10)
 P
 ggsave(filename = "Figure_3.png", plot = P, width = 6.9, height = 6.9)
-ggsave(filename = "Figure_3.tiff", plot = P, width = 6.9, height = 6.9, dpi = 300)
+ggsave(filename = "Figure_3.pdf", plot = P, width = 6.9, height = 6.9)
+ggsave(filename = "Figure_3.tiff", plot = P, width = 6.9, height = 6.9, dpi = 1000)
 
 # Figure S2
 load("Fecundity_total_fec_h2.Rda")
@@ -46,4 +48,5 @@ P <- plot_grid(Fecundity_h2, Fecundity_correlation,
                label_size = 10)
 P
 ggsave(filename = "Figure_SI2.png", plot = P, width = 6.9, height = 3.5)
-ggsave(filename = "Figure_SI2.tiff", plot = P, width = 6.9, height = 3.5, dpi = 300)
+ggsave(filename = "Figure_SI2.pdf", plot = P, width = 6.9, height = 3.5)
+ggsave(filename = "Figure_SI2.tiff", plot = P, width = 6.9, height = 3.5, dpi = 1000)
