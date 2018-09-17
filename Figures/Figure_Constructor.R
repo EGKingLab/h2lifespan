@@ -7,21 +7,22 @@ source("../Code/heritability/color_map.R")
 source("../Code/heritability/ggplot_theme.R")
 
 
-# Figure 3
+# Figure 2
 load("KM_plot.Rda")
 load("Fec_line_plot.Rda")
-load(file="ttrait_plot.rda")
+load("ttrait_plot.rda")
 
 bottom_row <- plot_grid(KM_plot, ttrait, labels = c('b.', 'c.'),
                         align = 'h',
                         label_size = 10)
-P <- plot_grid(Fec_line_plot,bottom_row, labels = c('a.', ''), 
-               ncol = 1,hjust = 0, label_size = 10)
+P <- plot_grid(Fec_line_plot, bottom_row, labels = c('a.', ''), 
+               ncol = 1, hjust = 0, label_size = 10)
 
 P
-ggsave(filename = "Figure_3.png", plot = P, width = 6.9, height = 6.9)
+ggsave(filename = "Figure_2.png", plot = P, width = 6.9, height = 6.9)
+ggsave(filename = "Figure_2.tiff", plot = P, width = 6.9, height = 6.9, dpi = 300)
 
-# Figure 4
+# Figure 3
 load("Lifespan_GxE.Rda")
 load("Fecundity_GxE.Rda")
 load("Lifespan_h2.Rda")
@@ -33,7 +34,8 @@ P <- plot_grid(Lifespan_h2, Lifespan_correlation,
                labels = c("a.", "b.", "c.", "d."),
                label_size = 10)
 P
-ggsave(filename = "Figure_4.png", plot = P, width = 6.9, height = 6.9)
+ggsave(filename = "Figure_3.png", plot = P, width = 6.9, height = 6.9)
+ggsave(filename = "Figure_3.tiff", plot = P, width = 6.9, height = 6.9, dpi = 300)
 
 # Figure S2
 load("Fecundity_total_fec_h2.Rda")
@@ -44,3 +46,4 @@ P <- plot_grid(Fecundity_h2, Fecundity_correlation,
                label_size = 10)
 P
 ggsave(filename = "Figure_SI2.png", plot = P, width = 6.9, height = 3.5)
+ggsave(filename = "Figure_SI2.tiff", plot = P, width = 6.9, height = 3.5, dpi = 300)
